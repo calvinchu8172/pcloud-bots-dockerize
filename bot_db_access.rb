@@ -36,10 +36,10 @@ class BotDBAccess
   end
   
 #=============== Pairing Methods ===============
+#===============================================
 
   def db_pairing_access(user_id = nil, device_id = nil)
     return nil if user_id.nil? || device_id.nil?
-    
     rows = @Client.query("SELECT * FROM `pairing` WHERE `user_id`='#{user_id}' AND `device_id`=#{device_id} LIMIT 1")
     
     if rows.count > 0 then
@@ -75,5 +75,39 @@ class BotDBAccess
     return FALSE if id.nil? || user_id.nil? || device_id.nil?
     result = @Client.query("DELETE FROM `pairing` WHERE `id`=#{id} AND `user_id`='#{user_id}' AND `device_id`=#{device_id}")
     return result.nil? ? TRUE : FALSE
+  end
+  
+  def db_pairing_session_access(user_id = nil, device_id = nil)
+    return nil if user_id.nil? || device_id.nil?
+    
+    rows = @Client.query("SELECT * FROM `paring_session` WHERE `user_id`='#{user_id}' AND `device_id`=#{device_id} LIMIT 1")
+    
+    if rows.count > 0 then
+      data = nil
+      rows.each do |result|
+        data = result
+      end
+      return data
+    else
+      return nil
+    end
+  end
+  
+  def db_pairing_session_insert(user_id = nil, device_id = nil)
+    return nil if user_id.nil? || device_id.nil?
+    
+    rows = self.db_pairing_session_access(user_id, device_id)
+    if rows.nil? then
+      result = @Client.query("INSERT INTO `paring_session` (`user_id`, `device_id`) VALUES ('#{user_id}', #{device_id})")
+      return result
+    else
+      return rows
+    end
+  end
+  
+  def db_pairing_session_update(id = nil, user_id = nil, device_id = nil)
+  end
+  
+  def db_pairing_session_delete()
   end
 end
