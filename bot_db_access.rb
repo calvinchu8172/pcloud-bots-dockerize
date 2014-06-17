@@ -197,4 +197,54 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
   
+  def db_device_session_access(device_id = nil)
+    return nil if device_id.nil?
+    
+    rows = DeviceSession.where(:device_id => device_id).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_device_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip) || !data.has_key?(:xmpp_account) || !data.has_key?(:password)
+
+    rows = self.db_device_session_access(data[:device_id])
+    if rows.nil? then
+      isSuccess = DeviceSession.create(:device_id => data[:device_id],
+                                       :ip => data[:ip],
+                                       :xmpp_account => data[:xmpp_account],
+                                       :password => data[:password]
+                                       )
+      
+      return self.db_device_session_access(data[:device_id]) if isSuccess
+    else
+      return rows
+    end
+  end
+  
+  def db_device_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:device_id) || !data.has_key?(:ip) || !data.has_key?(:xmpp_account) || !data.has_key?(:password)
+    
+    result = DeviceSession.find_by(:id => data[:id])
+    result.update(device_id: data[:device_id])
+    result.update(ip: data[:ip])
+    result.update(xmpp_account: data[:xmpp_account])
+    result.update(password: data[:password])
+    result.update(updated_at: DateTime.now)
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_device_session_delete(id = nil)
+    return nil if id.nil?
+    
+    result = DeviceSession.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
+  end
 end
