@@ -1,11 +1,28 @@
 #!/usr/bin/env ruby
 
-require 'mysql2'
+require 'rubygems'
+require 'active_record'
 
 DB_HOST = "localhost"
 DB_NAME = "personal_cloud"
 DB_USERID = "root"
 DB_USERPW = "12345"
+
+class Pairing < ActiveRecord::Base
+  self.table_name = "pairing"
+end
+
+class PairingSession < ActiveRecord::Base
+  self.table_name = "pairing_session"
+end
+
+class Devices < ActiveRecord::Base
+  self.table_name = "devices"
+end
+
+class DeviceSession < ActiveRecord::Base
+  self.table_name = "device_session"
+end
 
 class BotDBAccess
   
@@ -16,7 +33,7 @@ class BotDBAccess
               db_userid:DB_USERID,
               db_userpw:DB_USERPW}
     
-    @Client = self.db_connection(config)
+    self.db_connection(config)
   end
   
   def db_connection(config = {})
@@ -27,8 +44,11 @@ class BotDBAccess
     db_userid = config[:db_userid]
     db_userpw = config[:db_userpw]
     
-    conn = Mysql2::Client.new(:host => db_host, :username => db_userid, :password => db_userpw, :database => db_name)
-    return conn
+    ActiveRecord::Base.establish_connection(:adapter  => 'mysql',
+                                            :database => db_name,
+                                            :username => db_userid,
+                                            :password => db_userpw,
+                                            :host     => db_host)
   end
   
   def close
@@ -40,14 +60,10 @@ class BotDBAccess
 
   def db_pairing_access(user_id = nil, device_id = nil)
     return nil if user_id.nil? || device_id.nil?
-    rows = @Client.query("SELECT * FROM `pairing` WHERE `user_id`='#{user_id}' AND `device_id`=#{device_id} LIMIT 1")
     
-    if rows.count > 0 then
-      data = nil
-      rows.each do |result|
-        data = result
-      end
-      return data
+    rows = Pairing.where(:user_id => user_id, :device_id => device_id).first
+    if !rows.nil? then
+      return rows
     else
       return nil
     end
@@ -58,36 +74,37 @@ class BotDBAccess
     
     rows = self.db_pairing_access(user_id, device_id)
     if rows.nil? then
-      result = @Client.query("INSERT INTO `pairing` (`user_id`, `device_id`) VALUES ('#{user_id}', #{device_id})")
-      return result
+      isSuccess = Pairing.create(:user_id => user_id, :device_id => device_id)
+      return self.db_pairing_access(user_id, device_id) if isSuccess
     else
       return rows
     end
   end
   
-  def db_pairing_update(id = nil, user_id = nil, device_id = nil)
-    return FALSE if id.nil? || user_id.nil? || device_id.nil?
-    result = @Client.query("UPDATE `pairing` SET `device_id`=#{device_id} WHERE `user_id`='#{user_id}' AND `id`=#{id}")
+  def db_pairing_update(id = nil, userid = nil, deviceid = nil)
+    return FALSE if id.nil? || userid.nil? || deviceid.nil?
+    
+    result = Pairing.find_by(:id => id)
+    result.update(user_id: userid)
+    result.update(device_id: deviceid)
+    
     return result.nil? ? TRUE : FALSE
   end
   
-  def db_pairing_delete(id = nil, user_id = nil, device_id = nil)
-    return FALSE if id.nil? || user_id.nil? || device_id.nil?
-    result = @Client.query("DELETE FROM `pairing` WHERE `id`=#{id} AND `user_id`='#{user_id}' AND `device_id`=#{device_id}")
+  def db_pairing_delete(id = nil)
+    return FALSE if id.nil?
+    
+    result = Pairing.find_by(:id => id)
+    result.destroy
     return result.nil? ? TRUE : FALSE
   end
   
   def db_pairing_session_access(user_id = nil, device_id = nil)
     return nil if user_id.nil? || device_id.nil?
     
-    rows = @Client.query("SELECT * FROM `paring_session` WHERE `user_id`='#{user_id}' AND `device_id`=#{device_id} LIMIT 1")
-    
-    if rows.count > 0 then
-      data = nil
-      rows.each do |result|
-        data = result
-      end
-      return data
+    rows = PairingSession.where(:user_id => user_id, :device_id => device_id).first
+    if !rows.nil? then
+      return rows
     else
       return nil
     end
@@ -98,16 +115,29 @@ class BotDBAccess
     
     rows = self.db_pairing_session_access(user_id, device_id)
     if rows.nil? then
-      result = @Client.query("INSERT INTO `paring_session` (`user_id`, `device_id`) VALUES ('#{user_id}', #{device_id})")
-      return result
+      isSuccess = PairingSession.create(:user_id => user_id, :device_id => device_id)
+      return self.db_pairing_session_access(user_id, device_id) if isSuccess
     else
       return rows
     end
   end
   
-  def db_pairing_session_update(id = nil, user_id = nil, device_id = nil)
+  def db_pairing_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:user_id) || !data.has_key?(:device_id) || !data.has_key?(:status)
+    
+    result = PairingSession.find_by(:id => data[:id])
+    result.update(user_id: data[:user_id])
+    result.update(device_id: data[:device_id])
+    result.update(status: data[:status])
+    
+    return !result.nil? ? TRUE : FALSE
   end
   
-  def db_pairing_session_delete()
+  def db_pairing_session_delete(id = nil)
+    return nil if id.nil?
+    
+    result = PairingSession.find_by(:id => id)
+    result.destroy
+    return !result.nil? ? TRUE : FALSE
   end
 end
