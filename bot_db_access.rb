@@ -21,7 +21,7 @@ class Devices < ActiveRecord::Base
 end
 
 class DeviceSession < ActiveRecord::Base
-  self.table_name = "device_session"
+  self.table_name = "device_sessions"
 end
 
 class BotDBAccess
@@ -140,4 +140,61 @@ class BotDBAccess
     result.destroy
     return !result.nil? ? TRUE : FALSE
   end
+
+#=============== Device Methods ===============
+#===============================================  
+  
+  def db_device_access(data={})
+    return nil if data.empty? || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:model_name) || !data.has_key?(:firmware_version)
+    
+    rows = Devices.where(:serial_number => data[:serial_number],
+                         :mac_address => data[:mac_address],
+                         :model_name => data[:model_name],
+                         :firmware_version => data[:firmware_version]).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_device_insert(data={})
+    return nil if data.empty? || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:model_name) || !data.has_key?(:firmware_version)
+
+    rows = self.db_device_access(data)
+    if rows.nil? then
+      isSuccess = Devices.create(:serial_number => data[:serial_number],
+                                 :mac_address => data[:mac_address],
+                                 :model_name => data[:model_name],
+                                 :firmware_version => data[:firmware_version])
+      
+      return self.db_device_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+  
+  def db_device_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:model_name) || !data.has_key?(:firmware_version)
+    
+    result = Devices.find_by(:id => data[:id])
+    result.update(serial_number: data[:serial_number])
+    result.update(mac_address: data[:mac_address])
+    result.update(model_name: data[:model_name])
+    result.update(firmware_version: data[:firmware_version])
+    result.update(updated_at: DateTime.now)
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_device_delete(id = nil)
+    return nil if id.nil?
+    
+    result = Devices.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
 end
