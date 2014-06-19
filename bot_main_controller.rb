@@ -3,20 +3,16 @@
 require './bot_db_access'
 require './bot_queue_access'
 require './bot_pair_controller'
+require 'rexml/document'
 
-listenerThread = Thread.new {
-  puts 'Listener running'
-  PairListenController.new
-  PairListenController.run
+jobThread = Thread.new {
+    puts 'Pair controll running'
+    PairController.new
+    PairController.run
 }
-listenerThread.abort_on_exception = TRUE
+jobThread.abort_on_exception = TRUE
 
-senderThread = Thread.new {
-    puts 'Sender running'
-    PairSenderController.new
-    PairSenderController.run
-}
-senderThread.abort_on_exception = TRUE
+db_conn = BotDBAccess.new
 
 sqs = BotQueueAccess.new
 sqs.sqs_listen{
@@ -28,7 +24,10 @@ sqs.sqs_listen{
     when 'pair' then
       puts 'Get SQS Pair message'
       Thread.new{
-        PairSenderController.send_request('job1@10.1.1.110', 12)
+        session_id = data[:session_id]
+        device = db_conn.db_device_session_access_by_id(session_id)
+        info = {xmpp_account: device[:xmpp_account], session_id: data[:session_id]}
+        PairController.send_request(KPAIR_START_REQUEST, info)
       }
     
     when 'upnp' then
