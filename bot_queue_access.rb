@@ -28,7 +28,7 @@ class BotQueueAccess
       msg = JSON.parse(message.body)
       if msg["job"] == "pair" && block_given? then
         job = msg["job"]
-        data = {session_id: msg["session_id"], user_id: msg["user_id"], device_id: msg["device_id"]}
+        data = {session_id: msg["session_id"]}
         yield(job, data)
       
       elsif msg["job"] == "upnp" && block_given? then
