@@ -9,11 +9,11 @@ DB_USERID = "root"
 DB_USERPW = "12345"
 
 class Pairing < ActiveRecord::Base
-  self.table_name = "pairing"
+  self.table_name = "pairings"
 end
 
 class PairingSession < ActiveRecord::Base
-  self.table_name = "pairing_session"
+  self.table_name = "pairing_sessions"
 end
 
 class Devices < ActiveRecord::Base
