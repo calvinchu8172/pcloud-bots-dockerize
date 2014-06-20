@@ -4,7 +4,7 @@ require 'rubygems'
 require 'active_record'
 require 'yaml'
 
-DB_CONFIG_FILE = 'bot_db_config.yml'
+DB_CONFIG_FILE = '../config/bot_db_config.yml'
 
 class Pairing < ActiveRecord::Base
   self.table_name = "pairings"
