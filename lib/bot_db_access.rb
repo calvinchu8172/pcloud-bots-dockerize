@@ -220,9 +220,9 @@ class BotDBAccess
     end
   end
   
-  def db_device_session_access_by_id(id = nil)
-    return nil if id.nil?
-    result = DeviceSession.find_by(:id => id)
+  def db_device_session_access_by_device_id(device_id = nil)
+    return nil if device_id.nil?
+    result = DeviceSession.find_by(:device_id => device_id)
     return result
   end
   

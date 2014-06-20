@@ -41,7 +41,8 @@ sqs.sqs_listen{
       puts 'Get SQS Pair message'
       Thread.new{
         session_id = data[:session_id]
-        device = db_conn.db_device_session_access_by_id(session_id)
+        session_info = db_conn.db_pairing_session_access_by_id(session_id)
+        device = db_conn.db_device_session_access_by_device_id(session_info.device_id)
         info = {xmpp_account: device[:xmpp_account], session_id: data[:session_id]}
         PairController.send_request(KPAIR_START_REQUEST, info)
       }
