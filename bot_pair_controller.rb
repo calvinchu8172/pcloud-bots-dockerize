@@ -99,6 +99,9 @@ module PairController
               data = {id: session_id, status: 2}
               isSuccess = @db_conn.db_pairing_session_update(data)
               puts 'Update pair session completed success' if isSuccess
+              
+              isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
+              puts 'Insert paired data success' if isSuccess
             
               info = {xmpp_account: msg.from, session_id: session_id}
               send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
