@@ -4,7 +4,6 @@ require 'aws-sdk'
 require 'json'
 require 'yaml'
 
-SQS_QUEUE_NAME = 'personal_cloud_queue'
 SQS_CONFIG_FILE = 'bot_queue_config.yml'
 
 class BotQueueAccess
@@ -19,8 +18,12 @@ class BotQueueAccess
   end
   
   def sqs_connection(config)
-    sqs = AWS::SQS.new(config)    
-    return sqs.queues.named(SQS_QUEUE_NAME)
+    account = {:access_key_id => config['access_key_id'],
+               :secret_access_key => config['secret_access_key']
+              }
+    
+    sqs = AWS::SQS.new(account)
+    return sqs.queues.named(config['sqs_queue_name'])
   end
   
   def sqs_listen
