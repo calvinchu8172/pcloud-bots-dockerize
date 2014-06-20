@@ -2,11 +2,9 @@
 
 require 'rubygems'
 require 'active_record'
+require 'yaml'
 
-DB_HOST = "localhost"
-DB_NAME = "personal_cloud"
-DB_USERID = "root"
-DB_USERPW = "12345"
+DB_CONFIG_FILE = 'bot_db_config.yml'
 
 class Pairing < ActiveRecord::Base
   self.table_name = "pairings"
@@ -28,21 +26,18 @@ class BotDBAccess
   
   def initialize
     @Client = nil
-    config = {db_host:DB_HOST,
-              db_name:DB_NAME,
-              db_userid:DB_USERID,
-              db_userpw:DB_USERPW}
-    
+    config_file = File.join(File.dirname(__FILE__), DB_CONFIG_FILE)
+    config = YAML.load(File.read(config_file))
     self.db_connection(config)
   end
   
   def db_connection(config = {})
     return nil if config.empty?
     
-    db_host = config[:db_host]
-    db_name = config[:db_name]
-    db_userid = config[:db_userid]
-    db_userpw = config[:db_userpw]
+    db_host = config['db_host']
+    db_name = config['db_name']
+    db_userid = config['db_userid']
+    db_userpw = config['db_userpw']
     
     ActiveRecord::Base.establish_connection(:adapter  => 'mysql',
                                             :database => db_name,
