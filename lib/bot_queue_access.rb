@@ -6,6 +6,13 @@ require 'yaml'
 
 SQS_CONFIG_FILE = '../config/bot_queue_config.yml'
 
+def valid_json? json_
+  JSON.parse(json_)
+  return true
+rescue JSON::ParserError
+  return false
+end
+
 class BotQueueAccess
   
   def initialize
@@ -29,24 +36,26 @@ class BotQueueAccess
   
   def sqs_listen
     @Queue.poll do |message|
-      msg = JSON.parse(message.body)
-      if msg["job"] == "pair" && block_given? then
-        job = msg["job"]
-        data = {session_id: msg["session_id"]}
-        yield(job, data)
+      isValid = valid_json? message.body
+      if isValid then
+        msg = JSON.parse(message.body)
+        if msg["job"] == "pair" && block_given? then
+          job = msg["job"]
+          data = {session_id: msg["session_id"]}
+          yield(job, data)
       
-      elsif msg["job"] == "upnp" && block_given? then
-        job = msg["job"]
-        data = {}
-        yield(job, data)
+        elsif msg["job"] == "upnp" && block_given? then
+          job = msg["job"]
+          data = {}
+          yield(job, data)
       
-      elsif msg["job"] == "ddns" && block_given? then
-        job = msg["job"]
-        data = {}
-        yield(job, data)
-        
-      else
-        puts 'Data type non JSON'
+        elsif msg["job"] == "ddns" && block_given? then
+          job = msg["job"]
+          data = {}
+          yield(job, data)
+        else
+          puts 'Data type non JSON'
+        end
       end
       message.delete
     end
