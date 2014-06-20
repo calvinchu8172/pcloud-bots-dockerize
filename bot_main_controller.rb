@@ -14,6 +14,22 @@ jobThread.abort_on_exception = TRUE
 
 db_conn = BotDBAccess.new
 
+timeoutThread = Thread.new{
+  puts 'Timeout update running'
+  loop do
+    sleep(30.0)
+    data = db_conn.db_pairing_session_access_timeout
+    puts 'Search timeout session'
+    
+    data.find_each do |row|
+      data = {id: row.id, status: 4}
+      isSuccess = db_conn.db_pairing_session_update(data)
+      'Update timeout session success' if isSuccess
+    end
+  end
+}
+timeoutThread.abort_on_exception = TRUE
+
 sqs = BotQueueAccess.new
 sqs.sqs_listen{
   |job, data|

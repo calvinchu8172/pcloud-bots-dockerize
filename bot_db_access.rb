@@ -148,6 +148,15 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
 
+  def db_pairing_session_access_timeout
+    rows = PairingSession.where(["(`status` = 0 OR `status` = 1) AND `expire_at` < ?", DateTime.now])
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
 #=============== Device Methods ===============
 #===============================================  
   
