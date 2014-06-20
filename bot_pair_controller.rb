@@ -4,11 +4,9 @@ require './bot_db_access'
 require './bot_pair_protocol_template'
 require 'blather/client/dsl'
 require 'rexml/document'
+require 'yaml'
 
-include REXML
-
-BOT_XMPP_ACCOUNT = 'job2@10.1.1.110/pair_bot'
-BOT_XMPP_PASSWORD = '12345'
+BOT_ACCOUNT_CONFIG_FILE = 'bot_account_config.yml'
 
 KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
@@ -21,7 +19,13 @@ module PairController
   
   def self.new
     @db_conn = nil
-    setup BOT_XMPP_ACCOUNT, BOT_XMPP_PASSWORD
+    @bot_xmpp_account = nil
+    config_file = File.join(File.dirname(__FILE__), BOT_ACCOUNT_CONFIG_FILE)
+    config = YAML.load(File.read(config_file))
+    
+    @bot_xmpp_account = config['bot_xmpp_account']
+    
+    setup config['bot_xmpp_account'], config['bot_xmpp_password']
     puts 'Init listen account '
     
     @db_conn = BotDBAccess.new
@@ -35,23 +39,23 @@ module PairController
     
     case job
       when KPAIR_START_REQUEST
-        msg = PAIR_START_REQUEST % [info[:xmpp_account], BOT_XMPP_ACCOUNT, info[:session_id]]
+        msg = PAIR_START_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
       
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
-        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], BOT_XMPP_ACCOUNT, 'clshang@ecoworkinc.com', info[:session_id]]
+        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, 'clshang@ecoworkinc.com', info[:session_id]]
         write_to_stream msg
       
       when KPAIR_COMPLETED_FAILURE_RESPONSE
-        msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], BOT_XMPP_ACCOUNT, 999, info[:session_id]]
+        msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, 999, info[:session_id]]
         write_to_stream msg
         
       when KPAIR_TIMEOUT_SUCCESS_RESPONSE
-        msg = PAIR_TIMEOUT_SUCCESS_RESPONSE % [info[:xmpp_account], BOT_XMPP_ACCOUNT, info[:session_id]]
+        msg = PAIR_TIMEOUT_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
       
       when KPAIR_TIMEOUT_FAILURE_RESPONSE
-        msg = PAIR_TIMEOUT_FAILURE_FAILURE % [info[:xmpp_account], BOT_XMPP_ACCOUNT, 999, info[:session_id]]
+        msg = PAIR_TIMEOUT_FAILURE_FAILURE % [info[:xmpp_account], @bot_xmpp_account, 999, info[:session_id]]
         write_to_stream msg
     end
   end
