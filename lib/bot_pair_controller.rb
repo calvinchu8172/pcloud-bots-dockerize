@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 
-require './bot_db_access'
-require './bot_pair_protocol_template'
+require_relative 'bot_db_access'
+require_relative 'bot_pair_protocol_template'
 require 'blather/client/dsl'
 require 'rexml/document'
 require 'yaml'
 
-BOT_ACCOUNT_CONFIG_FILE = 'bot_account_config.yml'
+BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 
 KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'

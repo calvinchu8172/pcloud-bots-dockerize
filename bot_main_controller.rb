@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
-require './bot_db_access'
-require './bot_queue_access'
-require './bot_pair_controller'
+require_relative 'lib/bot_db_access'
+require_relative 'lib/bot_queue_access'
+require_relative 'lib/bot_pair_controller'
 require 'rexml/document'
 
 jobThread = Thread.new {

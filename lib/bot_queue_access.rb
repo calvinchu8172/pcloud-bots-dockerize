@@ -4,7 +4,7 @@ require 'aws-sdk'
 require 'json'
 require 'yaml'
 
-SQS_CONFIG_FILE = 'bot_queue_config.yml'
+SQS_CONFIG_FILE = '../config/bot_queue_config.yml'
 
 class BotQueueAccess
   
