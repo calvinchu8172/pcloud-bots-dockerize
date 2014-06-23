@@ -32,7 +32,7 @@ class BotDBAccess
     @Client = nil
     config_file = File.join(File.dirname(__FILE__), DB_CONFIG_FILE)
     config = YAML.load(File.read(config_file))
-    self.db_connection(config)
+    @Client = self.db_connection(config)
   end
   
   def db_connection(config = {})
@@ -42,17 +42,23 @@ class BotDBAccess
     db_name = config['db_name']
     db_userid = config['db_userid']
     db_userpw = config['db_userpw']
+    db_pool = config['db_pool']
+    db_reaping_frequency = config['db_reaping_frequency']
     
-    ActiveRecord::Base.establish_connection(:adapter  => 'mysql',
+    connect = ActiveRecord::Base.establish_connection(:adapter  => 'mysql',
                                             :database => db_name,
                                             :username => db_userid,
                                             :password => db_userpw,
-                                            :host     => db_host)
+                                            :host     => db_host,
+                                            :pool     => db_pool,
+                                            :reaping_frequency => db_reaping_frequency
+                                            )
+    return connect
   end
   
-  #def close
-  #  @Client.close if !@Client.nil?
-  #end
+  def close
+    ActiveRecord::Base.remove_connection(@Client) if !@Client.nil?
+  end
   
 #=============== Pairing Methods ===============
 #===============================================

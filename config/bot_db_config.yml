@@ -2,3 +2,5 @@ db_host: xxx
 db_name: xxx
 db_userid: xxx
 db_userpw: xxx
+db_pool: 100
+db_reaping_frequency: 2
