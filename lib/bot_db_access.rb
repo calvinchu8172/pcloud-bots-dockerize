@@ -22,6 +22,10 @@ class DeviceSession < ActiveRecord::Base
   self.table_name = "device_sessions"
 end
 
+class UpnpSession < ActiveRecord::Base
+  self.table_name = "upnp_sessions"
+end
+
 class BotDBAccess
   
   def initialize
@@ -263,5 +267,67 @@ class BotDBAccess
     result.destroy
     
     return !result.nil? ? TRUE : FALSE
+  end
+
+#=============== Upnp Methods ===============
+#===============================================
+  def db_upnp_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    rows = UpnpSession.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+
+  def db_upnp_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:user_id) || !data.has_key?(:device_id) || !data.has_key?(:status) || !data.has_key?(:service_list)
+    
+    rows = self.db_upnp_session_access(data)
+    if rows.nil? then
+      isSuccess = UpnpSession.create(data)
+      return self.db_upnp_session_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+
+  def db_upnp_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    
+    result = UpnpSession.find_by(:id => data[:id])
+    result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
+    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+    result.update(status: data[:status]) if data.has_key?(:status)
+    result.update(service_list: data[:service_list]) if data.has_key?(:service_list)
+    result.update(updated_at: DateTime.now)
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+
+  def db_upnp_session_delete(id = nil)
+    return nil if id.nil?
+    
+    result = UpnpSession.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_retreive_xmpp_account_by_upnp_session_id(id = nil)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `upnp_sessions` WHERE \
+                 `upnp_sessions`.`id`=%d AND \
+                 `upnp_sessions`.`device_id`=`device_sessions`.`device_id`" % id
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:xmpp_account) then
+      return rows.xmpp_account
+    else
+      return nil
+    end
   end
 end
