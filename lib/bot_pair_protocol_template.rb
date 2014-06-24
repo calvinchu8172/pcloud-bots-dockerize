@@ -73,3 +73,51 @@ PAIR_TIMEOUT_FAILURE_FAILURE = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#UNPAIR_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+UNPAIR_ASK_REQUEST = <<EOT
+<message to="DEVICE_JID" type="normal" from="BOT_JID" xml:lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+    <title>unpair</title>
+  </x>
+  <thread>session_id</thread>
+</message>
+EOT
+
+#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+UPNP_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <subject>upnp_service</subject>
+  <query xmlns='http://jabber.org/protocol/disco#items'></query>
+  <thread>%d</thread>
+</message>
+EOT
+
+#UPNP_FIELD_ITEM % ['SERVICE_NAME', 'STATUS', 'ENABLED', 'DESCRIPTION']
+UPNP_FIELD_ITEM = <<EOT
+<item>
+  <field var='service-name' type='text-single'>
+    <value>%s</value>
+  </field>
+  <field var='status' type='boolean'>
+    <value>%s</value>
+  </field>
+  <field var='enabled' type='boolean'>
+    <value>%s</value>
+  </field>
+  <field var='description' type='text-multi'>
+    <value>%s</value>
+  </field>
+</item>
+EOT
+
+#UPNP_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'FIELD_ITEM', 'SESSION_ID']
+UPNP_SETTING_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+    <title>upnp_service</title>
+    %s
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
