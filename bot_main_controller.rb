@@ -44,8 +44,9 @@ sqs.sqs_listen{
       puts 'Get SQS Pair message'
       pairThread = Thread.new{
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id).to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
-        info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
+        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                session_id: data[:session_id]}
         
         PairController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
       }
@@ -56,7 +57,7 @@ sqs.sqs_listen{
       puts 'Get SQS Upnp message submit'
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id).to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
         service_list = db_conn.db_upnp_session_access({id: session_id}).service_list
         
         field_item = ""
@@ -73,7 +74,9 @@ sqs.sqs_listen{
           end
         end
         
-        info = {xmpp_account: xmpp_account, session_id: data[:session_id], field_item: field_item}
+        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                session_id: data[:session_id],
+                field_item: field_item}
         PairController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
       }
       upnpSubmitThread.abort_on_exception = FALSE
@@ -83,8 +86,9 @@ sqs.sqs_listen{
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id).to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
-        info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                session_id: data[:session_id]}
         
         PairController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       }
