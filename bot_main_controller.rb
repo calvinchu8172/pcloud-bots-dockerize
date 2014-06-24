@@ -5,6 +5,9 @@ require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_pair_controller'
 require 'rexml/document'
 
+XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
+XMPP_RESOURCE_ID = '/device'
+
 jobThread = Thread.new {
     puts 'Pair controll running'
     PairController.new
@@ -41,7 +44,7 @@ sqs.sqs_listen{
       puts 'Get SQS Pair message'
       pairThread = Thread.new{
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id) + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
         info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
         
         PairController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
@@ -53,7 +56,7 @@ sqs.sqs_listen{
       puts 'Get SQS Upnp message submit'
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id) + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
         service_list = db_conn.db_upnp_session_access({id: session_id}).service_list
         
         field_item = ""
@@ -80,7 +83,7 @@ sqs.sqs_listen{
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id) + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID
         info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
         
         PairController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
