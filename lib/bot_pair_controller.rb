@@ -99,8 +99,11 @@ module PairController
             puts 'Update pair session wait success' if isSuccess
           end
         when 'unpair'
-        when 'upnp'
-          puts 'Receive upnp request'
+        when 'upnp_service'
+          session_id = msg.thread
+          data = {id: session_id, status:4}
+          isSuccess = @db_conn.db_upnp_session_update(data)
+          puts 'Update upnp session setting success' if isSuccess
         when 'ddns'
           puts 'Receive ddns request'  
       end
@@ -176,8 +179,11 @@ module PairController
             puts 'Update pair session failue success' if isSuccess
           end
         when 'unpair'
-        when 'upnp'
-          puts 'Receive upnp request'
+        when 'upnp_service'
+          session_id = msg.thread
+          data = {id: session_id, status: 3}
+          isSuccess = @db_conn.db_upnp_session_update(data)
+          puts 'Update upnp session failue success' if isSuccess
         when 'ddns'
           puts 'Receive ddns request'  
       end
