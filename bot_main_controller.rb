@@ -46,8 +46,46 @@ sqs.sqs_listen{
         info = {xmpp_account: device[:xmpp_account], session_id: data[:session_id]}
         PairController.send_request(KPAIR_START_REQUEST, info)
       }
-    
-    when 'upnp' then
-    when 'ddns' then  
+    when 'unpair' then
+      
+    when 'upnp_submit' then
+      puts 'Get SQS Upnp message submit'
+      upnpSubmitThread = Thread.new {
+        session_id = data[:session_id]
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        service_list = db_conn.db_upnp_session_access({id: session_id}).service_list
+        
+        field_item = ""
+        
+        if valid_json? service_list then
+          service_list_json = JSON.parse(service_list)
+          service_list_json.each do |item|
+            service_name = item["service_name"]
+            status = item["status"].to_s
+            enabled = item["enabled"].to_s
+            description = item["description"]
+            
+            field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description]
+          end
+        end
+        
+        info = {xmpp_account: xmpp_account, session_id: data[:session_id], field_item: field_item}
+        PairController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
+      }
+      upnpSubmitThread.abort_on_exception = FALSE
+      
+    when 'upnp_query' then
+      puts 'Get SQS Upnp message query'
+      
+      upnpQueryThread = Thread.new{
+        session_id = data[:session_id]
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
+        
+        PairController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
+      }
+      upnpQueryThread.abort_on_exception = FALSE
+      
+    when 'ddns' then
   end
 }
