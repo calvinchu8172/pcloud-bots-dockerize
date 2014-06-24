@@ -43,16 +43,22 @@ class BotQueueAccess
           job = msg["job"]
           data = {session_id: msg["session_id"]}
           yield(job, data)
-      
-        elsif msg["job"] == "upnp" && block_given? then
+
+        elsif msg["job"] == "unpair" && block_given? then
           job = msg["job"]
-          data = {}
+          data = {pair_id: msg["pair_id"]}
           yield(job, data)
-      
+
+        elsif (msg["job"] == "upnp_query" || msg["job"] == "upnp_submit") && block_given? then
+          job = msg["job"]
+          data = {session_id: msg["session_id"]}
+          yield(job, data)
+
         elsif msg["job"] == "ddns" && block_given? then
           job = msg["job"]
           data = {}
           yield(job, data)
+
         else
           puts 'Data type non JSON'
         end
