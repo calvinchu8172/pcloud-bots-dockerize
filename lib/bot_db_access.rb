@@ -26,6 +26,10 @@ class UpnpSession < ActiveRecord::Base
   self.table_name = "upnp_sessions"
 end
 
+class User < ActiveRecord::Base
+  self.table_name = "users"
+end
+
 class BotDBAccess
   
   def initialize
@@ -59,14 +63,31 @@ class BotDBAccess
   def close
     ActiveRecord::Base.remove_connection(@Client) if !@Client.nil?
   end
-  
+
+#=============== User Methods ===============
+#===============================================
+
+  def db_user_access(id = nil)
+    return nil if id.nil?
+    
+    data = {:id => id}
+    
+    rows = User.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+
 #=============== Pairing Methods ===============
 #===============================================
 
-  def db_pairing_access(user_id = nil, device_id = nil)
-    return nil if user_id.nil? || device_id.nil?
+  def db_pairing_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:user_id) && !data.has_key?(:device_id))
     
-    rows = Pairing.where(:user_id => user_id, :device_id => device_id).first
+    rows = Pairing.where(data).first
     if !rows.nil? then
       return rows
     else
@@ -77,23 +98,24 @@ class BotDBAccess
   def db_pairing_insert(user_id = nil, device_id = nil)
     return nil if user_id.nil? || device_id.nil?
     
-    rows = self.db_pairing_access(user_id, device_id)
+    rows = self.db_pairing_access({user_id: user_id, device_id: device_id})
     if rows.nil? then
       isSuccess = Pairing.create(:user_id => user_id, :device_id => device_id)
-      return self.db_pairing_access(user_id, device_id) if isSuccess
+      return self.db_pairing_access({user_id: user_id, device_id: device_id}) if isSuccess
     else
       return rows
     end
   end
   
-  def db_pairing_update(id = nil, userid = nil, deviceid = nil)
-    return FALSE if id.nil? || userid.nil? || deviceid.nil?
+  def db_pairing_update(data={})
+    return FALSE if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id))
     
-    result = Pairing.find_by(:id => id)
-    result.update(user_id: userid)
-    result.update(device_id: deviceid)
+    result = Pairing.find_by(:id => data[:id])
+    result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
+    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+    result.update(updated_at: DateTime.now)
     
-    return result.nil? ? TRUE : FALSE
+    return !result.nil? ? TRUE : FALSE
   end
   
   def db_pairing_delete(id = nil)
@@ -101,13 +123,13 @@ class BotDBAccess
     
     result = Pairing.find_by(:id => id)
     result.destroy
-    return result.nil? ? TRUE : FALSE
+    return !result.nil? ? TRUE : FALSE
   end
   
-  def db_pairing_session_access(user_id = nil, device_id = nil)
-    return nil if user_id.nil? || device_id.nil?
+  def db_pairing_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:user_id) && !data.has_key?(:device_id)) 
     
-    rows = PairingSession.where(:user_id => user_id, :device_id => device_id).first
+    rows = PairingSession.where(data).first
     if !rows.nil? then
       return rows
     else
@@ -115,19 +137,13 @@ class BotDBAccess
     end
   end
   
-  def db_pairing_session_access_by_id(id = nil)
-    return nil if id.nil?
-    result = PairingSession.find_by(:id => id)
-    return result
-  end
-  
   def db_pairing_session_insert(user_id = nil, device_id = nil)
     return nil if user_id.nil? || device_id.nil?
     
-    rows = self.db_pairing_session_access(user_id, device_id)
+    rows = self.db_pairing_session_access({user_id: user_id, device_id: device_id})
     if rows.nil? then
       isSuccess = PairingSession.create(:user_id => user_id, :device_id => device_id)
-      return self.db_pairing_session_access(user_id, device_id) if isSuccess
+      return self.db_pairing_session_access({user_id: user_id, device_id: device_id}) if isSuccess
     else
       return rows
     end
@@ -162,16 +178,29 @@ class BotDBAccess
       return nil
     end
   end
+  
+  def db_retreive_xmpp_account_by_pair_session_id(id = nil)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `pairing_sessions` WHERE \
+                 `pairing_sessions`.`id`=%d AND \
+                 `pairing_sessions`.`device_id`=`device_sessions`.`device_id`" % id
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:xmpp_account) then
+      return rows.xmpp_account
+    else
+      return nil
+    end
+  end
+  
 #=============== Device Methods ===============
 #===============================================  
   
   def db_device_access(data={})
-    return nil if data.empty? || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:model_name) || !data.has_key?(:firmware_version)
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:model_name) && !data.has_key?(:firmware_version))
     
-    rows = Devices.where(:serial_number => data[:serial_number],
-                         :mac_address => data[:mac_address],
-                         :model_name => data[:model_name],
-                         :firmware_version => data[:firmware_version]).first
+    rows = Devices.where(data).first
     
     if !rows.nil? then
       return rows
@@ -218,10 +247,10 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
   
-  def db_device_session_access(device_id = nil)
-    return nil if device_id.nil?
+  def db_device_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account))
     
-    rows = DeviceSession.where(:device_id => device_id).first
+    rows = DeviceSession.where(data).first
     
     if !rows.nil? then
       return rows
@@ -230,16 +259,10 @@ class BotDBAccess
     end
   end
   
-  def db_device_session_access_by_device_id(device_id = nil)
-    return nil if device_id.nil?
-    result = DeviceSession.find_by(:device_id => device_id)
-    return result
-  end
-  
   def db_device_session_insert(data={})
     return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip) || !data.has_key?(:xmpp_account) || !data.has_key?(:password)
 
-    rows = self.db_device_session_access(data[:device_id])
+    rows = self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]})
     if rows.nil? then
       isSuccess = DeviceSession.create(:device_id => data[:device_id],
                                        :ip => data[:ip],
@@ -247,7 +270,7 @@ class BotDBAccess
                                        :password => data[:password]
                                        )
       
-      return self.db_device_session_access(data[:device_id]) if isSuccess
+      return self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]}) if isSuccess
     else
       return rows
     end
