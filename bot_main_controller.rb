@@ -39,13 +39,14 @@ sqs.sqs_listen{
   case job
     when 'pair' then
       puts 'Get SQS Pair message'
-      Thread.new{
+      pairThread = Thread.new{
         session_id = data[:session_id]
-        session_info = db_conn.db_pairing_session_access_by_id(session_id)
-        device = db_conn.db_device_session_access_by_device_id(session_info.device_id)
-        info = {xmpp_account: device[:xmpp_account], session_id: data[:session_id]}
-        PairController.send_request(KPAIR_START_REQUEST, info)
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
+        info = {xmpp_account: xmpp_account, session_id: data[:session_id]}
+        
+        PairController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
       }
+      pairThread.abort_on_exception = FALSE
     when 'unpair' then
       
     when 'upnp_submit' then

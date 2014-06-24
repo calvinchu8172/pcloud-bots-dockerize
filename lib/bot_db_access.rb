@@ -162,6 +162,22 @@ class BotDBAccess
       return nil
     end
   end
+  
+  def db_retreive_xmpp_account_by_pair_session_id(id = nil)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `pairing_sessions` WHERE \
+                 `pairing_sessions`.`id`=%d AND \
+                 `pairing_sessions`.`device_id`=`device_sessions`.`device_id`" % id
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:xmpp_account) then
+      return rows.xmpp_account
+    else
+      return nil
+    end
+  end
+  
 #=============== Device Methods ===============
 #===============================================  
   
@@ -228,12 +244,6 @@ class BotDBAccess
     else
       return nil
     end
-  end
-  
-  def db_device_session_access_by_device_id(device_id = nil)
-    return nil if device_id.nil?
-    result = DeviceSession.find_by(:device_id => device_id)
-    return result
   end
   
   def db_device_session_insert(data={})
