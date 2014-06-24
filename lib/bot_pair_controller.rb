@@ -117,7 +117,7 @@ module PairController
           session_id = msg.thread
             
           if 'completed' == action then
-            device = @db_conn.db_pairing_session_access_by_id(session_id)
+            device = @db_conn.db_pairing_session_access({id: session_id})
             expire_time = device[:expire_at]
             
             if expire_time > DateTime.now 
