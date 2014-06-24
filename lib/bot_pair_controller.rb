@@ -49,7 +49,7 @@ module PairController
         write_to_stream msg
       
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
-        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, 'clshang@ecoworkinc.com', info[:session_id]]
+        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
         write_to_stream msg
       
       when KPAIR_COMPLETED_FAILURE_RESPONSE
@@ -128,7 +128,8 @@ module PairController
               isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
               puts 'Insert paired data success' if isSuccess
             
-              info = {xmpp_account: msg.from, session_id: session_id}
+              user = @db_conn.db_user_access(device[:user_id])
+              info = {xmpp_account: msg.from, session_id: session_id, email: user.nil? ? '' : user.email}
               send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
               puts 'Send to device completed success'
             else

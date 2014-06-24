@@ -26,6 +26,10 @@ class UpnpSession < ActiveRecord::Base
   self.table_name = "upnp_sessions"
 end
 
+class User < ActiveRecord::Base
+  self.table_name = "users"
+end
+
 class BotDBAccess
   
   def initialize
@@ -59,7 +63,24 @@ class BotDBAccess
   def close
     ActiveRecord::Base.remove_connection(@Client) if !@Client.nil?
   end
-  
+
+#=============== User Methods ===============
+#===============================================
+
+  def db_user_access(id = nil)
+    return nil if id.nil?
+    
+    data = {:id => id}
+    
+    rows = User.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+
 #=============== Pairing Methods ===============
 #===============================================
 
