@@ -32,6 +32,8 @@ timeoutThread = Thread.new{
 }
 timeoutThread.abort_on_exception = TRUE
 
+sleep(5)
+
 sqs = BotQueueAccess.new
 sqs.sqs_listen{
   |job, data|
