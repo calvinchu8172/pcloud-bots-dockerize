@@ -20,7 +20,7 @@ KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 KUPNP_ASK_REQUEST = 'upnp_ask_request'
 KUPNP_SETTING_REQUEST = 'upnp_setting_request'
 
-module PairController
+module XMPPController
   extend Blather::DSL
   
   def self.new

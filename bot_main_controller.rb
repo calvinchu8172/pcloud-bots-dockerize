@@ -2,16 +2,15 @@
 
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
-require_relative 'lib/bot_pair_controller'
-require 'rexml/document'
+require_relative 'lib/bot_xmpp_controller'
 
 XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
 XMPP_RESOURCE_ID = '/device'
 
 jobThread = Thread.new {
     puts 'Pair controll running'
-    PairController.new
-    PairController.run
+    XMPPController.new
+    XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
 
@@ -48,7 +47,7 @@ sqs.sqs_listen{
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: data[:session_id]}
         
-        PairController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
       }
       pairThread.abort_on_exception = FALSE
     when 'unpair' then
@@ -77,7 +76,7 @@ sqs.sqs_listen{
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: data[:session_id],
                 field_item: field_item}
-        PairController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
       }
       upnpSubmitThread.abort_on_exception = FALSE
       
@@ -90,7 +89,7 @@ sqs.sqs_listen{
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: data[:session_id]}
         
-        PairController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       }
       upnpQueryThread.abort_on_exception = FALSE
       
