@@ -111,9 +111,11 @@ class BotDBAccess
     return FALSE if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id))
     
     result = Pairing.find_by(:id => data[:id])
-    result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
-    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-    result.update(updated_at: DateTime.now)
+    if !result.nil? then
+      result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(updated_at: DateTime.now)
+    end
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -153,10 +155,12 @@ class BotDBAccess
     return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status))
     
     result = PairingSession.find_by(:id => data[:id])
-    result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
-    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-    result.update(status: data[:status]) if data.has_key?(:status)
-    result.update(updated_at: DateTime.now)
+    if !result.nil? then
+      result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(status: data[:status]) if data.has_key?(:status)
+      result.update(updated_at: DateTime.now)
+    end
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -229,11 +233,14 @@ class BotDBAccess
     return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:model_name) && !data.has_key?(:firmware_version))
     
     result = Devices.find_by(:id => data[:id])
-    result.update(serial_number: data[:serial_number]) if data.has_key?(:serial_number)
-    result.update(mac_address: data[:mac_address]) if data.has_key?(:mac_address)
-    result.update(model_name: data[:model_name]) if data.has_key?(:model_name)
-    result.update(firmware_version: data[:firmware_version]) if data.has_key?(:firmware_version)
-    result.update(updated_at: DateTime.now)
+    
+    if !result.nil? then
+      result.update(serial_number: data[:serial_number]) if data.has_key?(:serial_number)
+      result.update(mac_address: data[:mac_address]) if data.has_key?(:mac_address)
+      result.update(model_name: data[:model_name]) if data.has_key?(:model_name)
+      result.update(firmware_version: data[:firmware_version]) if data.has_key?(:firmware_version)
+      result.update(updated_at: DateTime.now)
+    end
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -280,11 +287,13 @@ class BotDBAccess
     return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account) && !data.has_key?(:password))
     
     result = DeviceSession.find_by(:id => data[:id])
-    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-    result.update(ip: data[:ip]) if data.has_key?(:ip)
-    result.update(xmpp_account: data[:xmpp_account]) if data.has_key?(:xmpp_account)
-    result.update(password: data[:password]) if data.has_key?(:password)
-    result.update(updated_at: DateTime.now)
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(ip: data[:ip]) if data.has_key?(:ip)
+      result.update(xmpp_account: data[:xmpp_account]) if data.has_key?(:xmpp_account)
+      result.update(password: data[:password]) if data.has_key?(:password)
+      result.update(updated_at: DateTime.now)
+    end
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -327,11 +336,13 @@ class BotDBAccess
     return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
     
     result = UpnpSession.find_by(:id => data[:id])
-    result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
-    result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-    result.update(status: data[:status]) if data.has_key?(:status)
-    result.update(service_list: data[:service_list]) if data.has_key?(:service_list)
-    result.update(updated_at: DateTime.now)
+    if !result.nil? then
+      result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(status: data[:status]) if data.has_key?(:status)
+      result.update(service_list: data[:service_list]) if data.has_key?(:service_list)
+      result.update(updated_at: DateTime.now)
+    end
     
     return !result.nil? ? TRUE : FALSE
   end
