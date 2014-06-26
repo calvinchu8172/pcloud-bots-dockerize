@@ -12,6 +12,7 @@ class BotRouteAccess
     config = YAML.load(File.read(config_file))
     
     @Route = self.route_connection(config)
+    self.find_zone_id('')
   end
   
   def route_connection(config)
