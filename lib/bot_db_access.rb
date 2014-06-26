@@ -30,6 +30,10 @@ class User < ActiveRecord::Base
   self.table_name = "users"
 end
 
+class DDNS < ActiveRecord::Base
+  self.table_name = "ddnss"
+end
+
 class BotDBAccess
   
   def initialize
@@ -369,5 +373,56 @@ class BotDBAccess
     else
       return nil
     end
+  end
+  
+#=============== Upnp Methods ===============
+#===============================================
+
+  def db_ddns_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip_address) && !data.has_key?(:host_name))
+    
+    rows = DDNS.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_ddns_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip_address) || !data.has_key?(:host_name)
+    
+    rows = self.db_ddns_access(data)
+    
+    if rows.nil? then
+      isSuccess = DDNS.create(data)
+      return self.db_ddns_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+
+  def db_ddns_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:ip_address) && !data.has_key?(:host_name))
+    
+    result = DDNS.find_by(:id => data[:id])
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(ip_address: data[:ip_address]) if data.has_key?(:ip_address)
+      result.update(host_name: data[:host_name]) if data.has_key?(:host_name)
+      result.update(updated_at: DateTime.now)
+    end
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_ddns_delete(id=nil)
+    return nil if id.nil?
+    
+    result = DDNS.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
   end
 end
