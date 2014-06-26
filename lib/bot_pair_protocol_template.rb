@@ -121,3 +121,42 @@ UPNP_SETTING_REQUEST = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#DDNS_SETTING_REQUEST % ['RESPONSE_ID', 'REQUEST_ID', 'HOSTNAME', 'DOMAINNAME','SESSION_ID']
+DDNS_SETTING_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+    <title>config</title>
+    <field type='text-single' var='hostname_prefix'>
+      <value>%s</value>
+    </field>
+    <field type='text-single' var='hostname_suffix'>
+      <value>%s</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+#DDNS_SETTING_SUCCESS_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'SESSION_ID']
+DDNS_SETTING_SUCCESS_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="result">
+    <title>config</title>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+#DDNS_SETTING_FAILURE_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'ERROR_CODE', 'SESSION_ID']
+DDNS_SETTING_FAILURE_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+    <title>config</title>
+    <field type='text-single' var='ERROR_CODE'>
+      <value>%d</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
