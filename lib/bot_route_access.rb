@@ -60,7 +60,18 @@ class BotRouteAccess
                                 :ttl => 60,
                                 :resource_records => [{:value => data[:ip]}])
       rescue AWS::Route53::Errors::InvalidChangeBatch => error
-        isSuccess = TRUE
+        begin
+          rrset = rrsets[host_name + '.' + domain_name, 'A']
+          ip = rrset.resource_records[0][:value]
+          if ip != data[:ip] then
+            rrset.resource_records = [{:value => data[:ip]}]
+            rrset.update
+          end
+          isSuccess = TRUE
+        rescue Exception => error
+          isSuccess = FALSE
+          puts error
+        end
       rescue Exception => error
         puts error
       end
