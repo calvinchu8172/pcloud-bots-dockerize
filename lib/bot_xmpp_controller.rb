@@ -195,26 +195,23 @@ module XMPPController
           if !host_name.empty? && !domain_name.empty? then
             device_ip = nil
             device_id = nil
+            old_device_id = nil
             xmpp_account = msg.from.node
             device = @db_conn.db_device_session_access({xmpp_account: xmpp_account})
             device_ip = device.ip if !device.nil?
             device_id = device.device_id if !device.nil?
             
-            if !device_ip.nil? then
+            ddns_record = @db_conn.db_ddns_access({full_domain: host_name + '.' + domain_name})
+            old_device_id = ddns_record.device_id if !ddns_record.nil?
+            
+            if !device_id.nil? && old_device_id.nil? then
               routeThread = Thread.new{
                 record_info = {host_name: host_name, domain_name: domain_name, ip: device_ip}
                 isSuccess = @route_conn.create_record(record_info)
                 
                 if isSuccess then
-                  ddns_info = @db_conn.db_ddns_access({host_name: host_name + '.' + domain_name})
-                
-                  if ddns_info.nil? then
-                    data = {device_id: device_id, ip_address: device_ip, host_name: host_name + '.' + domain_name}
-                    @db_conn.db_ddns_insert(data)
-                  else
-                   data = {id: ddns_info.id, device_id: device_id, ip_address: device_ip, host_name: host_name + '.' + domain_name}
-                   @db_conn.db_ddns_update(data)
-                  end
+                  data = {device_id: device_id, ip_address: device_ip, full_domain: host_name + '.' + domain_name}
+                  @db_conn.db_ddns_insert(data)
                   
                   info = {xmpp_account: msg.from}
                   send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
@@ -226,7 +223,16 @@ module XMPPController
                 end
               }
               routeThread.abort_on_exception = TRUE
-              
+            elsif !device_id.nil? && !old_device_id.nil? then
+              if device_id == old_device_id then
+                info = info = {xmpp_account: msg.from, error_code: 996}
+                send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                puts 'Response dns record has been register to device - ' + msg.from.to_s
+              else
+                info = info = {xmpp_account: msg.from, error_code: 995}
+                send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                puts 'Error, response dns record has been used to device - ' + msg.from.to_s
+              end
             else
               info = info = {xmpp_account: msg.from, error_code: 998}
               send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
