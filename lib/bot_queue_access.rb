@@ -56,7 +56,7 @@ class BotQueueAccess
 
         elsif msg["job"] == "ddns" && block_given? then
           job = msg["job"]
-          data = {}
+          data = {session_id: msg["session_id"]}
           yield(job, data)
 
         else

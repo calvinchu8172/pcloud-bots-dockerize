@@ -96,5 +96,21 @@ sqs.sqs_listen{
       upnpQueryThread.abort_on_exception = FALSE
       
     when 'ddns' then
+      puts 'Get SQS DDNS message query'
+      
+      ddnsQueryThread = Thread.new{
+        session_id = data[:session_id]
+        ddns_session = db_conn.db_ddns_session_access({id: session_id})
+        xmpp_account = db_conn.db_retreive_xmpp_account_by_ddns_session_id(session_id)
+        device_session = db_conn.db_device_session_access({xmpp_account: xmpp_account})
+        
+        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                session_id: data[:session_id],
+                ip: !device_session.nil? ? device_session.ip : '',
+                full_domain: !ddns_session.nil? ? ddns_session.full_domain : ''}
+        
+        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device_session.nil?
+      }
+      ddnsQueryThread.abort_on_exception = TRUE
   end
 }
