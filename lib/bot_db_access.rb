@@ -30,6 +30,14 @@ class User < ActiveRecord::Base
   self.table_name = "users"
 end
 
+class DDNS < ActiveRecord::Base
+  self.table_name = "ddnss"
+end
+
+class DDNSSession < ActiveRecord::Base
+  self.table_name = "ddns_sessions"
+end
+
 class BotDBAccess
   
   def initialize
@@ -362,6 +370,120 @@ class BotDBAccess
     sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `upnp_sessions` WHERE \
                  `upnp_sessions`.`id`=%d AND \
                  `upnp_sessions`.`device_id`=`device_sessions`.`device_id`" % id
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:xmpp_account) then
+      return rows.xmpp_account
+    else
+      return nil
+    end
+  end
+  
+#=============== DDNS Methods ===============
+#===============================================
+
+  def db_ddns_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip_address) && !data.has_key?(:full_domain))
+    
+    rows = DDNS.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_ddns_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip_address) || !data.has_key?(:full_domain)
+    
+    rows = self.db_ddns_access(data)
+    
+    if rows.nil? then
+      isSuccess = DDNS.create(data)
+      return self.db_ddns_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+
+  def db_ddns_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:ip_address) && !data.has_key?(:full_domain))
+    
+    result = DDNS.find_by(:id => data[:id])
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(ip_address: data[:ip_address]) if data.has_key?(:ip_address)
+      result.update(full_domain: data[:full_domain]) if data.has_key?(:full_domain)
+      result.update(updated_at: DateTime.now)
+    end
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_ddns_delete(id=nil)
+    return nil if id.nil?
+    
+    result = DDNS.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_ddns_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:full_domain) && !data.has_key?(:status))
+    
+    rows = DDNSSession.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_ddns_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:full_domain) || !data.has_key?(:status)
+    
+    rows = self.db_ddns_session_access(data)
+    
+    if rows.nil? then
+      isSuccess = DDNSSession.create(data)
+      return self.db_ddns_session_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+  
+  def db_ddns_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:full_domain) && !data.has_key?(:status))
+    
+    result = DDNSSession.find_by(:id => data[:id])
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(full_domain: data[:full_domain]) if data.has_key?(:full_domain)
+      result.update(status: data[:status]) if data.has_key?(:status)
+      result.update(updated_at: DateTime.now)
+    end
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_ddns_session_delete(id=nil)
+    return nil if id.nil?
+    
+    result = DDNSSession.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_retreive_xmpp_account_by_ddns_session_id(id=nil)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `ddns_sessions` WHERE \
+                 `ddns_sessions`.`id`=%d AND \
+                 `ddns_sessions`.`device_id`=`device_sessions`.`device_id`" % id
     rows = UpnpSession.find_by_sql(sql_string).first
     
     if !rows.nil? && rows.respond_to?(:xmpp_account) then
