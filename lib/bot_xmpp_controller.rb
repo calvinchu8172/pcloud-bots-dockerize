@@ -49,6 +49,10 @@ module XMPPController
     EM.run { client.run }
   end
   
+  def self.container(data)
+    yield(data)
+  end
+  
   def self.send_request(job, info)
     
     case job
@@ -307,25 +311,38 @@ module XMPPController
             old_device_id = ddns_record.device_id if !ddns_record.nil?
             
             if !device_id.nil? && old_device_id.nil? then
-              routeThread = Thread.new{
-                session_id = msg.thread
-                record_info = {host_name: host_name, domain_name: domain_name, ip: device_ip}
-                isSuccess = @route_conn.create_record(record_info)
+              data = {host_name: host_name,
+                      domain_name: domain_name,
+                      device_ip: device_ip,
+                      device_id: device_id,
+                      session_id: msg.thread,
+                      msg_from: msg.from.to_s
+                      }
+              # Use container for provied variable over write
+              container(data){
+                |x|
                 
-                if isSuccess then
-                  data = {device_id: device_id, ip_address: device_ip, full_domain: host_name + '.' + domain_name}
-                  @db_conn.db_ddns_insert(data)
-                  
-                  info = {xmpp_account: msg.from, session_id: session_id}
-                  send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                  puts 'Response DDNS success to device - ' + msg.from.to_s
-                else
-                  info = info = {xmpp_account: msg.from, error_code: 997, session_id: session_id}
-                  send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                  puts 'Response create dns record error to device - ' + msg.from.to_s
-                end
+                routeThread = Thread.new{
+                  session_id = x[:session_id]
+                  record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
+                  isSuccess = @route_conn.create_record(record_info)
+                
+                  if isSuccess then
+                    record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
+                    @db_conn.db_ddns_insert(record)
+                    
+                    info = {xmpp_account: x[:msg_from], session_id: session_id}
+                    send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
+                    puts 'Response DDNS success to device - ' + x[:msg_from]
+                  else
+                    info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
+                    send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                    puts 'Response create dns record error to device - ' + x[:msg_from]
+                  end
+                }
+                routeThread.abort_on_exception = TRUE
               }
-              routeThread.abort_on_exception = TRUE
+              
             elsif !device_id.nil? && !old_device_id.nil? then
               if device_id == old_device_id then
                 info = info = {xmpp_account: msg.from, error_code: 996, session_id: msg.thread}
