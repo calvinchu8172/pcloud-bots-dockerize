@@ -46,7 +46,7 @@ class BotQueueAccess
 
         elsif msg["job"] == "unpair" && block_given? then
           job = msg["job"]
-          data = {pair_id: msg["pair_id"]}
+          data = {device_id: msg["device_id"]}
           yield(job, data)
 
         elsif (msg["job"] == "upnp_query" || msg["job"] == "upnp_submit") && block_given? then

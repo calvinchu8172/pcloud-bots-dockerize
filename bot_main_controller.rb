@@ -52,7 +52,21 @@ sqs.sqs_listen{
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
       }
       pairThread.abort_on_exception = FALSE
+
     when 'unpair' then
+      puts 'Get SQS Unpair message'
+      unpairThread = Thread.new{
+        device_id = data[:device_id]
+        device_session = db_conn.db_device_session_access({device_id: device_id})
+        xmpp_account = !device_session.nil? ? device_session.xmpp_account : ''
+        unpair_session = db_conn.db_unpair_session_insert({device_id: device_id})
+        
+        info = {xmpp_account: xmpp_account + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                session_id: unpair_session.id}
+        
+        XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device_session.nil?
+      }
+      unpairThread.abort_on_exception = FALSE
       
     when 'upnp_submit' then
       puts 'Get SQS Upnp message submit'

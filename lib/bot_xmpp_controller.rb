@@ -73,8 +73,40 @@ module XMPPController
         write_to_stream msg
       
       when KUNPAIR_ASK_REQUEST
-        msg = UNPAIR_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
-        write_to_stream msg
+        
+        unpairThread = Thread.new{
+          xmpp_account = info[:xmpp_account]
+          session_id = info[:session_id]
+          
+          msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id]
+          write_to_stream msg
+          puts 'Send Unpair message to device - ' + info[:xmpp_account]
+          
+          df = EM::DefaultDeferrable.new
+          periodic_timer = EM.add_periodic_timer(15) {
+            unpair_session = @db_conn.db_unpair_session_access({id: session_id})
+            if !unpair_session.nil? then
+              write_to_stream msg
+              puts 'Resend Unpair message to device - ' + info[:xmpp_account]
+            else
+              df.set_deferred_status :succeeded, "Unpair success, and remove timer - " + info[:xmpp_account]
+            end
+          }
+          EM.add_timer(60 * 1){
+            df.set_deferred_status :succeeded, "Unpair times is up - " + info[:xmpp_account]
+          }
+          df.callback do |x|
+            unpair_session = @db_conn.db_unpair_session_access({id: session_id})
+            
+            if !unpair_session.nil? then
+              @db_conn.db_unpair_session_delete(unpair_session.id)
+            end
+            
+            EM.cancel_timer(periodic_timer)
+            puts 'Unpair timeout, stop timer - ' + info[:xmpp_account]
+          end
+        }
+        unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
         msg = UPNP_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
@@ -132,7 +164,7 @@ module XMPPController
             @db_conn.db_ddns_session_update({id: info[:session_id], status: 3})
           end
         }
-        routeThread.abort_on_exception = TRUE
+        routeThread.abort_on_exception = FALSE
         
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
@@ -166,6 +198,10 @@ module XMPPController
             puts 'Update pair session wait success' if isSuccess
           end
         when 'unpair'
+          isSuccess = FALSE
+          session_id = msg.thread
+          isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
+          puts 'Delete unpair sesson success as unpair success' if isSuccess
         when 'upnp_service'
           session_id = msg.thread
           data = {id: session_id, status:4}
@@ -329,6 +365,11 @@ module XMPPController
             puts 'Update pair session failue success' if isSuccess
           end
         when 'unpair'
+          isSuccess = FALSE
+          session_id = msg.thread
+          isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
+          puts 'Delete unpair sesson success as unpair failure' if isSuccess
+          
         when 'upnp_service'
           session_id = msg.thread
           data = {id: session_id, status: 3}
