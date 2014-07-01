@@ -65,7 +65,7 @@ module XMPPController
         write_to_stream msg
       
       when KPAIR_COMPLETED_FAILURE_RESPONSE
-        msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, 999, info[:session_id]]
+        msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
         
       when KPAIR_TIMEOUT_SUCCESS_RESPONSE
@@ -73,7 +73,7 @@ module XMPPController
         write_to_stream msg
       
       when KPAIR_TIMEOUT_FAILURE_RESPONSE
-        msg = PAIR_TIMEOUT_FAILURE_FAILURE % [info[:xmpp_account], @bot_xmpp_account, 999, info[:session_id]]
+        msg = PAIR_TIMEOUT_FAILURE_FAILURE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
       
       when KUNPAIR_ASK_REQUEST
@@ -241,44 +241,58 @@ module XMPPController
             
           if 'completed' == action then
             device = @db_conn.db_pairing_session_access({id: session_id})
-            expire_time = device[:expire_at]
+            expire_time = device[:expire_at] if !device.nil?
             
-            if expire_time > DateTime.now 
-              data = {id: session_id, status: 2}
-              isSuccess = @db_conn.db_pairing_session_update(data)
-              puts 'Update pair session completed success' if isSuccess
-              
-              isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
-              puts 'Insert paired data success' if isSuccess
+            if !device.nil? then
+              if expire_time > DateTime.now 
+                data = {id: session_id, status: 2}
+                isSuccess = @db_conn.db_pairing_session_update(data)
+                puts 'Update pair session:%d completed success received from device - %s' % [session_id, msg.from.to_s] if isSuccess
+                
+                isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
+                puts 'Insert paired data - user:%d, device:%d success' % [device[:user_id], device[:device_id]] if isSuccess
             
-              user = @db_conn.db_user_access(device[:user_id])
-              info = {xmpp_account: msg.from, session_id: session_id, email: user.nil? ? '' : user.email}
-              send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-              puts 'Send to device completed success'
+                user = @db_conn.db_user_access(device[:user_id])
+                info = {xmpp_account: msg.from, session_id: session_id, email: user.nil? ? '' : user.email}
+                send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
+                puts 'Response pair completed success to device - ' + msg.from.to_s
+              else
+                data = {id: session_id, status: 4}
+                isSuccess = @db_conn.db_pairing_session_update(data)
+                puts 'Update pair session:%d time out' % session_id if isSuccess
+            
+                info = {xmpp_account: msg.from, error_code: 899, session_id: session_id}
+                send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
+                puts 'Response pair completed time out to device - ' + msg.from.to_s
+              end
             else
-              data = {id: session_id, status: 4}
-              isSuccess = @db_conn.db_pairing_session_update(data)
-              puts 'Update pair session completed time out' if isSuccess
-            
-              info = {xmpp_account: msg.from, session_id: session_id}
+              info = {xmpp_account: msg.from, error_code: 898, session_id: session_id}
               send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-              puts 'Send to device completed success'
+              puts 'Response completed pair session id unfound received from - ' + msg.from.to_s
             end
           end
           
           if 'cancel' == action then # for timeout request
-            data = {id: session_id, status: 4}
-            isSuccess = @db_conn.db_pairing_session_update(data)
-            puts 'Update pair session time out' if isSuccess
+            pair_session = @db_conn.db_pairing_session_access({id: session_id})
             
-            if isSuccess
-              info = {xmpp_account: msg.from, session_id: session_id}
-              send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
-              puts 'Send to device time out success'
+            if !pair_session.nil? then
+              data = {id: session_id, status: 4}
+              isSuccess = @db_conn.db_pairing_session_update(data)
+              puts 'Update pair session:%d time out request from device - %s' % [session_id, msg.from.to_s] if isSuccess
+            
+              if isSuccess
+                info = {xmpp_account: msg.from, session_id: session_id}
+                send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
+                puts 'Response received time out success to device - ' + msg.from.to_s
+              else
+                info = {xmpp_account: msg.from, error_code: 897, session_id: session_id}
+                send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
+                puts 'Response received time out failure to device - ' + msg.from.to_s
+              end
             else
-              info = {xmpp_account: msg.from, session_id: session_id}
+              info = {xmpp_account: msg.from, error_code: 898, session_id: session_id}
               send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-              puts 'Send to device time out failure'
+              puts 'Response cancel pair session id unfound received from - ' + msg.from.to_s
             end
           end
         when 'unpair'
