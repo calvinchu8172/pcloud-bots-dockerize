@@ -76,11 +76,11 @@ EOT
 
 #UNPAIR_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 UNPAIR_ASK_REQUEST = <<EOT
-<message to="DEVICE_JID" type="normal" from="BOT_JID" xml:lang="en">
+<message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
     <title>unpair</title>
   </x>
-  <thread>session_id</thread>
+  <thread>%d</thread>
 </message>
 EOT
 
