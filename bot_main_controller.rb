@@ -38,11 +38,9 @@ sqs = BotQueueAccess.new
 sqs.sqs_listen{
   |job, data|
   
-  puts 'Get SQS message'
-  
   case job
     when 'pair' then
-      puts 'Get SQS Pair message'
+      puts 'Get SQS Pair message %s' % data
       pairThread = Thread.new{
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
@@ -54,7 +52,7 @@ sqs.sqs_listen{
       pairThread.abort_on_exception = FALSE
 
     when 'unpair' then
-      puts 'Get SQS Unpair message'
+      puts 'Get SQS Unpair message %s' % data
       unpairThread = Thread.new{
         device_id = data[:device_id]
         device_session = db_conn.db_device_session_access({device_id: device_id})
@@ -69,7 +67,7 @@ sqs.sqs_listen{
       unpairThread.abort_on_exception = FALSE
       
     when 'upnp_submit' then
-      puts 'Get SQS Upnp message submit'
+      puts 'Get SQS Upnp message submit %s' % data
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
@@ -97,7 +95,7 @@ sqs.sqs_listen{
       upnpSubmitThread.abort_on_exception = FALSE
       
     when 'upnp_query' then
-      puts 'Get SQS Upnp message query'
+      puts 'Get SQS Upnp message query %s' % data
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
@@ -110,7 +108,7 @@ sqs.sqs_listen{
       upnpQueryThread.abort_on_exception = FALSE
       
     when 'ddns' then
-      puts 'Get SQS DDNS message query'
+      puts 'Get SQS DDNS message query %s' % data
       
       ddnsQueryThread = Thread.new{
         session_id = data[:session_id]
