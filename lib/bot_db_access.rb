@@ -14,6 +14,10 @@ class PairingSession < ActiveRecord::Base
   self.table_name = "pairing_sessions"
 end
 
+class UnPairingSession < ActiveRecord::Base
+  self.table_name = "unpairing_sessions"
+end
+
 class Devices < ActiveRecord::Base
   self.table_name = "devices"
 end
@@ -491,5 +495,53 @@ class BotDBAccess
     else
       return nil
     end
+  end
+  
+#=============== DDNS Methods ===============
+#===============================================
+  def db_unpair_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id))
+    
+    rows = UnPairingSession.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_unpair_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id)
+    
+    rows = self.db_unpair_session_access(data)
+    
+    if rows.nil? then
+      isSuccess = UnPairingSession.create(data)
+      return self.db_unpair_session_access(data) if isSuccess
+    else
+      return rows
+    end
+  end
+  
+  def db_unpair_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:device_id)
+    
+    result = UnPairingSession.find_by(:id => data[:id])
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(updated_at: DateTime.now)
+    end
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_unpair_session_delete(id=nil)
+    return nil if id.nil?
+    
+    result = UnPairingSession.find_by(:id => id)
+    result.destroy
+    
+    return !result.nil? ? TRUE : FALSE
   end
 end
