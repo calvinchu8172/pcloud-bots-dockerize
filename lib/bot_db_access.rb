@@ -136,7 +136,7 @@ class BotDBAccess
     return FALSE if id.nil?
     
     result = Pairing.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     return !result.nil? ? TRUE : FALSE
   end
   
@@ -181,7 +181,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = PairingSession.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     return !result.nil? ? TRUE : FALSE
   end
 
@@ -261,7 +261,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = Devices.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -314,7 +314,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = DeviceSession.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -363,7 +363,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = UpnpSession.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -429,7 +429,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = DDNS.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -477,7 +477,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = DDNSSession.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
@@ -540,7 +540,7 @@ class BotDBAccess
     return nil if id.nil?
     
     result = UnPairingSession.find_by(:id => id)
-    result.destroy
+    result.destroy if !result.nil?
     
     return !result.nil? ? TRUE : FALSE
   end
