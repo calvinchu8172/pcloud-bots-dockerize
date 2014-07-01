@@ -544,4 +544,19 @@ class BotDBAccess
     
     return !result.nil? ? TRUE : FALSE
   end
+  
+  def db_retrive_user_location_by_upnp_session_id(id)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `users`.`language` AS `language` FROM `upnp_sessions`, `users` WHERE \
+                 `upnp_sessions`.`id`=%d AND \
+                 `upnp_sessions`.`user_id`=`users`.`id`" % id
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:language) then
+      return rows.language
+    else
+      return nil
+    end
+  end
 end

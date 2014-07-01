@@ -84,9 +84,9 @@ UNPAIR_ASK_REQUEST = <<EOT
 </message>
 EOT
 
-#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE','SESSION_ID']
 UPNP_ASK_REQUEST = <<EOT
-<message to="%s" type="normal" from="%s" xml:lang="en">
+<message to="%s" type="normal" from="%s" xml:lang="%s">
   <subject>upnp_service</subject>
   <query xmlns='http://jabber.org/protocol/disco#items'></query>
   <thread>%d</thread>
@@ -111,9 +111,9 @@ UPNP_FIELD_ITEM = <<EOT
 </item>
 EOT
 
-#UPNP_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'FIELD_ITEM', 'SESSION_ID']
+#UPNP_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE', 'FIELD_ITEM', 'SESSION_ID']
 UPNP_SETTING_REQUEST = <<EOT
-<message to="%s" type="normal" from="%s" xml:lang="en">
+<message to="%s" type="normal" from="%s" xml:lang="%s">
   <x xmlns="jabber:x:data" type="submit">
     <title>upnp_service</title>
     %s

@@ -72,6 +72,7 @@ sqs.sqs_listen{
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
         service_list = db_conn.db_upnp_session_access({id: session_id}).service_list
+        language = db_conn.db_retrive_user_location_by_upnp_session_id(session_id)
         
         field_item = ""
         
@@ -88,9 +89,10 @@ sqs.sqs_listen{
         end
         
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
-                session_id: data[:session_id],
+                language: language.to_s,
+                session_id: session_id,
                 field_item: field_item}
-        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil? && !language.nil?
       }
       upnpSubmitThread.abort_on_exception = FALSE
       
@@ -99,11 +101,13 @@ sqs.sqs_listen{
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
+        language = db_conn.db_retrive_user_location_by_upnp_session_id(session_id)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+                language: language.to_s,
                 session_id: data[:session_id]}
         
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? && !language.nil?
       }
       upnpQueryThread.abort_on_exception = FALSE
       

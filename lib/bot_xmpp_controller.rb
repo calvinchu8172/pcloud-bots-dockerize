@@ -118,12 +118,12 @@ module XMPPController
         unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
-        msg = UPNP_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
+        msg = UPNP_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:session_id]]
         write_to_stream msg
         puts 'Send %s message to device - %s' % [KUPNP_ASK_REQUEST, info[:xmpp_account]]
         
       when KUPNP_SETTING_REQUEST
-        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:field_item], info[:session_id]]
+        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:field_item], info[:session_id]]
         write_to_stream msg
         puts 'Send %s message to device - %s' % [KUPNP_SETTING_REQUEST, info[:xmpp_account]]
         
