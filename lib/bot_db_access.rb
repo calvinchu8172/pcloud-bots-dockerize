@@ -61,7 +61,7 @@ class BotDBAccess
     db_pool = config['db_pool']
     db_reaping_frequency = config['db_reaping_frequency']
     
-    connect = ActiveRecord::Base.establish_connection(:adapter  => 'mysql',
+    connect = ActiveRecord::Base.establish_connection(:adapter  => 'mysql2',
                                             :database => db_name,
                                             :username => db_userid,
                                             :password => db_userpw,
