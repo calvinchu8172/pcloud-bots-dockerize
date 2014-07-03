@@ -545,7 +545,7 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
   
-  def db_retrive_user_location_by_upnp_session_id(id)
+  def db_retrive_user_local_by_upnp_session_id(id)
     return nil if id.nil?
     
     sql_string = "SELECT `users`.`language` AS `language` FROM `upnp_sessions`, `users` WHERE \
