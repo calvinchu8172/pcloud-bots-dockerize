@@ -154,13 +154,13 @@ class BotDBAccess
     end
   end
   
-  def db_pairing_session_insert(user_id = nil, device_id = nil)
-    return nil if user_id.nil? || device_id.nil?
+  def db_pairing_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:user_id) || !data.has_key?(:device_id) || !data.has_key?(:expire_at)
     
-    rows = self.db_pairing_session_access({user_id: user_id, device_id: device_id})
+    rows = self.db_pairing_session_access(data)
     if rows.nil? then
-      isSuccess = PairingSession.create(:user_id => user_id, :device_id => device_id)
-      return self.db_pairing_session_access({user_id: user_id, device_id: device_id}) if isSuccess
+      isSuccess = PairingSession.create(data)
+      return self.db_pairing_session_access(data) if isSuccess
     else
       return rows
     end
