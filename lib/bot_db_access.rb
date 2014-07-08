@@ -167,13 +167,14 @@ class BotDBAccess
   end
   
   def db_pairing_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status))
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:expire_at))
     
     result = PairingSession.find_by(:id => data[:id])
     if !result.nil? then
       result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
       result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
       result.update(status: data[:status]) if data.has_key?(:status)
+      result.update(expire_at: data[:expire_at]) if data.has_key?(:expire_at)
       result.update(updated_at: DateTime.now)
     end
     
