@@ -31,6 +31,9 @@ describe XMPPController do
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
+  host_name = 'mytest3'
+  domain_name = 'demo.ecoworkinc.com.'
+  
   let(:route) {BotRouteAccess.new}
   let(:db) {BotDBAccess.new}
   
@@ -222,8 +225,6 @@ describe XMPPController do
     
     it 'Send DDNS SETTING REQUEST message to device' do
       session_id = 1
-      host_name = 'mytest3'
-      domain_name = 'demo.ecoworkinc.com.'
       full_domain = host_name + '.' + domain_name
       
       x = nil
@@ -481,9 +482,6 @@ describe XMPPController do
       isSuccess = db.db_pairing_session_delete(session_id)
       expect(isSuccess).to be true
     end
-    
-    host_name = 'test123'
-    domain_name = 'demo.ecoworkinc.com.'
     
     it 'Receive DDNS SETTING error response, code - 998, ip not found' do
       session_id = 0
