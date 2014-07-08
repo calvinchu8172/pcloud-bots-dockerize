@@ -110,7 +110,8 @@ describe BotDBAccess do
     end
     
     it 'Add new record into Pairing Session table' do
-      session = db.db_pairing_session_insert(2, 123456789)
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      session = db.db_pairing_session_insert(data)
       expect(session).to respond_to(:id)
       pair_session_id = session.id
     end

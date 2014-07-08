@@ -296,8 +296,8 @@ describe XMPPController do
   
   context 'Receive RESULT message' do
     it 'Receive PAIR START SUCCESS response' do
-      data = {user_id: 2, device_id: 123456789}
-      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       session_id = pair_session.id
       
@@ -370,8 +370,8 @@ describe XMPPController do
   context 'Receive SUBMIT message' do
     
     it 'Receive PAIR COMPLETED SUCCESS response' do
-      data = {user_id: 2, device_id: 123456789}
-      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       session_id = pair_session.id
       
@@ -431,8 +431,8 @@ describe XMPPController do
     end
     
     it 'Receive PAIR COMPLETED FAILURE response' do
-      data = {user_id: 2, device_id: 123456789}
-      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       session_id = pair_session.id
       
@@ -631,8 +631,8 @@ describe XMPPController do
   context 'Receive CANCEL message' do
     
     it 'Receive PAIR FAILURE response' do
-      data = {user_id: 2, device_id: 123456789}
-      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       session_id = pair_session.id
       
