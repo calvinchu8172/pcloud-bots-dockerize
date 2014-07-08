@@ -7,9 +7,10 @@ require 'aws-sdk'
 require 'xmpp4r/client'
 require 'multi_xml'
 require 'json'
+require 'eventmachine'
 include Jabber
 
-DELAY_TIME = 1.0
+DELAY_TIME = 0.5
 
 Jabber::debug = FALSE
 
@@ -58,9 +59,11 @@ describe XMPPController do
   
   x = nil
   callbackThread = Thread.new{
-    client.add_message_callback do |msg|
-      x = msg.respond_to?(:x) && !msg.x.nil? ? msg.x : msg.to_s
-    end
+    EM.run{
+      client.add_message_callback do |msg|
+        x = msg.respond_to?(:x) && !msg.x.nil? ? msg.x : msg.to_s
+      end
+    }
   }
   callbackThread.abort_on_exception = TRUE
   
@@ -68,9 +71,12 @@ describe XMPPController do
     it 'Send PAIR START REQUEST message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KPAIR_START_REQUEST, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -80,13 +86,15 @@ describe XMPPController do
       expect(action).to eq('start')
     end
   
-    x = nil
     it 'Send PAIR COMPLETED SUCCESS RESPONSE message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, email: 'example@ecoworkinc.com', session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -96,14 +104,16 @@ describe XMPPController do
       expect(action).to eq('completed')
     end
     
-    x = nil
     it 'Send PAIR COMPLETED FAILURE RESPONSE message to device' do
       session_id = 1
       error_code = 999
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -115,13 +125,15 @@ describe XMPPController do
       expect(error.to_d).to eq(error_code)
     end
     
-    x = nil
     it 'Send PAIR TIMEOUT SUCCESS RESPONSE message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -131,14 +143,16 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
     
-    x = nil
     it 'Send PAIR TIMEOUT FAILURE FAILURE message to device' do
       session_id = 1
       error_code = 998
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -150,13 +164,15 @@ describe XMPPController do
       expect(error.to_d).to eq(error_code)
     end
     
-    x = nil
     it 'Send UNPAIR ASK REQUEST message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KUNPAIR_ASK_REQUEST, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -168,13 +184,15 @@ describe XMPPController do
       sleep(60)
     end
     
-    x = nil
     it 'Send UPNP ASK REQUEST message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, language: 'en', session_id: session_id}
       XMPPController.send_request(KUPNP_ASK_REQUEST, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -184,13 +202,15 @@ describe XMPPController do
       expect(subject).to eq('upnp_service')
     end
     
-    x = nil
     it 'Send KUPNP SETTING REQUEST message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, language: 'en', field_item: '', session_id: session_id}
       XMPPController.send_request(KUPNP_SETTING_REQUEST, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -200,16 +220,18 @@ describe XMPPController do
       expect(title).to eq('upnp_service')
     end
     
-    x = nil
     it 'Send DDNS SETTING REQUEST message to device' do
       session_id = 1
       host_name = 'mytest3'
       domain_name = 'demo.ecoworkinc.com.'
       full_domain = host_name + '.' + domain_name
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
-      sleep(10)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -229,13 +251,15 @@ describe XMPPController do
       sleep(60)
     end
     
-    x = nil
     it 'Send DDNS SETTING SUCCESS RESPONSE message to device' do
       session_id = 1
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -247,14 +271,16 @@ describe XMPPController do
       expect(type).to eq('result')
     end
     
-    x = nil
     it 'Send DDNS SETTING FAILURE RESPONSE message to device' do
       session_id = 1
       error_code = 997
       
+      x = nil
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -341,7 +367,7 @@ describe XMPPController do
   end
   
   context 'Receive SUBMIT message' do
-    x = nil
+    
     it 'Receive PAIR COMPLETED SUCCESS response' do
       data = {user_id: 2, device_id: 123456789}
       pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
@@ -354,14 +380,16 @@ describe XMPPController do
       isSuccess = db.db_pairing_session_update(data)
       expect(isSuccess).to be true
       
+      x = nil
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       pair_session = db.db_pairing_session_access({id: session_id})
       expect(pair_session).not_to be_nil
       expect(pair_session.status.to_d).to eq(2)
-      sleep(DELAY_TIME)
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -379,12 +407,13 @@ describe XMPPController do
       x = nil
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       pair_session = db.db_pairing_session_access({id: session_id})
       expect(pair_session).not_to be_nil
       expect(pair_session.status.to_d).to eq(4)
-      sleep(DELAY_TIME)
       
       xml = MultiXml.parse(x.to_s)
       
@@ -400,7 +429,6 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
-    x = nil
     it 'Receive PAIR COMPLETED FAILURE response' do
       data = {user_id: 2, device_id: 123456789}
       pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
@@ -413,14 +441,16 @@ describe XMPPController do
       isSuccess = db.db_pairing_session_update(data)
       expect(isSuccess).to be true
       
+      x = nil
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       pair_session = db.db_pairing_session_access({id: session_id})
       expect(pair_session).not_to be_nil
       expect(pair_session.status.to_d).to eq(4)
-      sleep(DELAY_TIME)
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -434,7 +464,9 @@ describe XMPPController do
       x = nil
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, 0]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       xml = MultiXml.parse(x.to_s)
       
@@ -453,13 +485,15 @@ describe XMPPController do
     host_name = 'test123'
     domain_name = 'demo.ecoworkinc.com.'
     
-    x = nil
     it 'Receive DDNS SETTING error response, code - 998, ip not found' do
       session_id = 0
       
+      x = nil
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -471,13 +505,15 @@ describe XMPPController do
       expect(error_code.to_d).to eq(998)
     end
     
-    x = nil
     it 'Receive DDNS SETTING error response, code - 999, DNS format error' do
       session_id = 0
       
+      x = nil
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -489,7 +525,6 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
-    x = nil
     it 'Receive DDNS SETTING error response, code - 995, domain has been used' do
       session_id = 0
       
@@ -501,9 +536,12 @@ describe XMPPController do
       device = db.db_device_session_insert(data)
       expect(device).not_to be_nil
       
+      x = nil
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -521,7 +559,6 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
-    x = nil
     it 'Receive DDNS SETTING error response, code - 996, has registered' do
       session_id = 0
       
@@ -533,9 +570,12 @@ describe XMPPController do
       device = db.db_device_session_insert(data)
       expect(device).not_to be_nil
       
+      x = nil
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      while x.nil?
+        sleep(0.1)
+      end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -553,7 +593,6 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
-    x = nil
     it 'Receive DDNS SETTING SUCCESS response' do
       session_id = 0
       
@@ -561,15 +600,17 @@ describe XMPPController do
       device = db.db_device_session_insert(data)
       expect(device).not_to be_nil
       
+      x = nil
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      sleep(10)
+      while x.nil?
+        sleep(0.1)
+      end
       
       ddns = db.db_ddns_access({full_domain: host_name + '.' + domain_name})
       expect(ddns).not_to be_nil
       expect(ddns.device_id.to_d).to eq(data[:device_id])
       expect(ddns.ip_address).to eq(data[:ip])
-      sleep(DELAY_TIME)
       
       xml = MultiXml.parse(x.to_s)
       
