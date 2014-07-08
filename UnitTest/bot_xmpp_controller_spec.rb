@@ -1,6 +1,7 @@
 require_relative '../lib/bot_xmpp_controller'
 require_relative '../lib/bot_route_access'
 require_relative '../lib/bot_db_access'
+require_relative '../lib/bot_pair_protocol_template'
 require_relative './bot_xmpp_spec_protocol_template'
 require 'aws-sdk'
 require 'xmpp4r/client'
@@ -155,6 +156,8 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       expect(title).to eq('unpair')
+      
+      sleep(60)
     end
     
     x = nil
@@ -214,6 +217,8 @@ describe XMPPController do
       dns_data = {host_name: host_name, domain_name: domain_name}
       isSuccess = route.delete_record(dns_data)
       expect(isSuccess).to be true
+      
+      sleep(60)
     end
     
     x = nil
@@ -328,6 +333,251 @@ describe XMPPController do
   end
   
   context 'Receive SUBMIT message' do
+    x = nil
+    it 'Receive PAIR COMPLETED SUCCESS response' do
+      data = {user_id: 2, device_id: 123456789}
+      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      expect(pair_session).not_to be_nil
+      session_id = pair_session.id
+      
+      data[:id] = session_id
+      data[:status] = 1
+      data[:expire_at] = DateTime.strptime((Time.now.to_i + 120).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+      
+      msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(2)
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      value = xml['x']['field'][0]['value']
+      expect(title).to eq('pair')
+      expect(value).to eq('completed')
+      
+      data[:expire_at] = DateTime.strptime((Time.now.to_i - 240).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+      
+      x = nil
+      msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(4)
+      sleep(DELAY_TIME)
+      
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      value = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+      expect(title).to eq('pair')
+      expect(value).to eq('completed')
+      expect(error_code.to_d).to eq(899)
+      
+      isSuccess = db.db_pairing_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
     
+    x = nil
+    it 'Receive PAIR COMPLETED FAILURE response' do
+      data = {user_id: 2, device_id: 123456789}
+      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      expect(pair_session).not_to be_nil
+      session_id = pair_session.id
+      
+      data[:id] = session_id
+      data[:status] = 1
+      data[:expire_at] = DateTime.strptime((Time.now.to_i + 120).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+      
+      msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(4)
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      cancel = xml['x']['field']['value']
+      expect(title).to eq('pair')
+      expect(cancel).to eq('cancel')
+      
+      x = nil
+      msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, 0]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      cancel = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+      expect(title).to eq('pair')
+      expect(cancel).to eq('cancel')
+      expect(error_code.to_d).to eq(898)
+      
+      isSuccess = db.db_pairing_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    host_name = 'test123'
+    domain_name = 'demo.ecoworkinc.com.'
+    
+    x = nil
+    it 'Receive DDNS SETTING error response, code - 998, ip not found' do
+      session_id = 0
+      
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      error_code = xml['x']['field']['value']
+      expect(title).to eq('config')
+      expect(error_code.to_d).to eq(998)
+    end
+    
+    x = nil
+    it 'Receive DDNS SETTING error response, code - 999, DNS format error' do
+      session_id = 0
+      
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      error_code = xml['x']['field']['value']
+      expect(title).to eq('config')
+      expect(error_code.to_d).to eq(999)
+    end
+    
+    x = nil
+    it 'Receive DDNS SETTING error response, code - 995, domain has been used' do
+      session_id = 0
+      
+      data = {device_id: 76543210, ip_address: '10.1.1.111', full_domain: host_name + '.' + domain_name}
+      ddns = db.db_ddns_insert(data)
+      expect(ddns).not_to be_nil
+      
+      data = {device_id: 987654321, ip: '10.1.1.111', xmpp_account: jid.node, password: '12345'}
+      device = db.db_device_session_insert(data)
+      expect(device).not_to be_nil
+      
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      error_code = xml['x']['field']['value']
+      expect(title).to eq('config')
+      expect(error_code.to_d).to eq(995)
+      
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_device_session_delete(device.id)
+      expect(isSuccess).to be true
+    end
+    
+    x = nil
+    it 'Receive DDNS SETTING error response, code - 996, has registered' do
+      session_id = 0
+      
+      data = {device_id: 987654321, ip_address: '10.1.1.111', full_domain: host_name + '.' + domain_name}
+      ddns = db.db_ddns_insert(data)
+      expect(ddns).not_to be_nil
+      
+      data = {device_id: 987654321, ip: '10.1.1.111', xmpp_account: jid.node, password: '12345'}
+      device = db.db_device_session_insert(data)
+      expect(device).not_to be_nil
+      
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      error_code = xml['x']['field']['value']
+      expect(title).to eq('config')
+      expect(error_code.to_d).to eq(996)
+      
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_device_session_delete(device.id)
+      expect(isSuccess).to be true
+    end
+    
+    x = nil
+    it 'Receive DDNS SETTING SUCCESS response' do
+      session_id = 0
+      
+      data = {device_id: 987654321, ip: '10.1.1.111', xmpp_account: jid.node, password: '12345'}
+      device = db.db_device_session_insert(data)
+      expect(device).not_to be_nil
+      
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      client.send msg
+      sleep(10)
+      
+      ddns = db.db_ddns_access({full_domain: host_name + '.' + domain_name})
+      expect(ddns).not_to be_nil
+      expect(ddns.device_id.to_d).to eq(data[:device_id])
+      expect(ddns.ip_address).to eq(data[:ip])
+      sleep(DELAY_TIME)
+      
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      expect(title).to eq('config')
+      
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_device_session_delete(device.id)
+      expect(isSuccess).to be true
+      
+      dns_data = {host_name: host_name, domain_name: domain_name}
+      isSuccess = route.delete_record(dns_data)
+      expect(isSuccess).to be true
+    end
   end
 end
