@@ -580,4 +580,84 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
   end
+  
+  context 'Receive CANCEL message' do
+    
+    it 'Receive PAIR FAILURE response' do
+      data = {user_id: 2, device_id: 123456789}
+      pair_session = db.db_pairing_session_insert(data[:user_id], data[:device_id])
+      expect(pair_session).not_to be_nil
+      session_id = pair_session.id
+      
+      data[:id] = session_id
+      data[:status] = 1
+      data[:expire_at] = DateTime.strptime((Time.now.to_i + 120).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+      
+      msg = PAIR_START_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(4)
+      
+      isSuccess = db.db_pairing_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive UNPAIR FAILURE response' do
+      data = {device_id: 123456789}
+      unpair_session = db.db_unpair_session_insert(data)
+      expect(unpair_session).not_to be_nil
+      session_id = unpair_session.id
+      
+      msg = UNPAIR_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      unpair_session = db.db_unpair_session_access({id: session_id})
+      expect(unpair_session).to be_nil
+    end
+    
+    it 'Receive UPNP FAILURE response' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+      
+      msg = UPNP_ASK_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(3)
+      
+      isSuccess = db.db_upnp_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive DDNS FAILURE response' do
+      host_name = 'mytest3'
+      domain_name = 'demo.ecoworkinc.com.'
+      
+      data = {device_id: 987654321, full_domain: host_name + '.' + domain_name, status: 0}
+      ddns_session = db.db_ddns_session_insert(data)
+      expect(ddns_session).not_to be_nil
+      session_id = ddns_session.id
+      
+      msg = DDNS_SETTING_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      ddns_session = db.db_ddns_session_access({id: session_id})
+      expect(ddns_session).not_to be_nil
+      expect(ddns_session.status.to_d).to eq(3)
+      
+      isSuccess = db.db_ddns_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+  end
 end
