@@ -71,7 +71,7 @@ sqs.sqs_listen{
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
-        service_list = db_conn.db_upnp_session_access({id: session_id}).service_list
+        service_list = db_conn.db_upnp_session_access({id: session_id}).service_list.to_s
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         
         field_item = ""
