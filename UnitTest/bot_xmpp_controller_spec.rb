@@ -6,11 +6,19 @@ require_relative './bot_xmpp_spec_protocol_template'
 require 'aws-sdk'
 require 'xmpp4r/client'
 require 'multi_xml'
+require 'json'
 include Jabber
 
-DELAY_TIME = 0.5
+DELAY_TIME = 1.0
 
 Jabber::debug = FALSE
+
+def valid_json? json_
+  JSON.parse(json_)
+  return true
+rescue JSON::ParserError
+  return false
+end
 
 describe XMPPController do
   
@@ -657,6 +665,30 @@ describe XMPPController do
       expect(ddns_session.status.to_d).to eq(3)
       
       isSuccess = db.db_ddns_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+  end
+  
+  context 'Receive FORM message' do
+    
+    it 'Receive UPNP service list' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: ''}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+      
+      msg = UPNP_ASK_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(1)
+      
+      isValid = valid_json? upnp_session.service_list.to_s
+      expect(isValid).to be true
+      
+      isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
     end
   end
