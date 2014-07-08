@@ -35,7 +35,7 @@ class User < ActiveRecord::Base
 end
 
 class DDNS < ActiveRecord::Base
-  self.table_name = "ddnss"
+  self.table_name = "ddns"
 end
 
 class DDNSSession < ActiveRecord::Base
