@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+$stdout.sync = true
+
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_xmpp_controller'
