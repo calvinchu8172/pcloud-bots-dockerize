@@ -101,7 +101,7 @@ sqs.sqs_listen{
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
-        language = db_conn.db_retrive_user_location_by_upnp_session_id(session_id)
+        language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 language: language.to_s,
