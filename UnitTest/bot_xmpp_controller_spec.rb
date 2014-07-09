@@ -557,7 +557,7 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
-    it 'Receive DDNS SETTING error response, code - 996, has registered' do
+    it 'Receive DDNS SETTING response as DDNS record has been registered' do
       session_id = 0
       
       data = {device_id: 987654321, ip_address: '10.1.1.111', full_domain: host_name + '.' + domain_name}
@@ -580,9 +580,7 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
-      error_code = xml['x']['field']['value']
       expect(title).to eq('config')
-      expect(error_code.to_d).to eq(996)
       
       isSuccess = db.db_ddns_delete(ddns.id)
       expect(isSuccess).to be true

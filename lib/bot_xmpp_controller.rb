@@ -366,8 +366,8 @@ module XMPPController
               
             elsif !device_id.nil? && !old_device_id.nil? then
               if device_id == old_device_id then
-                info = info = {xmpp_account: msg.from, error_code: 996, session_id: msg.thread}
-                send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                info = info = {xmpp_account: msg.from, session_id: msg.thread}
+                send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
                 puts 'Response dns record has been register to device - ' + msg.from.to_s
               else
                 info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
