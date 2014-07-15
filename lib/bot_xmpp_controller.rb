@@ -205,6 +205,15 @@ module XMPPController
   #subscription :request? do |s|
   #  write_to_stream s.approve!
   #end
+  disconnected {
+    sleep(10)
+    puts '[%s] Reconnect - %s' % [DateTime.now, client.jid.to_s]
+    begin
+      self.run
+    rescue Exception => error
+      puts error
+    end
+    }
   
   message :normal? do |msg|
     begin
