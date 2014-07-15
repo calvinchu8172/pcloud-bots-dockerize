@@ -8,6 +8,7 @@ require 'xmpp4r/client'
 require 'multi_xml'
 require 'json'
 require 'eventmachine'
+require 'resolv'
 include Jabber
 
 DELAY_TIME = 0.5
@@ -168,14 +169,61 @@ describe XMPPController do
     end
     
     it 'Send UNPAIR ASK REQUEST message to device' do
-      session_id = 1
+      unpair_session_id = 1
+      host_name = 'mytest3'
+      domain_name = 'demo.ecoworkinc.com.'
+      ip = '10.1.1.112'
+      ipv4 = nil
+      
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      ddns = db.db_ddns_insert({device_id: 123456789, full_domain: host_name + '.' + domain_name, ip_address: ip})
+      expect(ddns).not_to be_nil
+      
+      ddns_session_id = ddns.id
+      isSuccess = route.create_record({host_name: host_name, domain_name: domain_name, ip: ip})
+      expect(isSuccess).to be true
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
       
       x = nil
-      info = {xmpp_account: device_xmpp_account, session_id: session_id}
+      info = {xmpp_account: device_xmpp_account,
+              full_domain: host_name + '.' + domain_name,
+              session_id: unpair_session_id}
+      
       XMPPController.send_request(KUNPAIR_ASK_REQUEST, info)
       while x.nil?
         sleep(0.1)
       end
+      
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -184,7 +232,10 @@ describe XMPPController do
       title = xml['x']['title']
       expect(title).to eq('unpair')
       
-      sleep(60)
+      ddns_confirm = db.db_ddns_access({id: ddns_session_id})
+      expect(ddns_confirm).to be_nil
+      
+      sleep(10)
     end
     
     it 'Send UPNP ASK REQUEST message to device' do
