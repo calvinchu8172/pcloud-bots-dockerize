@@ -436,5 +436,48 @@ describe BotDBAccess do
       expect(user_local).to be_an_instance_of(String)
       unpair_session_id = nil
     end
+    
+    it 'Retrieve user email by DDNS Session id' do
+      user_email = db.db_retrive_user_email_by_ddns_session_id(1)
+      expect(user_email).to be_an_instance_of(String)
+    end
+    
+    it 'Retrieve user email by XMPP account' do
+      user_email = db.db_retrive_user_email_by_xmpp_account('bot2')
+      expect(user_email).to be_an_instance_of(String)
+    end
+  end
+  
+  ddns_retry_session_id = nil
+  ddns_retry_data = {device_id: 123456789, full_domain: 'test123.demo.ecoworokinc.com.'}
+  
+  context "About DDNS Retry Session table" do
+    it 'Access non-exist record from DDNS Retry Session table' do
+      ddns = db.db_ddns_retry_session_access({id: 0})
+      expect(ddns).to be_nil
+    end
+    
+    it 'Add new record into DDNS Retry Session table' do
+      
+      ddns = db.db_ddns_retry_session_insert(ddns_retry_data)
+      expect(ddns).not_to be_nil
+      ddns_retry_session_id = ddns.id
+    end
+    
+    it 'Update DDNS Retry Session record' do
+      ddns_retry_data[:id] = ddns_retry_session_id
+      isSuccess = db.db_ddns_retry_session_update(ddns_retry_data)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Access all retry DDNS session' do
+      ddnss = db.db_retrive_retry_ddns
+      expect(ddnss).not_to be_nil
+    end
+    
+    it 'Delete DDNS Retry Session record' do
+      isSuccess = db.db_ddns_retry_session_delete(ddns_retry_session_id)
+      expect(isSuccess).to be true
+    end
   end
 end

@@ -42,6 +42,10 @@ class DDNSSession < ActiveRecord::Base
   self.table_name = "ddns_sessions"
 end
 
+class DDNSRetrySession < ActiveRecord::Base
+  self.table_name = "ddns_retry_sessions"
+end
+
 class BotDBAccess
   
   def initialize
@@ -559,6 +563,100 @@ class BotDBAccess
     
     if !rows.nil? && rows.respond_to?(:language) then
       return rows.language
+    else
+      return nil
+    end
+  end
+  
+  def db_retrive_user_email_by_ddns_session_id(id=nil)
+    return nil if id.nil?
+    
+    sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `ddns_sessions`, `users` WHERE \
+                 `ddns_sessions`.`id`=%d AND \
+                 `ddns_sessions`.`device_id`=`pairings`.`device_id` AND \
+                 `users`.`id`=`pairings`.`user_id`" % id
+    
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:email) then
+      return rows.email
+    else
+      return nil
+    end
+  end
+  
+  def db_retrive_user_email_by_xmpp_account(account=nil)
+    return nil if account.nil?
+    
+    sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `device_sessions`, `users` WHERE \
+                 `device_sessions`.`xmpp_account`='%s' AND \
+                 `device_sessions`.`device_id`=`pairings`.`device_id` AND \
+                 `users`.`id`=`pairings`.`user_id`" % account
+    
+    rows = UpnpSession.find_by_sql(sql_string).first
+    
+    if !rows.nil? && rows.respond_to?(:email) then
+      return rows.email
+    else
+      return nil
+    end
+  end
+
+#=============== DDNS Retry Methods ============
+#===============================================
+  def db_ddns_retry_session_access(data={})
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:full_domain))
+    
+    rows = DDNSRetrySession.where(data).first
+    
+    if !rows.nil? then
+      return rows
+    else
+      return nil
+    end
+  end
+  
+  def db_ddns_retry_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:full_domain)
+    
+    rows = self.db_ddns_retry_session_access(data)
+    
+    if rows.nil? then
+      record = DDNSRetrySession.new(data)
+      isSuccess = record.save
+      
+      return record if isSuccess
+    else
+      return rows
+    end
+  end
+  
+  def db_ddns_retry_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:device_id) || !data.has_key?(:full_domain)
+    
+    result = DDNSRetrySession.find_by(:id => data[:id])
+    if !result.nil? then
+      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(full_domain: data[:full_domain]) if data.has_key?(:full_domain)
+      result.update(updated_at: DateTime.now)
+    end
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_ddns_retry_session_delete(id=nil)
+    return nil if id.nil?
+    
+    result = DDNSRetrySession.find_by(:id => id)
+    result.destroy if !result.nil?
+    
+    return !result.nil? ? TRUE : FALSE
+  end
+  
+  def db_retrive_retry_ddns
+    data = DDNSRetrySession.limit(100).all
+    if !data.nil? then
+      return data
     else
       return nil
     end
