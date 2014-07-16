@@ -9,12 +9,16 @@ require_relative 'lib/bot_xmpp_controller'
 XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
 XMPP_RESOURCE_ID = '/device'
 
+xmpp_connect_ready = FALSE
+
 jobThread = Thread.new {
     puts 'Pair controll running'
     XMPPController.new
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
+
+XMPPController.when_ready { xmpp_connect_ready = TRUE }
 
 db_conn = BotDBAccess.new
 
@@ -34,7 +38,11 @@ timeoutThread = Thread.new{
 }
 timeoutThread.abort_on_exception = TRUE
 
-sleep(5)
+while !xmpp_connect_ready
+  puts '[%s] Waiting XMPP connection ready' % DateTime.now
+  sleep(2)
+end
+puts '[%s] XMPP connection ready' % DateTime.now
 
 sqs = BotQueueAccess.new
 sqs.sqs_listen{
