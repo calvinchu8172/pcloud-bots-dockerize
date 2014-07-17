@@ -78,7 +78,7 @@ sqs.sqs_listen{
         device_session = db_conn.db_device_session_access({device_id: device_id})
         xmpp_account = !device_session.nil? ? device_session.xmpp_account : ''
         unpair_session = db_conn.db_unpair_session_insert({device_id: device_id})
-        ddns_session = db_conn.db_ddns_session_access({device_id: device_id})
+        ddns_session = db_conn.db_ddns_access({device_id: device_id})
         full_domain = !ddns_session.nil? ? ddns_session.full_domain : ''
         
         info = {xmpp_account: xmpp_account + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
