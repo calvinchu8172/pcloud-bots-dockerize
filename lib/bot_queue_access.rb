@@ -39,7 +39,7 @@ class BotQueueAccess
       isValid = valid_json? message.body
       if isValid then
         msg = JSON.parse(message.body)
-        if msg["job"] == "pair" && block_given? then
+        if msg["job"] == "pairing" && block_given? then
           job = msg["job"]
           data = {session_id: msg["session_id"]}
           yield(job, data)

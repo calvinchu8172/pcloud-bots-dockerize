@@ -59,8 +59,8 @@ sqs.sqs_listen{
   |job, data|
   
   case job
-    when 'pair' then
-      puts 'Get SQS Pair message %s' % data
+    when 'pairing' then
+      puts 'Get SQS Pairing message %s' % data
       pairThread = Thread.new{
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
