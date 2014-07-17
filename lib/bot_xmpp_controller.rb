@@ -3,6 +3,7 @@
 require_relative 'bot_db_access'
 require_relative 'bot_route_access'
 require_relative 'bot_pair_protocol_template'
+require_relative 'bot_mail_access'
 require 'blather/client/dsl'
 require 'multi_xml'
 require 'json'
@@ -39,10 +40,10 @@ module XMPPController
     @bot_xmpp_account = config['bot_xmpp_account']
     
     setup config['bot_xmpp_account'], config['bot_xmpp_password']
-    puts 'Init listen account '
     
     @db_conn = BotDBAccess.new
     @route_conn = BotRouteAccess.new
+    @mail_conn = BotMailAccess.new
   end
   
   def self.run
@@ -51,6 +52,39 @@ module XMPPController
   
   def self.container(data)
     yield(data)
+  end
+  
+  def self.retry_ddns_register
+    ddnss = @db_conn.db_retrive_retry_ddns
+    ddnss.each do |ddns|
+      session_id = ddns.id
+      device_id = ddns.device_id
+      full_domain = ddns.full_domain
+
+      device = @db_conn.db_device_session_access({device_id: device_id})
+      ip = device.ip
+      xmpp_account = device.xmpp_account
+
+      user_email = @db_conn.db_retrive_user_email_by_xmpp_account(xmpp_account)
+
+      domain_S = full_domain.split('.')
+      host_name = domain_S[0]
+      domain_S.shift
+      domain_name = domain_S.join('.')
+      domain_name += '.' if '.' != domain_name[-1, 1]
+
+      route_data = {host_name: host_name, domain_name: domain_name, ip: ip}
+      isSuccess = @route_conn.create_record(route_data)
+      puts '[%s] Retry register DDNS success - %s' % [DateTime.now, full_domain] if isSuccess
+      
+      if isSuccess then
+        isSuccess = @mail_conn.send_online_mail(user_email)
+        puts '[%s] Send online mail to user - %s' % [DateTime.now, user_email] if isSuccess
+        
+        isSuccess = @db_conn.db_ddns_retry_session_delete(session_id)
+        puts '[%s] Delete DDNS retry session:%d' % [DateTime.now, session_id] if isSuccess
+      end
+    end
   end
   
   def self.send_request(job, info)
@@ -159,6 +193,9 @@ module XMPPController
             write_to_stream msg
             puts 'Send DDNS request to ' + info[:xmpp_account]
             
+            ddns_retry_session = @db_conn.db_ddns_retry_session_access({full_domain: info[:full_domain]})
+            @db_conn.db_ddns_retry_session_delete(ddns_retry_session.id) if !ddns_retry_session.nil?
+
             df = EM::DefaultDeferrable.new
             periodic_timer = EM.add_periodic_timer(15) {
               ddns_session = @db_conn.db_ddns_session_access({id: info[:session_id]})
@@ -186,6 +223,13 @@ module XMPPController
             end
           else
             @db_conn.db_ddns_session_update({id: info[:session_id], status: 3})
+            user_email = @db_conn.db_retrive_user_email_by_ddns_session_id(info[:session_id])
+
+            ddns_session = @db_conn.db_ddns_session_access({id: info[:session_id]})
+
+            @db_conn.db_ddns_retry_session_insert({device_id: ddns_session.device_id, full_domain: ddns_session.full_domain})
+            isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
+            puts '[%s] Send DDNS offline email to user - %s' % [DateTime.now, user_email] if isSuccess
           end
         }
         routeThread.abort_on_exception = FALSE
@@ -359,7 +403,8 @@ module XMPPController
                       device_ip: device_ip,
                       device_id: device_id,
                       session_id: msg.thread,
-                      msg_from: msg.from.to_s
+                      msg_from: msg.from.to_s,
+                      xmpp_account: msg.from.node
                       }
               # Use container for provied variable over write
               container(data){
@@ -373,7 +418,10 @@ module XMPPController
                   if isSuccess then
                     record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
                     @db_conn.db_ddns_insert(record)
-                    
+
+                    ddns_retry_session = @db_conn.db_ddns_retry_session_access({full_domain: x[:host_name] + '.' + x[:domain_name]})
+                    @db_conn.db_ddns_retry_session_delete(ddns_retry_session.id) if !ddns_retry_session.nil?
+
                     info = {xmpp_account: x[:msg_from], session_id: session_id}
                     send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
                     puts 'Response DDNS success to device - ' + x[:msg_from]
@@ -381,6 +429,12 @@ module XMPPController
                     info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
                     send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
                     puts 'Response create dns record error to device - ' + x[:msg_from]
+
+                    @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
+
+                    user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
+                    isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
+                    puts '[%s] Send DDNS offline email to user - %s' % [DateTime.now, user_email] if isSuccess
                   end
                 }
                 routeThread.abort_on_exception = TRUE
