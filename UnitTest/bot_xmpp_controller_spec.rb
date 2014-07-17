@@ -780,4 +780,59 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
   end
+  
+  context 'Other Methods' do
+    it 'Retry register DDNS' do
+      host_name = 'test%' % Time.now.to_i
+      domain_name = 'demo.ecoworkinc.com.'
+      data = {device_id: 123456789, full_domain: host_name + '.' + domain_name}
+      ipv4 = nil
+      retry_session = db.db_ddns_retry_session_insert(data)
+      expect(retry_session).not_to be_nil
+      
+      session_id = retry_session.id
+      
+      XMPPController.retry_ddns_register
+      
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
+      
+      dns_data = {host_name: host_name, domain_name: domain_name}
+      isSuccess = route.delete_record(dns_data)
+      expect(isSuccess).to be true
+      
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
+      
+      retry_session = db.db_ddns_retry_session_access({id: session_id})
+      expect(retry_session).to be_nil
+    end
+  end
 end
