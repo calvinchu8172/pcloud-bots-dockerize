@@ -93,27 +93,27 @@ module XMPPController
       when KPAIR_START_REQUEST
         msg = PAIR_START_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KPAIR_START_REQUEST, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KPAIR_START_REQUEST, info[:xmpp_account]]
       
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
         msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KPAIR_COMPLETED_SUCCESS_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KPAIR_COMPLETED_SUCCESS_RESPONSE, info[:xmpp_account]]
       
       when KPAIR_COMPLETED_FAILURE_RESPONSE
         msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KPAIR_COMPLETED_FAILURE_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KPAIR_COMPLETED_FAILURE_RESPONSE, info[:xmpp_account]]
         
       when KPAIR_TIMEOUT_SUCCESS_RESPONSE
         msg = PAIR_TIMEOUT_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KPAIR_TIMEOUT_SUCCESS_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KPAIR_TIMEOUT_SUCCESS_RESPONSE, info[:xmpp_account]]
       
       when KPAIR_TIMEOUT_FAILURE_RESPONSE
         msg = PAIR_TIMEOUT_FAILURE_FAILURE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KPAIR_TIMEOUT_FAILURE_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KPAIR_TIMEOUT_FAILURE_RESPONSE, info[:xmpp_account]]
       
       when KUNPAIR_ASK_REQUEST
         
@@ -136,20 +136,20 @@ module XMPPController
           
           msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id]
           write_to_stream msg
-          puts 'Send %s message to device - %s' % [KUNPAIR_ASK_REQUEST, info[:xmpp_account]]
+          puts '[%s] Send %s message to device - %s' % [DateTime.now, KUNPAIR_ASK_REQUEST, info[:xmpp_account]]
           
           df = EM::DefaultDeferrable.new
           periodic_timer = EM.add_periodic_timer(15) {
             unpair_session = @db_conn.db_unpair_session_access({id: session_id})
             if !unpair_session.nil? then
               write_to_stream msg
-              puts 'Resend Unpair message to device - ' + info[:xmpp_account]
+              puts '[%s] Resend Unpair message to device - %s' % [DateTime.now, info[:xmpp_account]]
             else
-              df.set_deferred_status :succeeded, "Unpair success, and remove timer - " + info[:xmpp_account]
+              df.set_deferred_status :succeeded, "[%s] Unpair success, and remove timer - %s" % [DateTime.now, info[:xmpp_account]]
             end
           }
           EM.add_timer(60 * 1){
-            df.set_deferred_status :succeeded, "Unpair times is up - " + info[:xmpp_account]
+            df.set_deferred_status :succeeded, "[%s] Unpair times is up - %s" % [DateTime.now, info[:xmpp_account]]
           }
           df.callback do |x|
             unpair_session = @db_conn.db_unpair_session_access({id: session_id})
@@ -159,7 +159,7 @@ module XMPPController
             end
             
             EM.cancel_timer(periodic_timer)
-            puts 'Unpair timeout, stop timer - ' + info[:xmpp_account]
+            puts '[%s] Unpair timeout, stop timer - %s' % [DateTime.now, info[:xmpp_account]]
           end
         }
         unpairThread.abort_on_exception = FALSE
@@ -167,12 +167,12 @@ module XMPPController
       when KUPNP_ASK_REQUEST
         msg = UPNP_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KUPNP_ASK_REQUEST, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KUPNP_ASK_REQUEST, info[:xmpp_account]]
         
       when KUPNP_SETTING_REQUEST
         msg = UPNP_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:field_item], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KUPNP_SETTING_REQUEST, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KUPNP_SETTING_REQUEST, info[:xmpp_account]]
         
       when KDDNS_SETTING_REQUEST
         domain_S = info[:full_domain].split('.')
@@ -182,7 +182,7 @@ module XMPPController
         domain_name += '.' if '.' != domain_name[-1, 1]
         
         routeThread = Thread.new{
-          puts 'Start send DDNS request to device'
+          puts '[%s] Start send DDNS request to device' % DateTime.now
           @db_conn.db_ddns_session_update({id: info[:session_id], status: 1})
           
           record_info = {host_name: host_name, domain_name: domain_name, ip: info[:ip]}
@@ -191,7 +191,7 @@ module XMPPController
           if isSuccess then
             msg = DDNS_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, host_name, domain_name, info[:session_id]]
             write_to_stream msg
-            puts 'Send DDNS request to ' + info[:xmpp_account]
+            puts '[%s] Send DDNS request to %s' % [DateTime.now, info[:xmpp_account]]
             
             ddns_retry_session = @db_conn.db_ddns_retry_session_access({full_domain: info[:full_domain]})
             @db_conn.db_ddns_retry_session_delete(ddns_retry_session.id) if !ddns_retry_session.nil?
@@ -203,13 +203,13 @@ module XMPPController
               if 2 != status then
                 msg = DDNS_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, host_name, domain_name, info[:session_id]]
                 write_to_stream msg
-                puts 'Resent DDNS request to' + info[:xmpp_account]
+                puts '[%s] Resent DDNS request to %s' % [DateTime.now, info[:xmpp_account]]
               else
-                df.set_deferred_status :succeeded, "Setup DDNS timeup"
+                df.set_deferred_status :succeeded, "[%s] Setup DDNS timeup" % DateTime.now
               end
             }
             EM.add_timer(60 * 1){
-              df.set_deferred_status :succeeded, "Setup DDNS timeup"
+              df.set_deferred_status :succeeded, "[%s] Setup DDNS timeup" % DateTime.now
             }
             df.callback do |x|
               ddns_session = @db_conn.db_ddns_session_access({id: info[:session_id]})
@@ -219,7 +219,7 @@ module XMPPController
               end
             
               EM.cancel_timer(periodic_timer)
-              puts 'Setup DDNS timeout, stop timer - ' + info[:xmpp_account]
+              puts '[%s] Setup DDNS timeout, stop timer - %s' % [DateTime.now, info[:xmpp_account]]
             end
           else
             @db_conn.db_ddns_session_update({id: info[:session_id], status: 3})
@@ -237,12 +237,12 @@ module XMPPController
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KDDNS_SETTING_SUCCESS_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KDDNS_SETTING_SUCCESS_RESPONSE, info[:xmpp_account]]
       
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-        puts 'Send %s message to device - %s' % [KDDNS_SETTING_FAILURE_RESPONSE, info[:xmpp_account]]
+        puts '[%s] Send %s message to device - %s' % [DateTime.now, KDDNS_SETTING_FAILURE_RESPONSE, info[:xmpp_account]]
     end
   end
   
@@ -264,7 +264,7 @@ module XMPPController
     
     if msg.form.result? then
       title = msg.form.title
-      puts 'Receive result message ' + title
+      puts '[%s] Receive result message %s' % [DateTime.now, title]
       
       case title
         when 'pair'
@@ -274,23 +274,23 @@ module XMPPController
           if 'start' == action then
             data = {id: session_id, status: 1}
             isSuccess = @db_conn.db_pairing_session_update(data)
-            puts 'Update the status of pair session:%d to "WAIT" success as received "START PAIR" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+            puts '[%s] Update the status of pair session:%d to "WAIT" success as received "START PAIR" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
           end
         when 'unpair'
           isSuccess = FALSE
           session_id = msg.thread
           isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
-          puts 'Delete unpair sesson:%d success as received "UNPAIR SUCCESS" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Delete unpair sesson:%d success as received "UNPAIR SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
         when 'upnp_service'
           session_id = msg.thread
           data = {id: session_id, status:4}
           isSuccess = @db_conn.db_upnp_session_update(data)
-          puts 'Update upnp session:%d success as received "UPNP SET SUCCESS" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Update upnp session:%d success as received "UPNP SET SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
         when 'config' #for DDNS settings
           session_id = msg.thread
           data = {id: session_id, status:2}
           isSuccess = @db_conn.db_ddns_session_update(data)
-          puts 'Update ddns session:%d success as received "DDNS UPDATE SUCCESS" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Update ddns session:%d success as received "DDNS UPDATE SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
           
           ddns_session = @db_conn.db_ddns_session_access({id: session_id})
           device = @db_conn.db_device_session_access({xmpp_account: msg.from.node})
@@ -300,13 +300,13 @@ module XMPPController
                     full_domain: ddns_session.full_domain
                    }
             isSuccess = @db_conn.db_ddns_insert(data)
-            puts 'Insert new DNS record - %s into DB' % ddns_session.full_domain if !isSuccess.nil?
+            puts '[%s] Insert new DNS record - %s into DB' % [DateTime.now, ddns_session.full_domain] if !isSuccess.nil?
           end
       end
         
     elsif msg.form.submit? then
       title = msg.form.title
-      puts 'Receive submit message ' + title
+      puts '[%s] Receive submit message %s' % [DateTime.now, title]
       case title
         when 'pair'
           action = msg.form.field('action').value
@@ -320,28 +320,28 @@ module XMPPController
               if expire_time > DateTime.now 
                 data = {id: session_id, status: 2}
                 isSuccess = @db_conn.db_pairing_session_update(data)
-                puts 'Update pair session:%d completed success received from device - %s' % [session_id, msg.from.to_s] if isSuccess
+                puts '[%s] Update pair session:%d completed success received from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
                 
                 isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
-                puts 'Insert paired data - user:%d, device:%d success' % [device[:user_id], device[:device_id]] if isSuccess
+                puts '[%s] Insert paired data - user:%d, device:%d success' % [DateTime.now, device[:user_id], device[:device_id]] if isSuccess
             
                 user = @db_conn.db_user_access(device[:user_id])
                 info = {xmpp_account: msg.from, session_id: session_id, email: user.nil? ? '' : user.email}
                 send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-                puts 'Response pair completed success to device - ' + msg.from.to_s
+                puts '[%s] Response pair completed success to device - %s' % [DateTime.now, msg.from.to_s]
               else
                 data = {id: session_id, status: 4}
                 isSuccess = @db_conn.db_pairing_session_update(data)
-                puts 'Update pair session:%d time out' % session_id if isSuccess
+                puts '[%s] Update pair session:%d time out' % [DateTime.now, session_id] if isSuccess
             
                 info = {xmpp_account: msg.from, error_code: 899, session_id: session_id}
                 send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-                puts 'Response pair completed time out to device - ' + msg.from.to_s
+                puts '[%s] Response pair completed time out to device - %s' % [DateTime.now, msg.from.to_s]
               end
             else
               info = {xmpp_account: msg.from, error_code: 898, session_id: session_id}
               send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-              puts 'Response completed pair session id unfound received from - ' + msg.from.to_s
+              puts '[%s] Response completed pair session id unfound received from - %s' % [DateTime.now, msg.from.to_s]
             end
           end
           
@@ -351,21 +351,21 @@ module XMPPController
             if !pair_session.nil? then
               data = {id: session_id, status: 4}
               isSuccess = @db_conn.db_pairing_session_update(data)
-              puts 'Update pair session:%d time out request from device - %s' % [session_id, msg.from.to_s] if isSuccess
+              puts '[%s] Update pair session:%d time out request from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
             
               if isSuccess
                 info = {xmpp_account: msg.from, session_id: session_id}
                 send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
-                puts 'Response received time out success to device - ' + msg.from.to_s
+                puts '[%s] Response received time out success to device - %s' % [DateTime.now, msg.from.to_s]
               else
                 info = {xmpp_account: msg.from, error_code: 897, session_id: session_id}
                 send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-                puts 'Response received time out failure to device - ' + msg.from.to_s
+                puts '[%s] Response received time out failure to device - %s' % [DateTime.now, msg.from.to_s]
               end
             else
               info = {xmpp_account: msg.from, error_code: 898, session_id: session_id}
               send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-              puts 'Response cancel pair session id unfound received from - ' + msg.from.to_s
+              puts '[%s] Response cancel pair session id unfound received from - %s' % [DateTime.now, msg.from.to_s]
             end
           end
         when 'unpair'
@@ -424,11 +424,11 @@ module XMPPController
 
                     info = {xmpp_account: x[:msg_from], session_id: session_id}
                     send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                    puts 'Response DDNS success to device - ' + x[:msg_from]
+                    puts '[%s] Response DDNS success to device - %s' % [DateTime.now, x[:msg_from]]
                   else
                     info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
                     send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                    puts 'Response create dns record error to device - ' + x[:msg_from]
+                    puts '[%s] Response create dns record error to device - %s' % [DateTime.now, x[:msg_from]]
 
                     @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
 
@@ -444,29 +444,27 @@ module XMPPController
               if device_id == old_device_id then
                 info = info = {xmpp_account: msg.from, session_id: msg.thread}
                 send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                puts 'Response dns record has been register to device - ' + msg.from.to_s
+                puts '[%s] Response dns record has been register to device - %s' % [DateTime.now, msg.from.to_s]
               else
                 info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
                 send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                puts 'Error, response dns record has been used to device - ' + msg.from.to_s
+                puts '[%s] Error, response dns record has been used to device - %s' % [DateTime.now, msg.from.to_s]
               end
             else
               info = info = {xmpp_account: msg.from, error_code: 998, session_id: msg.thread}
               send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-              puts 'Response device ip not find to device - ' + msg.from.to_s
+              puts '[%s] Response device ip not find to device - %s' % [DateTime.now, msg.from.to_s]
             end
           else
             info = info = {xmpp_account: msg.from, error_code: 999, session_id: msg.thread}
             send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-            puts 'Response DDNS format error to device - ' + msg.from.to_s
-          end
-          
-          puts 'Receive ddns request'  
+            puts '[%s] Response DDNS format error to device - %s' % [DateTime.now, msg.from.to_s]
+          end 
       end
       
     elsif msg.form.cancel? then
       title = msg.form.title
-      puts 'Receive cancel message ' + title
+      puts '[%s] Receive cancel message %s' % [DateTime.now, title]
       
       case title
         when 'pair'
@@ -476,28 +474,28 @@ module XMPPController
           if 'start' == action then
             data = {id: session_id, status: 4}
             isSuccess = @db_conn.db_pairing_session_update(data)
-            puts 'Update the status of pair session:%d to "FAILURE" success as received "START PAIR FAILURE" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+            puts '[%s] Update the status of pair session:%d to "FAILURE" success as received "START PAIR FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
           end
         when 'unpair'
           isSuccess = FALSE
           session_id = msg.thread
           isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
-          puts 'Delete unpair sesson:%d success as received "UNPAIR FAILURE" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Delete unpair sesson:%d success as received "UNPAIR FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
         when 'upnp_service'
           session_id = msg.thread
           data = {id: session_id, status: 3}
           isSuccess = @db_conn.db_upnp_session_update(data)
-          puts 'Update the status of upnp session:%d to "FAILURE" success as received "UPNP SET FAILURE" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Update the status of upnp session:%d to "FAILURE" success as received "UPNP SET FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
         when 'config' #for DDNS Setting
           session_id = msg.thread
           data = {id: session_id, status:3}
           isSuccess = @db_conn.db_ddns_session_update(data)
-          puts 'Update the status of ddns session:%d to "FAILURE" success as received "DDNS UPDATE FAILURE" response from device - %s' % [session_id, msg.from.to_s] if isSuccess
+          puts '[%s] Update the status of ddns session:%d to "FAILURE" success as received "DDNS UPDATE FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
       end
     
     elsif msg.form.form? then
       title = msg.form.title
-      puts 'Receive form message ' + title
+      puts '[%s] Receive form message %s' % [DateTime.now, title]
       
       case title
         when 'upnp_service'
@@ -538,12 +536,12 @@ module XMPPController
           
           data = {id: session_id, status: 1, service_list: service_list_json}
           isSuccess = @db_conn.db_upnp_session_update(data)
-          puts 'Update Upnp form to upnp session:%d' % session_id if isSuccess
+          puts '[%s] Update Upnp form to upnp session:%d' % [DateTime.now, session_id] if isSuccess
       end
     else
     end
     rescue Exception => error
-      puts 'ERROR : ' + error.to_s
+      puts '[%s] ERROR : %s' % [DateTime.now, error.to_s]
     end
   end
 end

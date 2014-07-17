@@ -12,7 +12,7 @@ XMPP_RESOURCE_ID = '/device'
 xmpp_connect_ready = FALSE
 
 jobThread = Thread.new {
-    puts 'Pair controll running'
+    puts '[%s] XMPP Controll running' % DateTime.now
     XMPPController.new
     XMPPController.run
 }
@@ -23,16 +23,16 @@ XMPPController.when_ready { xmpp_connect_ready = TRUE }
 db_conn = BotDBAccess.new
 
 timeoutThread = Thread.new{
-  puts 'Timeout update running'
+  puts '[%s] Timeout update running' % DateTime.now
   loop do
     sleep(30.0)
     data = db_conn.db_pairing_session_access_timeout
-    puts 'Search timeout session'
+    puts '[%s] Search timeout session' % DateTime.now
     
     data.find_each do |row|
       data = {id: row.id, status: 4}
       isSuccess = db_conn.db_pairing_session_update(data)
-      'Update timeout session success' if isSuccess
+      '[%s] Update timeout session success' % DateTime.now if isSuccess
     end
   end
 }
@@ -60,7 +60,7 @@ sqs.sqs_listen{
   
   case job
     when 'pairing' then
-      puts 'Get SQS Pairing message %s' % data
+      puts '[%s] Get SQS Pairing message %s' % [DateTime.now, data]
       pairThread = Thread.new{
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
@@ -72,7 +72,7 @@ sqs.sqs_listen{
       pairThread.abort_on_exception = FALSE
 
     when 'unpair' then
-      puts 'Get SQS Unpair message %s' % data
+      puts '[%s] Get SQS Unpair message %s' % [DateTime.now, data]
       unpairThread = Thread.new{
         device_id = data[:device_id]
         device_session = db_conn.db_device_session_access({device_id: device_id})
@@ -91,7 +91,7 @@ sqs.sqs_listen{
       unpairThread.abort_on_exception = FALSE
       
     when 'upnp_submit' then
-      puts 'Get SQS Upnp message submit %s' % data
+      puts '[%s] Get SQS Upnp message submit %s' % [DateTime.now, data]
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
@@ -121,7 +121,7 @@ sqs.sqs_listen{
       upnpSubmitThread.abort_on_exception = FALSE
       
     when 'upnp_query' then
-      puts 'Get SQS Upnp message query %s' % data
+      puts '[%s] Get SQS Upnp message query %s' % [DateTime.now, data]
       
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
@@ -136,7 +136,7 @@ sqs.sqs_listen{
       upnpQueryThread.abort_on_exception = FALSE
       
     when 'ddns' then
-      puts 'Get SQS DDNS message query %s' % data
+      puts '[%s] Get SQS DDNS message query %s' % [DateTime.now, data]
       
       ddnsQueryThread = Thread.new{
         session_id = data[:session_id]
