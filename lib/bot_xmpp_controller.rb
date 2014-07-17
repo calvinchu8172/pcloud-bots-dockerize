@@ -54,6 +54,39 @@ module XMPPController
     yield(data)
   end
   
+  def self.retry_ddns_register
+    ddnss = @db_conn.db_retrive_retry_ddns
+    ddnss.each do |ddns|
+      session_id = ddns.id
+      device_id = ddns.device_id
+      full_domain = ddns.full_domain
+
+      device = @db_conn.db_device_session_access({device_id: device_id})
+      ip = device.ip
+      xmpp_account = device.xmpp_account
+
+      user_email = @db_conn.db_retrive_user_email_by_xmpp_account(xmpp_account)
+
+      domain_S = full_domain.split('.')
+      host_name = domain_S[0]
+      domain_S.shift
+      domain_name = domain_S.join('.')
+      domain_name += '.' if '.' != domain_name[-1, 1]
+
+      route_data = {host_name: host_name, domain_name: domain_name, ip: ip}
+      isSuccess = @route_conn.create_record(route_data)
+      puts '[%s] Retry register DDNS success - %s' % [DateTime.now, full_domain] if isSuccess
+      
+      if isSuccess then
+        isSuccess = @mail_conn.send_online_mail(user_email)
+        puts '[%s] Send online mail to user - %s' % [DateTime.now, user_email] if isSuccess
+        
+        isSuccess = @db_conn.db_ddns_retry_session_delete(session_id)
+        puts '[%s] Delete DDNS retry session:%d' % [DateTime.now, session_id] if isSuccess
+      end
+    end
+  end
+  
   def self.send_request(job, info)
     
     case job

@@ -38,6 +38,16 @@ timeoutThread = Thread.new{
 }
 timeoutThread.abort_on_exception = TRUE
 
+ddnsThread = Thread.new{
+  puts '[%s] DDNS re-update running' % DateTime.now
+  loop do
+    sleep(30)
+    puts '[%s] Retry DDNS register' % DateTime.now
+    XMPPController.retry_ddns_register
+  end
+}
+ddnsThread.abort_on_exception = TRUE
+
 while !xmpp_connect_ready
   puts '[%s] Waiting XMPP connection ready' % DateTime.now
   sleep(2)
