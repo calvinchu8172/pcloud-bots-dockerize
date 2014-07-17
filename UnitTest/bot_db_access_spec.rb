@@ -82,6 +82,7 @@ describe BotDBAccess do
       device_id = 12345678
       pair_data[:id] = pair_id
       pair_data[:device_id] = device_id
+      pair_data[:enabled] = 0
       isSuccess = db.db_pairing_update(pair_data)
       expect(isSuccess).to be true
       

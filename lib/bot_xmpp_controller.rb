@@ -322,7 +322,8 @@ module XMPPController
                 isSuccess = @db_conn.db_pairing_session_update(data)
                 puts '[%s] Update pair session:%d completed success received from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
                 
-                isSuccess = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
+                pairing = @db_conn.db_pairing_insert(device[:user_id], device[:device_id])
+                isSuccess = @db_conn.db_pairing_update({id: pairing.id, user_id: device[:user_id], device_id: device[:device_id], enabled: 1})
                 puts '[%s] Insert paired data - user:%d, device:%d success' % [DateTime.now, device[:user_id], device[:device_id]] if isSuccess
             
                 user = @db_conn.db_user_access(device[:user_id])

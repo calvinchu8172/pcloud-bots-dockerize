@@ -127,12 +127,13 @@ class BotDBAccess
   end
   
   def db_pairing_update(data={})
-    return FALSE if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id))
+    return FALSE if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:enabled))
     
     result = Pairing.find_by(:id => data[:id])
     if !result.nil? then
       result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
       result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
+      result.update(enabled: data[:enabled]) if data.has_key?(:enabled)
       result.update(updated_at: DateTime.now)
     end
     
