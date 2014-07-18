@@ -57,7 +57,7 @@ EOT
 UPNP_ASK_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="form">
-	<title>upnp_service</title>
+	<title>get_upnp_service</title>
 	  <item>
 		<field var='service-name' type='text-single'>
 		  <value>FTP</value>
@@ -109,17 +109,30 @@ EOT
 UPNP_ASK_RESPONSE_SUCCESS = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
   <x xmlns="jabber:x:data" type="result">
-	<title>upnp_service</title>
+	<title>set_upnp_service</title>
   </x>
   <thread>%d</thread>
 </message>
 EOT
 
 #UPNP_ASK_RESPONSE_FAILURE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
-UPNP_ASK_RESPONSE_FAILURE = <<EOT
+UPNP_ASK_GET_RESPONSE_FAILURE = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
   <x xmlns="jabber:x:data" type="cancel">
-	<title>upnp_service</title>
+	<title>get_upnp_service</title>
+	<field type='text-single' var='ERROR_CODE'>
+	  <value>%d</value>
+	</field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+#UPNP_ASK_RESPONSE_FAILURE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
+UPNP_ASK_SET_RESPONSE_FAILURE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+	<title>set_upnp_service</title>
 	<field type='text-single' var='ERROR_CODE'>
 	  <value>%d</value>
 	</field>
