@@ -23,6 +23,10 @@ class BotRouteAccess
     return AWS::Route53.new(account)
   end
   
+  def zones_list
+    @zones_list
+  end
+  
   def find_zone_id(name=nil)
     return nil if name.nil?
     
@@ -38,7 +42,7 @@ class BotRouteAccess
         list << {id: zone[:id], name: zone[:name].downcase}
         zone_id = zone[:id] if name.downcase == zone[:name].downcase
       end
-      @zone_list = list
+      @zones_list = list
     end
     
     return zone_id
