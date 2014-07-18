@@ -281,7 +281,7 @@ module XMPPController
           session_id = msg.thread
           isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
           puts '[%s] Delete unpair sesson:%d success as received "UNPAIR SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
-        when 'upnp_service'
+        when 'set_upnp_service'
           session_id = msg.thread
           data = {id: session_id, status:4}
           isSuccess = @db_conn.db_upnp_session_update(data)
@@ -482,7 +482,7 @@ module XMPPController
           session_id = msg.thread
           isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
           puts '[%s] Delete unpair sesson:%d success as received "UNPAIR FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
-        when 'upnp_service'
+        when 'get_upnp_service', 'set_upnp_service'
           session_id = msg.thread
           data = {id: session_id, status: 3}
           isSuccess = @db_conn.db_upnp_session_update(data)
@@ -499,7 +499,7 @@ module XMPPController
       puts '[%s] Receive form message %s' % [DateTime.now, title]
       
       case title
-        when 'upnp_service'
+        when 'get_upnp_service'
           session_id = msg.thread
           service_list = Array.new
           

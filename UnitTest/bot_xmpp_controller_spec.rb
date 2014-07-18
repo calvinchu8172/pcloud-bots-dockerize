@@ -252,8 +252,8 @@ describe XMPPController do
       xml = MultiXml.parse(x.to_s)
       
       expect(xml).to be_an_instance_of(Hash)
-      subject = xml['message']['subject']
-      expect(subject).to eq('upnp_service')
+      title = xml['x']['title']
+      expect(title).to eq('get_upnp_service')
     end
     
     it 'Send KUPNP SETTING REQUEST message to device' do
@@ -271,7 +271,7 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
-      expect(title).to eq('upnp_service')
+      expect(title).to eq('set_upnp_service')
     end
     
     it 'Send DDNS SETTING REQUEST message to device' do
@@ -717,13 +717,31 @@ describe XMPPController do
       expect(unpair_session).to be_nil
     end
     
-    it 'Receive UPNP FAILURE response' do
+    it 'Receive UPNP GET FAILURE response' do
       data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
       upnp_session = db.db_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
       session_id = upnp_session.id
       
-      msg = UPNP_ASK_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      msg = UPNP_ASK_GET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(3)
+      
+      isSuccess = db.db_upnp_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive UPNP SET FAILURE response' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+      
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
       client.send msg
       sleep(DELAY_TIME)
       
