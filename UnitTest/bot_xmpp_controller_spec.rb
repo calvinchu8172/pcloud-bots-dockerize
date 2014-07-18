@@ -38,12 +38,21 @@ describe XMPPController do
   let(:route) {BotRouteAccess.new}
   let(:db) {BotDBAccess.new}
   
+  xmpp_connect_ready = FALSE
+  
   xmppThread=Thread.new{
     XMPPController.new
     XMPPController.run
   }
   xmppThread.abort_on_exception = TRUE
-  sleep(10)
+  
+  XMPPController.when_ready { xmpp_connect_ready = TRUE }
+  
+  while !xmpp_connect_ready
+    puts '    Waiting XMPP connection ready'
+    sleep(2)
+  end
+  puts '    XMPP connection ready'
   
   it 'Config file check' do
     expect(config).to be_an_instance_of(Hash)
@@ -57,6 +66,7 @@ describe XMPPController do
   
   it 'Connection to remote XMPP server' do
     client.connect
+    sleep(3)
     isAuth = client.auth('12345')
     expect(isAuth).to be true
   end
@@ -801,7 +811,7 @@ describe XMPPController do
   
   context 'Other Methods' do
     it 'Retry register DDNS' do
-      host_name = 'test%' % Time.now.to_i
+      host_name = 'test%d' % Time.now.to_i
       domain_name = 'demo.ecoworkinc.com.'
       data = {device_id: 123456789, full_domain: host_name + '.' + domain_name}
       ipv4 = nil
