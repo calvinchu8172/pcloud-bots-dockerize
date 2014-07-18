@@ -87,8 +87,9 @@ EOT
 #UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE','SESSION_ID']
 UPNP_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="%s">
-  <subject>upnp_service</subject>
-  <query xmlns='http://jabber.org/protocol/disco#items'></query>
+  <x xmlns="jabber:x:data" type="submit">
+    <title>get_upnp_service</title>
+  </x>
   <thread>%d</thread>
 </message>
 EOT
@@ -115,7 +116,7 @@ EOT
 UPNP_SETTING_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="%s">
   <x xmlns="jabber:x:data" type="submit">
-    <title>upnp_service</title>
+    <title>set_upnp_service</title>
     %s
   </x>
   <thread>%d</thread>
