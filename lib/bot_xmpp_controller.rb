@@ -194,7 +194,7 @@ module XMPPController
             old_domain_name = old_domain_S.join('.')
             old_domain_name += '.' if '.' != old_domain_name[-1, 1]
 
-            data = {id: ddns_record.id, full_domain: info[:full_domain], ip: info[:ip]}
+            data = {id: ddns_record.id, full_domain: info[:full_domain], ip_address: info[:ip]}
             isSuccess =  @db_conn.db_ddns_update(data)
             puts '[%s] Update DDNS table, id:%d' % [DateTime.now, ddns_record.id] if isSuccess
 
@@ -440,7 +440,7 @@ module XMPPController
                     domain_name = domain_S.join('.')
                     domain_name += '.' if '.' != domain_name[-1, 1]
 
-                    data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip: x[:device_ip]}
+                    data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
                     isSuccess =  @db_conn.db_ddns_update(data)
                     puts '[%s] Update DDNS table, id:%d' % [DateTime.now, ddns_record.id]
 
