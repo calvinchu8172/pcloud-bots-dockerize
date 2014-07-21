@@ -146,6 +146,7 @@ sqs.sqs_listen{
         
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: data[:session_id],
+                device_id: !ddns_session.nil? ? ddns_session.device_id : '',
                 ip: !device_session.nil? ? device_session.ip : '',
                 full_domain: !ddns_session.nil? ? ddns_session.full_domain : ''}
         

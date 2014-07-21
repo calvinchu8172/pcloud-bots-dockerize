@@ -185,6 +185,29 @@ module XMPPController
           puts '[%s] Start send DDNS request to device' % DateTime.now
           @db_conn.db_ddns_session_update({id: info[:session_id], status: 1})
           
+          ddns_record = @db_conn.db_ddns_access({device_id: info[:device_id]})
+
+          if !ddns_record.nil? then
+            old_domain_S = ddns_record.full_domain.to_s.split('.')
+            old_host_name = old_domain_S[0]
+            old_domain_S.shift
+            old_domain_name = old_domain_S.join('.')
+            old_domain_name += '.' if '.' != old_domain_name[-1, 1]
+
+            data = {id: ddns_record.id, full_domain: info[:full_domain], ip: info[:ip]}
+            isSuccess =  @db_conn.db_ddns_update(data)
+            puts '[%s] Update DDNS table, id:%d' % [DateTime.now, ddns_record.id] if isSuccess
+
+            record_info = {host_name: old_host_name, domain_name: old_domain_name}
+            isSuccess = @route_conn.delete_record(record_info)
+            puts '[%s] Delete DDNS record - %s' % [DateTime.now, old_host_name + '.' + old_domain_name] if isSuccess
+          else
+            data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
+            isSuccess = @db_conn.db_ddns_insert(data)
+
+            puts '[%s] Insert DDNS record into table - ' % [DateTime.now, info[:full_domain]] if isSuccess
+          end
+
           record_info = {host_name: host_name, domain_name: domain_name, ip: info[:ip]}
           isSuccess = @route_conn.create_record(record_info)
           
@@ -291,17 +314,6 @@ module XMPPController
           data = {id: session_id, status:2}
           isSuccess = @db_conn.db_ddns_session_update(data)
           puts '[%s] Update ddns session:%d success as received "DDNS UPDATE SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
-          
-          ddns_session = @db_conn.db_ddns_session_access({id: session_id})
-          device = @db_conn.db_device_session_access({xmpp_account: msg.from.node})
-          if !ddns_session.nil? && !device.nil? then
-            data = {device_id: ddns_session.device_id,
-                    ip_address: device.ip,
-                    full_domain: ddns_session.full_domain
-                   }
-            isSuccess = @db_conn.db_ddns_insert(data)
-            puts '[%s] Insert new DNS record - %s into DB' % [DateTime.now, ddns_session.full_domain] if !isSuccess.nil?
-          end
       end
         
     elsif msg.form.submit? then
@@ -386,7 +398,12 @@ module XMPPController
           
           domain_name += '.' if '.' != domain_name[-1, 1]
           
-          if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? then
+          isValidZoneName = FALSE
+          @route_conn.zones_list.each do |zone|
+            isValidZoneName = TRUE if domain_name.downcase == zone[:name].downcase
+          end
+
+          if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName then
             device_ip = nil
             device_id = nil
             old_device_id = nil
@@ -413,6 +430,25 @@ module XMPPController
                 
                 routeThread = Thread.new{
                   session_id = x[:session_id]
+
+                  ddns_record = @db_conn.db_ddns_access({device_id: device_id})
+
+                  if !ddns_record.nil? then
+                    domain_S = ddns_record.full_domain.to_s.split('.')
+                    host_name = domain_S[0]
+                    domain_S.shift
+                    domain_name = domain_S.join('.')
+                    domain_name += '.' if '.' != domain_name[-1, 1]
+
+                    data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip: x[:device_ip]}
+                    isSuccess =  @db_conn.db_ddns_update(data)
+                    puts '[%s] Update DDNS table, id:%d' % [DateTime.now, ddns_record.id]
+
+                    record_info = {host_name: host_name, domain_name: domain_name}
+                    isSuccess = @route_conn.delete_record(record_info)
+                    puts '[%s] Delete DDNS record - %s' % [DateTime.now, host_name + '.' + domain_name]
+                  end
+
                   record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
                   isSuccess = @route_conn.create_record(record_info)
                 
@@ -443,9 +479,40 @@ module XMPPController
               
             elsif !device_id.nil? && !old_device_id.nil? then
               if device_id == old_device_id then
-                info = info = {xmpp_account: msg.from, session_id: msg.thread}
-                send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                puts '[%s] Response dns record has been register to device - %s' % [DateTime.now, msg.from.to_s]
+                data = {host_name: host_name,
+                        domain_name: domain_name,
+                        device_ip: device_ip,
+                        device_id: device_id,
+                        session_id: msg.thread,
+                        msg_from: msg.from.to_s,
+                        xmpp_account: msg.from.node
+                       }
+                container(data){
+                  |x|
+                  session_id = x[:session_id]
+
+                  ddns = @db_conn.db_ddns_access({device_id: device_id})
+                  isSuccess = @db_conn.db_ddns_update({id: ddns.id, ip_address: device_ip, full_domain: host_name + '.' + domain_name})
+
+                  record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
+                  isSuccess = @route_conn.create_record(record_info)
+
+                  if isSuccess then
+                    info = info = {xmpp_account: x[:msg_from], session_id: session_id}
+                    send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
+                    puts '[%s] Response dns record register success - %s' % [DateTime.now, x[:msg_from]]
+                  else
+                    info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
+                    send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                    puts '[%s] Response create dns record error to device - %s' % [DateTime.now, x[:msg_from]]
+
+                    @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
+
+                    user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
+                    isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
+                    puts '[%s] Send DDNS offline email to user - %s' % [DateTime.now, user_email] if isSuccess
+                  end
+                }
               else
                 info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
                 send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
