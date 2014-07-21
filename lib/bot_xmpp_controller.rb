@@ -205,7 +205,7 @@ module XMPPController
             data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
             isSuccess = @db_conn.db_ddns_insert(data)
 
-            puts '[%s] Insert DDNS record into table - ' % [DateTime.now, info[:full_domain]] if isSuccess
+            puts '[%s] Insert DDNS record into table - %s' % [DateTime.now, info[:full_domain]] if isSuccess
           end
 
           record_info = {host_name: host_name, domain_name: domain_name, ip: info[:ip]}
