@@ -185,6 +185,29 @@ module XMPPController
           puts '[%s] Start send DDNS request to device' % DateTime.now
           @db_conn.db_ddns_session_update({id: info[:session_id], status: 1})
           
+          ddns_record = @db_conn.db_ddns_access({device_id: info[:device_id]})
+
+          if !ddns_record.nil? then
+            old_domain_S = ddns_record.full_domain.to_s.split('.')
+            old_host_name = old_domain_S[0]
+            old_domain_S.shift
+            old_domain_name = old_domain_S.join('.')
+            old_domain_name += '.' if '.' != old_domain_name[-1, 1]
+
+            data = {id: ddns_record.id, full_domain: info[:full_domain], ip: info[:ip]}
+            isSuccess =  @db_conn.db_ddns_update(data)
+            puts '[%s] Update DDNS table, id:%d' % [DateTime.now, ddns_record.id] if isSuccess
+
+            record_info = {host_name: old_host_name, domain_name: old_domain_name}
+            isSuccess = @route_conn.delete_record(record_info)
+            puts '[%s] Delete DDNS record - %s' % [DateTime.now, old_host_name + '.' + old_domain_name] if isSuccess
+          else
+            data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
+            isSuccess = @db_conn.db_ddns_insert(data)
+
+            puts '[%s] Insert DDNS record into table - ' % [DateTime.now, info[:full_domain]] if isSuccess
+          end
+
           record_info = {host_name: host_name, domain_name: domain_name, ip: info[:ip]}
           isSuccess = @route_conn.create_record(record_info)
           
@@ -291,20 +314,6 @@ module XMPPController
           data = {id: session_id, status:2}
           isSuccess = @db_conn.db_ddns_session_update(data)
           puts '[%s] Update ddns session:%d success as received "DDNS UPDATE SUCCESS" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
-          
-          ddns_session = @db_conn.db_ddns_session_access({id: session_id})
-          device = @db_conn.db_device_session_access({xmpp_account: msg.from.node})
-          if !ddns_session.nil? && !device.nil? then
-            full_domain = ddns_session.full_domain
-            full_domain += '.' if '.' != full_domain[-1, 1]
-            
-            data = {device_id: ddns_session.device_id,
-                    ip_address: device.ip,
-                    full_domain: full_domain
-                   }
-            isSuccess = @db_conn.db_ddns_insert(data)
-            puts '[%s] Insert new DNS record - %s into DB' % [DateTime.now, ddns_session.full_domain] if !isSuccess.nil?
-          end
       end
         
     elsif msg.form.submit? then
