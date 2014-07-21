@@ -284,16 +284,26 @@ describe XMPPController do
       expect(title).to eq('set_upnp_service')
     end
     
-    it 'Send DDNS SETTING REQUEST message to device' do
-      session_id = 1
+    it 'Send DDNS SETTING REQUEST message to device for create new DDNS record' do
+      
+      device_id = 987654321
+      host_name = 'test%d' % Time.now.to_i
       full_domain = host_name + '.' + domain_name
       
+      data = {device_id: device_id, full_domain: full_domain, status: 0}
+      ddns_session = db.db_ddns_session_insert(data)
+      expect(ddns_session).not_to be_nil
+      session_id = ddns_session.id
+      ipv4 = nil
+      
       x = nil
-      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain}
+      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
       while x.nil?
         sleep(0.1)
       end
+      
+      sleep(60)
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -306,11 +316,141 @@ describe XMPPController do
       expect(hostname_prefix).to eq(host_name)
       expect(hostname_suffix).to eq(domain_name)
       
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
+      
       dns_data = {host_name: host_name, domain_name: domain_name}
       isSuccess = route.delete_record(dns_data)
       expect(isSuccess).to be true
       
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
+      
+      ddns = db.db_ddns_access({full_domain: full_domain})
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_ddns_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Send DDNS SETTING REQUEST message to device for update DDNS record' do
+      device_id = 987654321
+      old_host_name = 'test%d' % Time.now.to_i
+      
+      sleep(0.2)
+      
+      host_name = 'test%d' % Time.now.to_i
+      full_domain = host_name + '.' + domain_name
+      session_id = nil
+      ddns_id = nil
+      ipv4 = nil
+      
+      data = {device_id: device_id, full_domain: full_domain, status: 0}
+      ddns_session = db.db_ddns_session_insert(data)
+      expect(ddns_session).not_to be_nil
+      session_id = ddns_session.id
+      
+      data = {device_id: device_id, ip_address: '10.1.1.110', full_domain: old_host_name + '.' + domain_name}
+      ddns = db.db_ddns_insert(data)
+      expect(ddns).not_to be_nil
+      ddns_id = ddns.id
+      
+      x = nil
+      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
+      XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
+      while x.nil?
+        sleep(0.1)
+      end
+      
       sleep(60)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      hostname_prefix = xml['x']['field'][0]['value']
+      hostname_suffix = xml['x']['field'][1]['value']
+      expect(title).to eq('config')
+      expect(hostname_prefix).to eq(host_name)
+      expect(hostname_suffix).to eq(domain_name)
+      
+      ddns = db.db_ddns_access({id: ddns_id})
+      expect(ddns).not_to be_nil
+      expect(ddns.ip_address).to eq('10.1.1.111')
+      expect(ddns.full_domain).to eq(full_domain)
+      
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
+      
+      dns_data = {host_name: host_name, domain_name: domain_name}
+      isSuccess = route.delete_record(dns_data)
+      expect(isSuccess).to be true
+      
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
+      
+      ddns = db.db_ddns_access({full_domain: full_domain})
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_ddns_session_delete(session_id)
+      expect(isSuccess).to be true
     end
     
     it 'Send DDNS SETTING SUCCESS RESPONSE message to device' do
@@ -587,6 +727,7 @@ describe XMPPController do
     it 'Receive DDNS SETTING error response, code - 995, domain has been used' do
       session_id = 0
       
+      host_name = 'test%d' % Time.now.to_i
       data = {device_id: 76543210, ip_address: '10.1.1.111', full_domain: host_name + '.' + domain_name}
       ddns = db.db_ddns_insert(data)
       expect(ddns).not_to be_nil
@@ -652,6 +793,7 @@ describe XMPPController do
     
     it 'Receive DDNS SETTING SUCCESS response' do
       session_id = 0
+      ipv4 = nil
       
       data = {device_id: 987654321, ip: '10.1.1.111', xmpp_account: jid.node, password: '12345'}
       device = db.db_device_session_insert(data)
@@ -675,14 +817,128 @@ describe XMPPController do
       title = xml['x']['title']
       expect(title).to eq('config')
       
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
+      
+      dns_data = {host_name: host_name, domain_name: domain_name}
+      isSuccess = route.delete_record(dns_data)
+      expect(isSuccess).to be true
+      
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
+      
       isSuccess = db.db_ddns_delete(ddns.id)
       expect(isSuccess).to be true
       
       isSuccess = db.db_device_session_delete(device.id)
       expect(isSuccess).to be true
+    end
+    
+    it 'Receive DDNS SETTING SUCCESS response for update DDNS record' do
+      session_id = 0
+      ipv4 = nil
+      device_id = 987654321
+      old_host_name = 'test%d' % Time.now.to_i
+      
+      sleep(0.2)
+      
+      host_name = 'test%d' % Time.now.to_i
+      
+      data = {device_id: device_id, ip_address: '10.1.1.110', full_domain: old_host_name + '.' + domain_name}
+      ddns = db.db_ddns_insert(data)
+      expect(ddns).not_to be_nil
+      
+      data = {device_id: device_id, ip: '10.1.1.111', xmpp_account: jid.node, password: '12345'}
+      device = db.db_device_session_insert(data)
+      expect(device).not_to be_nil
+      
+      x = nil
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      client.send msg
+      while x.nil?
+        sleep(0.1)
+      end
+      
+      ddns = db.db_ddns_access({full_domain: host_name + '.' + domain_name})
+      expect(ddns).not_to be_nil
+      expect(ddns.device_id.to_d).to eq(device_id)
+      expect(ddns.ip_address).to eq(data[:ip])
+      expect(ddns.full_domain).to eq(host_name + '.' + domain_name)
+      
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      expect(title).to eq('config')
+      
+      resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
+      
+      i = 0
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
       
       dns_data = {host_name: host_name, domain_name: domain_name}
       isSuccess = route.delete_record(dns_data)
+      expect(isSuccess).to be true
+      
+      i = 0
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(host_name + '.' + domain_name)
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+      
+      expect(ipv4).to be_nil
+      resolv_i.close
+      
+      isSuccess = db.db_ddns_delete(ddns.id)
+      expect(isSuccess).to be true
+      
+      isSuccess = db.db_device_session_delete(device.id)
       expect(isSuccess).to be true
     end
   end
