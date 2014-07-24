@@ -567,40 +567,49 @@ module XMPPController
       
       case title
         when 'get_upnp_service'
+          hasX = nil
+          hasITEM = nil
           session_id = msg.thread
           service_list = Array.new
           
           MultiXml.parser = :rexml
           xml = MultiXml.parse(msg.form.to_s)
-          xml["x"]["item"].each do |item|
-            service_name = nil
-            status = nil
-            enabled = nil
-            description = nil
-            
-            item["field"].each do |field|
-              var = field["var"]
-              case var
-                when 'service-name'
-                  service_name = field["value"]
-                when 'status'
-                  status = field["value"] == 'true' ? true : false
-                when 'enabled'
-                  enabled = field["value"] == 'true' ? true : false
-                when 'description'
-                  description = field["value"]
-              end
-            end
-            
-            service = {:service_name => service_name,
-                       :status => status,
-                       :enabled => enabled,
-                       :description => description
-                      }
-            service_list << service
-          end
+          hasX = xml.has_key?("x")
+          hasITEM = xml["x"].has_key?("item") if hasX
           
-          service_list_json = JSON.generate(service_list)
+          if !xml.nil? && hasX && hasITEM then
+            xml["x"]["item"].each do |item|
+              service_name = nil
+              status = nil
+              enabled = nil
+              description = nil
+            
+              item["field"].each do |field|
+                var = field["var"]
+                case var
+                  when 'service-name'
+                    service_name = field["value"]
+                  when 'status'
+                    status = field["value"] == 'true' ? true : false
+                  when 'enabled'
+                    enabled = field["value"] == 'true' ? true : false
+                  when 'description'
+                    description = field["value"]
+                end
+              end
+            
+              service = {:service_name => service_name,
+                         :status => status,
+                         :enabled => enabled,
+                         :description => description
+                        }
+              service_list << service
+            end
+          
+            service_list_json = JSON.generate(service_list)
+          else
+            service_list_json = ''
+          end
           
           data = {id: session_id, status: 1, service_list: service_list_json}
           isSuccess = @db_conn.db_upnp_session_update(data)
@@ -610,6 +619,9 @@ module XMPPController
     end
     rescue Exception => error
       puts '[%s] ERROR : %s' % [DateTime.now, error.to_s]
+      puts '[%s] ERROR : %s' % [DateTime.now, error.message]
+      puts '[%s] ERROR : %s' % [DateTime.now, error.inspect]
+      puts '[%s] ERROR : %s' % [DateTime.now, error.backtrace]
     end
   end
 end
