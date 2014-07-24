@@ -105,6 +105,16 @@ UPNP_ASK_RESPONSE = <<EOT
 </message>
 EOT
 
+#UPNP_ASK_EMPTY_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+UPNP_ASK_EMPTY_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="form">
+	<title>get_upnp_service</title>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
 #UPNP_ASK_RESPONSE_SUCCESS % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 UPNP_ASK_RESPONSE_SUCCESS = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">

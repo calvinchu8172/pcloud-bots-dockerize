@@ -303,7 +303,13 @@ describe XMPPController do
         sleep(0.1)
       end
       
-      sleep(60)
+      j = 60
+      while j > 0
+        puts '        waiting %d second' % j
+        sleep(5)
+        j -= 5
+      end
+      puts '        waiting 0 second'
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -390,7 +396,13 @@ describe XMPPController do
         sleep(0.1)
       end
       
-      sleep(60)
+      j = 60
+      while j > 0
+        puts '        waiting %d second' % j
+        sleep(5)
+        j -= 5
+      end
+      puts '        waiting 0 second'
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -1020,7 +1032,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS FAILURE response' do
-      host_name = 'mytest3'
+      host_name = 'test%d' % Time.now.to_i
       domain_name = 'demo.ecoworkinc.com.'
       
       data = {device_id: 987654321, full_domain: host_name + '.' + domain_name, status: 0}
@@ -1059,6 +1071,27 @@ describe XMPPController do
       
       isValid = valid_json? upnp_session.service_list.to_s
       expect(isValid).to be true
+      
+      isSuccess = db.db_upnp_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive UPNP service list - empty form' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration"},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration"},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration"}]'}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+      
+      msg = UPNP_ASK_EMPTY_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(1)
+      
+      isValid = valid_json? upnp_session.service_list.to_s
+      expect(isValid).to be false
       
       isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
