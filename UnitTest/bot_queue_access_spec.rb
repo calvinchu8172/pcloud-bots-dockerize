@@ -29,7 +29,7 @@ describe BotQueueAccess do
   queue = aws_sqs.queues.named(config['sqs_queue_name'])
   
   it 'Send Pair message to SQS' do
-    pair_body = '{"job":"pair", "session_id":1}'
+    pair_body = '{"job":"pairing", "session_id":1}'
     send_message = queue.send_message(pair_body)
     expect(send_message).to respond_to(:message_id)
   end
