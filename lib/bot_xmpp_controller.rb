@@ -121,18 +121,20 @@ module XMPPController
           xmpp_account = info[:xmpp_account]
           session_id = info[:session_id]
           
-          domain_S = info[:full_domain].split('.')
-          host_name = domain_S[0]
-          domain_S.shift
-          domain_name = domain_S.join('.')
-          domain_name += '.' if '.' != domain_name[-1, 1]
+          if !info[:full_domain].nil?
+            domain_S = info[:full_domain].split('.')
+            host_name = domain_S[0]
+            domain_S.shift
+            domain_name = domain_S.join('.')
+            domain_name += '.' if '.' != domain_name[-1, 1]
           
-          isSuccess = @route_conn.delete_record({host_name: host_name, domain_name: domain_name})
-          break if !isSuccess
+            isSuccess = @route_conn.delete_record({host_name: host_name, domain_name: domain_name})
+            break if !isSuccess
           
-          isSuccess = FALSE
-          ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
-          isSuccess = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
+            isSuccess = FALSE
+            ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
+            isSuccess = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
+          end
           
           msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id]
           write_to_stream msg

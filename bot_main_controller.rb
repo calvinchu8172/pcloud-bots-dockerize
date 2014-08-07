@@ -78,15 +78,15 @@ sqs.sqs_listen{
         device_session = db_conn.db_device_session_access({device_id: device_id})
         xmpp_account = !device_session.nil? ? device_session.xmpp_account : ''
         unpair_session = db_conn.db_unpair_session_insert({device_id: device_id})
-        ddns_session = db_conn.db_ddns_access({device_id: device_id})
-        full_domain = !ddns_session.nil? ? ddns_session.full_domain : ''
+        ddns = db_conn.db_ddns_access({device_id: device_id})
+        full_domain = !ddns.nil? ? ddns.full_domain : nil
         
         info = {xmpp_account: xmpp_account + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: unpair_session.id,
                 full_domain: full_domain
                 }
         
-        XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device_session.nil? && !ddns_session.nil?
+        XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device_session.nil?
       }
       unpairThread.abort_on_exception = FALSE
       
