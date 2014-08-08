@@ -546,6 +546,16 @@ module XMPPController
             isSuccess = @db_conn.db_pairing_session_update(data)
             puts '[%s] Update the status of pair session:%d to "FAILURE" success as received "START PAIR FAILURE" response from device - %s' % [DateTime.now, session_id, msg.from.to_s] if isSuccess
           end
+
+          if 'completed' == action then
+            data = {id: session_id, status: 4}
+            isSuccess = @db_conn.db_pairing_session_update(data)
+          end
+
+          if 'cancel' == action then
+            data = {id: session_id, status: 4}
+            isSuccess = @db_conn.db_pairing_session_update(data)
+          end
         when 'unpair'
           isSuccess = FALSE
           session_id = msg.thread
