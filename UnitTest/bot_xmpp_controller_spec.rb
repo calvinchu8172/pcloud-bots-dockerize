@@ -86,10 +86,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KPAIR_START_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i+=1
       end
       
       MultiXml.parser = :rexml
@@ -104,10 +106,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, email: 'example@ecoworkinc.com', session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -123,10 +127,12 @@ describe XMPPController do
       error_code = 999
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -143,10 +149,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -162,10 +170,12 @@ describe XMPPController do
       error_code = 998
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -210,13 +220,15 @@ describe XMPPController do
       expect(ipv4).to be_an_instance_of(Resolv::IPv4)
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account,
               full_domain: host_name + '.' + domain_name,
               session_id: unpair_session_id}
       
       XMPPController.send_request(KUNPAIR_ASK_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       i = 0
@@ -252,10 +264,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, language: 'en', session_id: session_id}
       XMPPController.send_request(KUPNP_ASK_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -270,10 +284,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, language: 'en', field_item: '', session_id: session_id}
       XMPPController.send_request(KUPNP_SETTING_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -297,10 +313,12 @@ describe XMPPController do
       ipv4 = nil
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       j = 60
@@ -390,10 +408,12 @@ describe XMPPController do
       ddns_id = ddns.id
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       j = 60
@@ -469,10 +489,12 @@ describe XMPPController do
       session_id = 1
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -490,10 +512,12 @@ describe XMPPController do
       error_code = 997
       
       x = nil
+      i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -595,10 +619,12 @@ describe XMPPController do
       expect(isSuccess).to be true
       
       x = nil
+      i = 0
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       pair_session = db.db_pairing_session_access({id: session_id})
@@ -619,10 +645,12 @@ describe XMPPController do
       expect(isSuccess).to be true
       
       x = nil
+      i = 0
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       pair_session = db.db_pairing_session_access({id: session_id})
@@ -656,10 +684,12 @@ describe XMPPController do
       expect(isSuccess).to be true
       
       x = nil
+      i = 0
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       pair_session = db.db_pairing_session_access({id: session_id})
@@ -676,10 +706,12 @@ describe XMPPController do
       expect(cancel).to eq('cancel')
       
       x = nil
+      i = 0
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, 0]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       xml = MultiXml.parse(x.to_s)
@@ -700,10 +732,12 @@ describe XMPPController do
       session_id = 0
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -720,10 +754,12 @@ describe XMPPController do
       session_id = 0
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -749,10 +785,12 @@ describe XMPPController do
       expect(device).not_to be_nil
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -783,10 +821,12 @@ describe XMPPController do
       expect(device).not_to be_nil
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       MultiXml.parser = :rexml
@@ -812,10 +852,12 @@ describe XMPPController do
       expect(device).not_to be_nil
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       ddns = db.db_ddns_access({full_domain: host_name + '.' + domain_name})
@@ -892,10 +934,12 @@ describe XMPPController do
       expect(device).not_to be_nil
       
       x = nil
+      i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil?
+      while x.nil? && i < 100
         sleep(0.1)
+        i += 1
       end
       
       ddns = db.db_ddns_access({full_domain: host_name + '.' + domain_name})
