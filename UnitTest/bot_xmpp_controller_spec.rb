@@ -13,6 +13,13 @@ include Jabber
 
 DELAY_TIME = 0.5
 
+FLUENT_BOT_SYSINFO = "bot.sys-info"
+FLUENT_BOT_SYSERROR = "bot.sys-error"
+FLUENT_BOT_SYSALERT = "bot.sys-alert"
+FLUENT_BOT_FLOWINFO = "bot.flow-info"
+FLUENT_BOT_FLOWERROR = "bot.flow-error"
+FLUENT_BOT_FLOWALERT = "bot.flow-alert"
+
 Jabber::debug = FALSE
 
 def valid_json? json_
