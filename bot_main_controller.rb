@@ -5,14 +5,31 @@ $stdout.sync = true
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_xmpp_controller'
+require 'fluent-logger'
 
 XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
 XMPP_RESOURCE_ID = '/device'
 
+FLUENT_BOT_SYSINFO = "bot.sys-info"
+FLUENT_BOT_SYSERROR = "bot.sys-error"
+FLUENT_BOT_SYSALERT = "bot.sys-alert"
+FLUENT_BOT_FLOWINFO = "bot.flow-info"
+FLUENT_BOT_FLOWERROR = "bot.flow-error"
+FLUENT_BOT_FLOWALERT = "bot.flow-alert"
+
 xmpp_connect_ready = FALSE
 
+Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
+
 jobThread = Thread.new {
-    puts '[%s] XMPP Controll running' % DateTime.now
+    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                             direction: 'N/A',
+                                             to: 'N/A',
+                                             form: 'N/A',
+                                             id: 'N/A',
+                                             full_domain: 'N/A',
+                                             message:"XMPP Controll running ...",
+                                             data: 'N/A'})
     XMPPController.new
     XMPPController.run
 }
@@ -23,36 +40,85 @@ XMPPController.when_ready { xmpp_connect_ready = TRUE }
 db_conn = BotDBAccess.new
 
 timeoutThread = Thread.new{
-  puts '[%s] Timeout update running' % DateTime.now
+  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                           direction: 'N/A',
+                                           to: 'N/A',
+                                           form: 'N/A',
+                                           id: 'N/A',
+                                           full_domain: 'N/A',
+                                           message:"Updating timeout pairing session ...",
+                                           data: 'N/A'})
   loop do
     sleep(30.0)
     data = db_conn.db_pairing_session_access_timeout
-    puts '[%s] Search timeout session' % DateTime.now
+    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                             direction: 'N/A',
+                                             to: 'N/A',
+                                             form: 'N/A',
+                                             id: 'N/A',
+                                             full_domain: 'N/A',
+                                             message:"Search timeout pairing session ...",
+                                             data: 'N/A'})
     
     data.find_each do |row|
       data = {id: row.id, status: 4}
       isSuccess = db_conn.db_pairing_session_update(data)
-      '[%s] Update timeout session success' % DateTime.now if isSuccess
+      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                               direction: 'N/A',
+                                               to: 'N/A',
+                                               form: 'N/A',
+                                               id: 'N/A',
+                                               full_domain: 'N/A',
+                                               message:"Update timeout pairing session id:%d %s ..." % [row.id, isSuccess ? 'success' : 'failure'],
+                                               data: 'N/A'})
     end
   end
 }
 timeoutThread.abort_on_exception = TRUE
 
 ddnsThread = Thread.new{
-  puts '[%s] DDNS re-update running' % DateTime.now
+  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                           direction: 'N/A',
+                                           to: 'N/A',
+                                           form: 'N/A',
+                                           id: 'N/A',
+                                           full_domain: 'N/A',
+                                           message:"Start re-update DDNS record ...",
+                                           data: 'N/A'})
   loop do
     sleep(30)
-    puts '[%s] Retry DDNS register' % DateTime.now
+    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                             direction: 'N/A',
+                                             to: 'N/A',
+                                             form: 'N/A',
+                                             id: 'N/A',
+                                             full_domain: 'N/A',
+                                             message:"Retry register DDNS record ...",
+                                             data: 'N/A'})
     XMPPController.retry_ddns_register
   end
 }
 ddnsThread.abort_on_exception = TRUE
 
 while !xmpp_connect_ready
-  puts '[%s] Waiting XMPP connection ready' % DateTime.now
+  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                           direction: 'N/A',
+                                           to: 'N/A',
+                                           form: 'N/A',
+                                           id: 'N/A',
+                                           full_domain: 'N/A',
+                                           message:"Waiting XMPP connection ready ...",
+                                           data: 'N/A'})
   sleep(2)
 end
-puts '[%s] XMPP connection ready' % DateTime.now
+Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                         direction: 'N/A',
+                                         to: 'N/A',
+                                         form: 'N/A',
+                                         id: 'N/A',
+                                         full_domain: 'N/A',
+                                         message:"XMPP connection ready",
+                                         data: 'N/A'})
 
 sqs = BotQueueAccess.new
 sqs.sqs_listen{
@@ -60,7 +126,14 @@ sqs.sqs_listen{
   
   case job
     when 'pairing' then
-      puts '[%s] Get SQS Pairing message %s' % [DateTime.now, data]
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
+                                                direction: 'N/A',
+                                                to: 'N/A',
+                                                form: 'N/A',
+                                                id: data[:session_id],
+                                                full_domain: 'N/A',
+                                                message:"Get SQS queue of pairing",
+                                                data: 'N/A'})
       pairThread = Thread.new{
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
@@ -72,7 +145,13 @@ sqs.sqs_listen{
       pairThread.abort_on_exception = FALSE
 
     when 'unpair' then
-      puts '[%s] Get SQS Unpair message %s' % [DateTime.now, data]
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
+                                                direction: 'N/A',
+                                                to: 'N/A',
+                                                form: 'N/A',
+                                                id: 'N/A',
+                                                full_domain: 'N/A',
+                                                message:"Get SQS queue of unpair", data: data})
       unpairThread = Thread.new{
         device_id = data[:device_id]
         device_session = db_conn.db_device_session_access({device_id: device_id})
@@ -91,7 +170,13 @@ sqs.sqs_listen{
       unpairThread.abort_on_exception = FALSE
       
     when 'upnp_submit' then
-      puts '[%s] Get SQS Upnp message submit %s' % [DateTime.now, data]
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+                                                direction: 'N/A',
+                                                to: 'N/A',
+                                                form: 'N/A',
+                                                id: data[:session_id],
+                                                full_domain: 'N/A',
+                                                message:"Get SQS queue of upnp-submit", data: data})
       upnpSubmitThread = Thread.new {
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
@@ -121,8 +206,13 @@ sqs.sqs_listen{
       upnpSubmitThread.abort_on_exception = FALSE
       
     when 'upnp_query' then
-      puts '[%s] Get SQS Upnp message query %s' % [DateTime.now, data]
-      
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+                                                direction: 'N/A',
+                                                to: 'N/A',
+                                                form: 'N/A',
+                                                id: data[:session_id],
+                                                full_domain: 'N/A',
+                                                message:"Get SQS queue of upnp-query", data: data})
       upnpQueryThread = Thread.new{
         session_id = data[:session_id]
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
@@ -136,8 +226,13 @@ sqs.sqs_listen{
       upnpQueryThread.abort_on_exception = FALSE
       
     when 'ddns' then
-      puts '[%s] Get SQS DDNS message query %s' % [DateTime.now, data]
-      
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+                                                direction: 'N/A',
+                                                to: 'N/A',
+                                                form: 'N/A',
+                                                id: data[:session_id],
+                                                full_domain: 'N/A',
+                                                message:"Get SQS queue of DDNS-query", data: data})
       ddnsQueryThread = Thread.new{
         session_id = data[:session_id]
         ddns_session = db_conn.db_ddns_session_access({id: session_id})
