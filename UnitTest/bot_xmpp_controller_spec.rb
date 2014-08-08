@@ -32,7 +32,7 @@ describe XMPPController do
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
-  host_name = 'mytest3'
+  host_name = 'test%d' % Time.now.to_i
   domain_name = 'demo.ecoworkinc.com.'
   
   let(:route) {BotRouteAccess.new}
@@ -671,7 +671,7 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
-    it 'Receive PAIR COMPLETED FAILURE response' do
+    it 'Receive PAIR TIMEOUT response' do
       data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
       pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
@@ -1001,7 +1001,7 @@ describe XMPPController do
   
   context 'Receive CANCEL message' do
     
-    it 'Receive PAIR FAILURE response' do
+    it 'Receive PAIR START FAILURE response' do
       data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
       pair_session = db.db_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
@@ -1021,6 +1021,54 @@ describe XMPPController do
       expect(pair_session).not_to be_nil
       expect(pair_session.status.to_d).to eq(4)
       
+      isSuccess = db.db_pairing_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive PAIR COMPLETED FAILURE response' do
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+      session_id = pair_session.id
+      
+      data[:id] = session_id
+      data[:status] = 1
+      data[:expire_at] = DateTime.strptime((Time.now.to_i + 120).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+      
+      msg = PAIR_COMPLETED_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+      
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(4)
+      
+      isSuccess = db.db_pairing_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive PAIR CANCEL FAILURE response' do
+      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
+      pair_session = db.db_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+      session_id = pair_session.id
+
+      data[:id] = session_id
+      data[:status] = 1
+      data[:expire_at] = DateTime.strptime((Time.now.to_i + 120).to_s, "%s")
+      isSuccess = db.db_pairing_session_update(data)
+      expect(isSuccess).to be true
+
+      msg = PAIR_TIMEOUT_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      pair_session = db.db_pairing_session_access({id: session_id})
+      expect(pair_session).not_to be_nil
+      expect(pair_session.status.to_d).to eq(4)
+
       isSuccess = db.db_pairing_session_delete(session_id)
       expect(isSuccess).to be true
     end

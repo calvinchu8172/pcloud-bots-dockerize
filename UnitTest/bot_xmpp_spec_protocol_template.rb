@@ -53,6 +53,22 @@ PAIR_TIMEOUT_REQUEST = <<EOT
 </message>
 EOT
 
+#PAIR_TIMEOUT_FAILURE_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
+PAIR_TIMEOUT_FAILURE_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+	<title>pair</title>
+	<field type='hidden' var='action'>
+	  <value>cancel</value>
+	</field>
+	<field type='text-single' var='ERROR_CODE'>
+	  <value>%d</value>
+	</field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
 #UPNP_ASK_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 UPNP_ASK_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
