@@ -761,8 +761,19 @@ module XMPPController
             routeThread = Thread.new{
               session_id = x[:session_id]
               ddns_record = @db_conn.db_ddns_access({device_id: device_id})
+              record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
+              isSuccess = @route_conn.create_record(record_info)
+              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                                    {event: 'DDNS',
+                                     direction: 'N/A',
+                                     to: 'N/A',
+                                     from: 'N/A',
+                                     id: 'N/A',
+                                     full_domain: x[:host_name] + '.' + x[:domain_name],
+                                     message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                     data: {ip: x[:device_ip]}})
               
-              if !ddns_record.nil? then
+              if !ddns_record.nil? && isSuccess then
                 domain_S = ddns_record.full_domain.to_s.split('.')
                 host_name = domain_S[0]
                 domain_S.shift
@@ -781,30 +792,20 @@ module XMPPController
                                        message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
                                        data: {ip: x[:device_ip]}})
 
-                record_info = {host_name: host_name, domain_name: domain_name}
-                isSuccess = @route_conn.delete_record(record_info)
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
-                                      {event: 'DDNS',
-                                       direction: 'N/A',
-                                       to: 'N/A',
-                                       from: 'N/A',
-                                       id: 'N/A',
-                                       full_domain: host_name + '.' + domain_name,
-                                       message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
-                                       data: 'N/A'})
+                if host_name != x[:host_name] || domain_name != x[:domain_name] then
+                  record_info = {host_name: host_name, domain_name: domain_name}
+                  isSuccess = @route_conn.delete_record(record_info)
+                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                                        {event: 'DDNS',
+                                         direction: 'N/A',
+                                         to: 'N/A',
+                                         from: 'N/A',
+                                         id: 'N/A',
+                                         full_domain: host_name + '.' + domain_name,
+                                         message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                         data: 'N/A'})
+                end
               end
-
-              record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
-              isSuccess = @route_conn.create_record(record_info)
-              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
-                                    {event: 'DDNS',
-                                     direction: 'N/A',
-                                     to: 'N/A',
-                                     from: 'N/A',
-                                     id: 'N/A',
-                                     full_domain: x[:host_name] + '.' + x[:domain_name],
-                                     message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
-                                     data: {ip: x[:device_ip]}})
                 
               if isSuccess then
                 record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
@@ -867,54 +868,97 @@ module XMPPController
                   }
             container(data){
               |x|
-              session_id = x[:session_id]
-
-              ddns = @db_conn.db_ddns_access({device_id: x[:device_id]})
+              routeThread = Thread.new{
+                session_id = x[:session_id]
               
-              isSuccess = @db_conn.db_ddns_update({id: ddns.id, ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]})
-
-              record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
-              isSuccess = @route_conn.create_record(record_info)
-
-              if isSuccess then
-                info = info = {xmpp_account: x[:msg_from], session_id: session_id}
-                send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
-                                      {event: 'DDNS',
-                                       direction: 'Bot->Device',
-                                       to: x[:msg_from],
-                                       from: @bot_xmpp_account,
-                                       id: 'N/A',
-                                       full_domain: x[:host_name] + '.' + x[:domain_name],
-                                       message:"Send DDNS SETTING SUCCESS RESPONSE message to device as create Route53 DDNS record success",
-                                       data: {ip: x[:device_ip], device_id: x[:device_id]}})
-              else
-                info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
-                send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
-                                      {event: 'DDNS',
-                                       direction: 'Bot->Device',
-                                       to: x[:msg_from],
-                                       from: @bot_xmpp_account,
-                                       id: 'N/A',
-                                       full_domain: x[:host_name] + '.' + x[:domain_name],
-                                       message:"Send DDNS SETTING FAILURE RESPONSE message to device as create Route53 DDNS record failure",
-                                       data: {error_code: 997}})
-
-                @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
-
-                user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
-                isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
+                record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
+                isSuccess = @route_conn.create_record(record_info)
+                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
                                        from: 'N/A',
                                        id: 'N/A',
-                                       full_domain: 'N/A',
-                                       message:"Send DDNS offline email to user %s" % [isSuccess ? 'success' : 'failure'],
-                                       data: {user_email: user_email}})
-              end
+                                       full_domain: x[:host_name] + '.' + x[:domain_name],
+                                       message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                       data: {ip: x[:device_ip]}})
+              
+                if !ddns_record.nil? && isSuccess then
+                  domain_S = ddns_record.full_domain.to_s.split('.')
+                  host_name = domain_S[0]
+                  domain_S.shift
+                  domain_name = domain_S.join('.')
+                  domain_name += '.' if '.' != domain_name[-1, 1]
+
+                  data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
+                  isSuccess =  @db_conn.db_ddns_update(data)
+                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                                        {event: 'DDNS',
+                                         direction: 'N/A',
+                                         to: 'N/A',
+                                         from: 'N/A',
+                                         id: ddns_record.id,
+                                         full_domain: x[:host_name] + '.' + x[:domain_name],
+                                         message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                         data: {ip: x[:device_ip]}})
+
+                  if host_name != x[:host_name] || domain_name != x[:domain_name] then
+                    record_info = {host_name: host_name, domain_name: domain_name}
+                    isSuccess = @route_conn.delete_record(record_info)
+                    Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                                          {event: 'DDNS',
+                                           direction: 'N/A',
+                                           to: 'N/A',
+                                           from: 'N/A',
+                                           id: 'N/A',
+                                           full_domain: host_name + '.' + domain_name,
+                                           message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                           data: 'N/A'})
+                  end
+                end
+
+                if isSuccess then
+                  info = info = {xmpp_account: x[:msg_from], session_id: session_id}
+                  send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
+                  Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                        {event: 'DDNS',
+                                         direction: 'Bot->Device',
+                                         to: x[:msg_from],
+                                         from: @bot_xmpp_account,
+                                         id: 'N/A',
+                                         full_domain: x[:host_name] + '.' + x[:domain_name],
+                                         message:"Send DDNS SETTING SUCCESS RESPONSE message to device as create Route53 DDNS record success",
+                                         data: {ip: x[:device_ip], device_id: x[:device_id]}})
+                else
+                  info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
+                  send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
+                  Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                        {event: 'DDNS',
+                                         direction: 'Bot->Device',
+                                         to: x[:msg_from],
+                                         from: @bot_xmpp_account,
+                                         id: 'N/A',
+                                         full_domain: x[:host_name] + '.' + x[:domain_name],
+                                         message:"Send DDNS SETTING FAILURE RESPONSE message to device as create Route53 DDNS record failure",
+                                         data: {error_code: 997}})
+
+                  @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
+
+                  user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
+                  isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
+                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                                        {event: 'DDNS',
+                                         direction: 'N/A',
+                                         to: 'N/A',
+                                         from: 'N/A',
+                                         id: 'N/A',
+                                         full_domain: 'N/A',
+                                         message:"Send DDNS offline email to user %s" % [isSuccess ? 'success' : 'failure'],
+                                         data: {user_email: user_email}})
+                end
+              }
+              routeThread.abort_on_exception = TRUE
             }
           else
             info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
