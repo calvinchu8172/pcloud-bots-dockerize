@@ -76,6 +76,17 @@ class BotRouteAccess
           isSuccess = FALSE
           puts error
         end
+      rescue AWS::Route53::Errors::PriorRequestNotComplete => error
+        sleep(2)
+        begin
+          isSuccess = rrsets.create(host_name + '.' + domain_name,
+                                'A',
+                                :ttl => 60,
+                                :resource_records => [{:value => data[:ip]}])
+        rescue Exception => error
+          isSuccess = FALSE
+          puts error
+        end
       rescue Exception => error
         puts error
       end
@@ -99,6 +110,14 @@ class BotRouteAccess
       
       begin
         isSuccess = rrset.update
+      rescue AWS::Route53::Errors::PriorRequestNotComplete => error
+        sleep(2)
+        begin
+          isSuccess = rrset.update
+        rescue Exception => error
+          isSuccess = FALSE
+          puts error
+        end
       rescue Exception => error
         isSuccess = nil
         puts error
@@ -125,6 +144,14 @@ class BotRouteAccess
       rescue AWS::Core::Resource::NotFound => error
         isSuccess = TRUE
         puts error
+      rescue AWS::Route53::Errors::PriorRequestNotComplete => error
+        sleep(2)
+        begin
+          isSuccess = rrset.delete
+        rescue Exception => error
+          isSuccess = FALSE
+          puts error
+        end
       rescue Exception => error
         isSuccess = nil
         puts error
