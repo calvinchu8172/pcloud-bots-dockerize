@@ -1221,6 +1221,13 @@ module XMPPController
       hasITEM = xml["x"].has_key?("item") if hasX
           
       if !xml.nil? && hasX && hasITEM then
+        
+        if !xml["x"]["item"].instance_of?(Array) then
+          items = Array.new
+          items << xml["x"]["item"]
+          xml["x"]["item"] = items
+        end
+        
         xml["x"]["item"].each do |item|
         service_name = nil
         status = nil
