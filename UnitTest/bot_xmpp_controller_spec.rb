@@ -1107,25 +1107,53 @@ describe XMPPController do
       upnp_session = db.db_upnp_session_access({id: session_id})
       expect(upnp_session).not_to be_nil
       expect(upnp_session.status.to_d).to eq(3)
-      
+
       isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
     end
-    
+
     it 'Receive UPNP SET FAILURE response' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
       upnp_session = db.db_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
       session_id = upnp_session.id
       
-      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
       sleep(DELAY_TIME)
       
       upnp_session = db.db_upnp_session_access({id: session_id})
       expect(upnp_session).not_to be_nil
       expect(upnp_session.status.to_d).to eq(3)
-      
+
+      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(service_list[0]['error_code']).to eq('799')
+      expect(service_list[1]['error_code']).to eq('')
+      expect(service_list[2]['error_code']).to eq('798')
+
+      isSuccess = db.db_upnp_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
+    it 'Receive UPNP SET FAILURE response - single item' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(3)
+
+      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(service_list[0]['error_code']).to eq('799')
+      expect(service_list[1]['error_code']).to eq('')
+      expect(service_list[2]['error_code']).to eq('')
+
       isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
     end
@@ -1175,8 +1203,29 @@ describe XMPPController do
       expect(isSuccess).to be true
     end
     
+    it 'Receive UPNP service list - single item' do
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: ''}
+      upnp_session = db.db_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+      session_id = upnp_session.id
+ 
+      msg = UPNP_ASK_RESPONSE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, session_id]
+      client.send msg
+      sleep(DELAY_TIME)
+ 
+      upnp_session = db.db_upnp_session_access({id: session_id})
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session.status.to_d).to eq(1)
+
+      isValid = valid_json? upnp_session.service_list.to_s
+      expect(isValid).to be true
+
+      isSuccess = db.db_upnp_session_delete(session_id)
+      expect(isSuccess).to be true
+    end
+    
     it 'Receive UPNP service list - empty form' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration"},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration"},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration"}]'}
+      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
       upnp_session = db.db_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
       session_id = upnp_session.id
