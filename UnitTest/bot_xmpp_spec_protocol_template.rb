@@ -69,6 +69,30 @@ PAIR_TIMEOUT_FAILURE_RESPONSE = <<EOT
 </message>
 EOT
 
+#UPNP_ASK_RESPONSE_SINGLE_ITEM % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+UPNP_ASK_RESPONSE_SINGLE_ITEM = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="form">
+	<title>get_upnp_service</title>
+	  <item>
+		<field var='service-name' type='text-single'>
+		  <value>FTP</value>
+		</field>
+		<field var='status' type='boolean'>
+		  <value>true</value>
+		</field>
+		<field var='enabled' type='boolean'>
+		  <value>true</value>
+		</field>
+		<field var='description' type='text-multi'>
+		  <value>FTP configuration</value>
+		</field>
+	  </item>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
 #UPNP_ASK_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 UPNP_ASK_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
@@ -154,14 +178,45 @@ UPNP_ASK_GET_RESPONSE_FAILURE = <<EOT
 </message>
 EOT
 
-#UPNP_ASK_RESPONSE_FAILURE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
+#UPNP_ASK_RESPONSE_FAILURE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 UPNP_ASK_SET_RESPONSE_FAILURE = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
   <x xmlns="jabber:x:data" type="cancel">
 	<title>set_upnp_service</title>
-	<field type='text-single' var='ERROR_CODE'>
-	  <value>%d</value>
-	</field>
+	<item>
+	  <field type='textsingle' var='ERROR_CODE'>
+	    <value>799</value>
+	  </field>
+	  <field var='servicename' type='textsingle'>
+		<value>FTP</value>
+	  </field>
+	</item>
+	<item>
+	  <field type='textsingle' var='ERROR_CODE'>
+	    <value>798</value>
+	  </field>
+	  <field var='servicename' type='textsingle'>
+		<value>HTTP</value>
+	  </field>
+	</item>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+#UPNP_ASK_RESPONSE_FAILURE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+UPNP_ASK_SET_RESPONSE_FAILURE_SINGLE_ITEM = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+	<title>set_upnp_service</title>
+	<item>
+	  <field type='textsingle' var='ERROR_CODE'>
+	    <value>799</value>
+	  </field>
+	  <field var='servicename' type='textsingle'>
+		<value>FTP</value>
+	  </field>
+	</item>
   </x>
   <thread>%d</thread>
 </message>

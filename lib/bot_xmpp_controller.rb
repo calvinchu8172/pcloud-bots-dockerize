@@ -1094,7 +1094,7 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.cancel? && ('get_upnp_service' == m.form.title || 'set_upnp_service' == m.form.title)} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
       
@@ -1109,8 +1109,75 @@ module XMPPController
                              from: msg.from.to_s,
                              id: session_id,
                              full_domain: 'N/A',
-                             message:"Update the status of upnp session to FAILURE %s as receive UPNP SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                             message:"Update the status of upnp session to FAILURE %s as receive UPNP GET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+  
+  message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title} do |msg|
+    begin
+      cancel_syslog(msg)
+      
+      hasX = FALSE
+      hasITEM = FALSE
+      session_id = msg.thread
+      error_code_record = Array.new
+      
+      upnp_session = @db_conn.db_upnp_session_access({id: session_id})
+      service_list = JSON.parse(upnp_session.service_list.to_s)
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(msg.form.to_s)
+      hasX = xml.has_key?("x")
+      hasITEM = xml["x"].has_key?("item") if hasX
+      
+      if !xml.nil? && hasX && hasITEM then
+        
+        if !xml["x"]["item"].instance_of?(Array) then
+          items = Array.new
+          items << xml["x"]["item"]
+          xml["x"]["item"] = items
+        end
+        
+        xml["x"]["item"].each do |item|
+          servicename = nil
+          error_code = nil
+          
+          item["field"].each do |field|
+            var = field["var"]
+            case var
+              when 'servicename'
+                servicename = field["value"]
+              when 'ERROR_CODE'
+                error_code = field["value"]
+            end
+          end
+          
+          service_list.each do |service|
+            if service["service_name"] == servicename then
+              service["error_code"] = error_code
+            end
+          end
+          
+          error_code_record << {service_name: servicename, error_code: error_code}
+        end
+      end
+      
+      service_list_json = JSON.generate(service_list)
+      
+      data = {id: session_id, status: 3, service_list: service_list_json}
+      isSuccess = @db_conn.db_upnp_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+                            {event: 'UPNP',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Update the status of upnp session to FAILURE %s as receive UPNP SET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                             data: {error_code: JSON.generate(error_code_record)}})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
@@ -1154,6 +1221,13 @@ module XMPPController
       hasITEM = xml["x"].has_key?("item") if hasX
           
       if !xml.nil? && hasX && hasITEM then
+        
+        if !xml["x"]["item"].instance_of?(Array) then
+          items = Array.new
+          items << xml["x"]["item"]
+          xml["x"]["item"] = items
+        end
+        
         xml["x"]["item"].each do |item|
         service_name = nil
         status = nil
@@ -1177,7 +1251,8 @@ module XMPPController
         service = {:service_name => service_name,
                    :status => status,
                    :enabled => enabled,
-                   :description => description
+                   :description => description,
+                   :error_code => ''
                   }
         service_list << service
       end
