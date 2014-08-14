@@ -732,8 +732,14 @@ module XMPPController
       @route_conn.zones_list.each do |zone|
         isValidZoneName = TRUE if domain_name.downcase == zone[:name].downcase
       end
+      
+      isValidLength = FALSE
+      isValidLength = TRUE if (host_name + '.' + domain_name).length > 255
+      (host_name + '.' + domain_name).split('.').each do |item|
+        isValidLength = TRUE if item.length > 63
+      end
 
-      if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName then
+      if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName && !isValidLength then
         device_ip = nil
         device_id = nil
         old_device_id = nil
