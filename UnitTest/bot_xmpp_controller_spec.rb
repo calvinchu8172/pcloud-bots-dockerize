@@ -801,6 +801,28 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
+    it 'Receive DDNS SETTING error response, code - 999, DNS too short' do
+      session_id = 0
+      
+      x = nil
+      i = 0
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'my', domain_name, session_id]
+      client.send msg
+      while x.nil? && i < 100
+        sleep(0.1)
+        i += 1
+      end
+      
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      error_code = xml['x']['field']['value']
+      expect(title).to eq('config')
+      expect(error_code.to_d).to eq(999)
+    end
+    
     it 'Receive DDNS SETTING error response, code - 995, domain has been used' do
       session_id = 0
       

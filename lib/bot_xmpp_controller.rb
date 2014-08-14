@@ -736,7 +736,7 @@ module XMPPController
       isValidLength = FALSE
       isValidLength = TRUE if (host_name + '.' + domain_name).length > 255
       (host_name + '.' + domain_name).split('.').each do |item|
-        isValidLength = TRUE if item.length > 63
+        isValidLength = TRUE if item.length > 63 || item.length < 3
       end
 
       if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName && !isValidLength then
