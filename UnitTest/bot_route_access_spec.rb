@@ -11,9 +11,11 @@ describe BotRouteAccess do
     
     expect(config).to have_key('access_key_id')
     expect(config).to have_key('secret_access_key')
+    expect(config).to have_key('reserved_host_name')
     
     expect(config['access_key_id']).not_to eq('xxx')
     expect(config['secret_access_key']).not_to eq('xxx')
+    expect(config['reserved_host_name'].length).not_to eq(0)
   end
   
   let(:route) {BotRouteAccess.new}
@@ -21,6 +23,16 @@ describe BotRouteAccess do
   
   dns_data = {host_name: 'mytest3', domain_name: 'demo.ecoworkinc.com.', ip: '10.1.1.112'}
   ipv4 = nil
+  
+  it "Return reserved host name list" do
+    reserved = route.reserved_hostname
+    expect(reserved.length).not_to eq(0)
+  end
+  
+  it "Return zones list" do
+    zones_list = route.zones_list
+    expect(zones_list.length).not_to eq(0)
+  end
   
   it "Create DNS record #{dns_data[:host_name]}.#{dns_data[:domain_name]} - #{dns_data[:ip]}" do
     isSuccess = route.create_record(dns_data)
