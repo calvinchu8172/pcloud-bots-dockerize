@@ -94,7 +94,7 @@ UPNP_ASK_REQUEST = <<EOT
 </message>
 EOT
 
-#UPNP_FIELD_ITEM % ['SERVICE_NAME', 'STATUS', 'ENABLED', 'DESCRIPTION']
+#UPNP_FIELD_ITEM % ['SERVICE_NAME', 'STATUS', 'ENABLED', 'DESCRIPTION', 'PATH', 'PORT']
 UPNP_FIELD_ITEM = <<EOT
 <item>
   <field var='service-name' type='text-single'>
@@ -108,6 +108,12 @@ UPNP_FIELD_ITEM = <<EOT
   </field>
   <field var='description' type='text-multi'>
     <value>%s</value>
+  </field>
+  <field var='path' type='text-single'>
+    <value>%s</value>
+  </field>
+  <field var='port' type='text-single'>
+    <value>%d</value>
   </field>
 </item>
 EOT

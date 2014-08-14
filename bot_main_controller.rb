@@ -192,8 +192,10 @@ sqs.sqs_listen{
             status = item["status"].to_s
             enabled = item["enabled"].to_s
             description = item["description"]
+            path = item["path"]
+            port = item["port"]
             
-            field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description]
+            field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description, path, port]
           end
         end
         
