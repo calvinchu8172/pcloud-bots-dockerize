@@ -1239,6 +1239,8 @@ module XMPPController
         status = nil
         enabled = nil
         description = nil
+        path = nil
+        port = nil
 
         item["field"].each do |field|
           var = field["var"]
@@ -1251,6 +1253,10 @@ module XMPPController
               enabled = field["value"] == 'true' ? true : false
             when 'description'
               description = field["value"]
+            when 'path'
+              path = field["value"]
+            when 'port'
+              port = field["value"]
           end
         end
             
@@ -1258,6 +1264,8 @@ module XMPPController
                    :status => status,
                    :enabled => enabled,
                    :description => description,
+                   :path => path,
+                   :port => port,
                    :error_code => ''
                   }
         service_list << service
