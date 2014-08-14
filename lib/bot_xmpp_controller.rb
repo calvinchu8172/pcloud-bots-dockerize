@@ -366,7 +366,7 @@ module XMPPController
               ddns_session = @db_conn.db_ddns_session_access({id: info[:session_id]})
               status = ddns_session.status
               if 1 == status then
-                @db_conn.db_ddns_session_update({id: info[:session_id], status: 3})
+                @db_conn.db_ddns_session_update({id: info[:session_id], status: 2})
               end
             
               EM.cancel_timer(periodic_timer)
