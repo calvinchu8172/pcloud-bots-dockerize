@@ -738,8 +738,13 @@ module XMPPController
       (host_name + '.' + domain_name).split('.').each do |item|
         isValidLength = TRUE if item.length > 63 || item.length < 3
       end
+      
+      isReserved = FALSE
+      @route_conn.reserved_hostname.each do |host|
+        isReserved = TRUE if host == host_name
+      end
 
-      if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName && !isValidLength then
+      if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName && !isValidLength && !isReserved then
         device_ip = nil
         device_id = nil
         old_device_id = nil
