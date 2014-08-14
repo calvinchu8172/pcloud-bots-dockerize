@@ -73,7 +73,7 @@ class BotRouteAccess
           end
           isSuccess = TRUE
         rescue Exception => error
-          isSuccess = FALSE
+          isSuccess = nil
           puts error
         end
       rescue AWS::Route53::Errors::PriorRequestNotComplete => error
@@ -84,10 +84,11 @@ class BotRouteAccess
                                 :ttl => 60,
                                 :resource_records => [{:value => data[:ip]}])
         rescue Exception => error
-          isSuccess = FALSE
+          isSuccess = nil
           puts error
         end
       rescue Exception => error
+        isSuccess = nil
         puts error
       end
     end
@@ -115,7 +116,7 @@ class BotRouteAccess
         begin
           isSuccess = rrset.update
         rescue Exception => error
-          isSuccess = FALSE
+          isSuccess = nil
           puts error
         end
       rescue Exception => error
@@ -149,7 +150,7 @@ class BotRouteAccess
         begin
           isSuccess = rrset.delete
         rescue Exception => error
-          isSuccess = FALSE
+          isSuccess = nil
           puts error
         end
       rescue Exception => error
