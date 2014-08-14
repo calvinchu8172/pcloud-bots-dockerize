@@ -87,6 +87,12 @@ UPNP_ASK_RESPONSE_SINGLE_ITEM = <<EOT
 		<field var='description' type='text-multi'>
 		  <value>FTP configuration</value>
 		</field>
+		<field var='port' type='text-single'>
+          <value>21</value>
+        </field>
+        <field var='path' type='text-single'>
+          <value>ftp://wanip:port</value>
+        </field>
 	  </item>
   </x>
   <thread>%d</thread>
@@ -111,6 +117,12 @@ UPNP_ASK_RESPONSE = <<EOT
 		<field var='description' type='text-multi'>
 		  <value>FTP configuration</value>
 		</field>
+		<field var='port' type='text-single'>
+          <value>21</value>
+        </field>
+        <field var='path' type='text-single'>
+          <value>ftp://wanip:port</value>
+        </field>
 	  </item>
 	  <item>
 		<field var='service-name' type='text-single'>
@@ -125,6 +137,12 @@ UPNP_ASK_RESPONSE = <<EOT
 		<field var='description' type='text-multi'>
 		  <value>DDNS configuration</value>
 		</field>
+		<field var='port' type='text-single'>
+          <value>53</value>
+        </field>
+        <field var='path' type='text-single'>
+          <value></value>
+        </field>
 	  </item>
 	  <item>
 		<field var='service-name' type='text-single'>
@@ -139,6 +157,12 @@ UPNP_ASK_RESPONSE = <<EOT
 		<field var='description' type='text-multi'>
 		  <value>HTTP configuration</value>
 		</field>
+		<field var='port' type='text-single'>
+          <value>80</value>
+        </field>
+        <field var='path' type='text-single'>
+          <value>http://wanip:port</value>
+        </field>
 	  </item>
   </x>
   <thread>%d</thread>

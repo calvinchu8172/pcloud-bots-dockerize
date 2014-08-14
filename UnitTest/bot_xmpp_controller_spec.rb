@@ -1242,6 +1242,13 @@ describe XMPPController do
       
       isValid = valid_json? upnp_session.service_list.to_s
       expect(isValid).to be true
+      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(service_list[0].has_key?("service_name")).to be true
+      expect(service_list[0].has_key?("status")).to be true
+      expect(service_list[0].has_key?("enabled")).to be true
+      expect(service_list[0].has_key?("description")).to be true
+      expect(service_list[0].has_key?("path")).to be true
+      expect(service_list[0].has_key?("error_code")).to be true
       
       isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
@@ -1263,6 +1270,13 @@ describe XMPPController do
 
       isValid = valid_json? upnp_session.service_list.to_s
       expect(isValid).to be true
+      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(service_list[0].has_key?("service_name")).to be true
+      expect(service_list[0].has_key?("status")).to be true
+      expect(service_list[0].has_key?("enabled")).to be true
+      expect(service_list[0].has_key?("description")).to be true
+      expect(service_list[0].has_key?("path")).to be true
+      expect(service_list[0].has_key?("error_code")).to be true
 
       isSuccess = db.db_upnp_session_delete(session_id)
       expect(isSuccess).to be true
