@@ -11,6 +11,7 @@ class BotRouteAccess
     config_file = File.join(File.dirname(__FILE__), ROUTE_CONFIG_FILE)
     config = YAML.load(File.read(config_file))
     
+    @reserved_hostname = config['reserved_host_name']
     @Route = self.route_connection(config)
     self.find_zone_id('')
   end
@@ -25,6 +26,10 @@ class BotRouteAccess
   
   def zones_list
     @zones_list
+  end
+  
+  def reserved_hostname
+    @reserved_hostname
   end
   
   def find_zone_id(name=nil)
