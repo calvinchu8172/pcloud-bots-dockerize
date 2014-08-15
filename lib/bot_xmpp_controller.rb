@@ -1251,7 +1251,7 @@ module XMPPController
           var = field["var"]
           case var
             when 'service-name'
-              service_name = field["value"]
+              service_name = field["value"].nil? ? '' : field["value"]
             when 'status'
               status = field["value"] == 'true' ? true : false
             when 'enabled'
@@ -1259,9 +1259,9 @@ module XMPPController
             when 'description'
               description = field["value"]
             when 'path'
-              path = field["value"]
+              path = field["value"].nil? ? '' : field["value"]
             when 'port'
-              port = field["value"]
+              port = field["value"].nil? ? '' : field["value"]
           end
         end
             
