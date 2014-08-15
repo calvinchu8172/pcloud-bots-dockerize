@@ -1240,12 +1240,12 @@ module XMPPController
         end
         
         xml["x"]["item"].each do |item|
-        service_name = nil
-        status = nil
-        enabled = nil
-        description = nil
-        path = nil
-        port = nil
+        service_name = ''
+        status = false
+        enabled = false
+        description = ''
+        path = ''
+        port = ''
 
         item["field"].each do |field|
           var = field["var"]
