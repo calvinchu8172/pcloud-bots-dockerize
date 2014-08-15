@@ -1178,7 +1178,7 @@ module XMPPController
       
       service_list_json = JSON.generate(service_list)
       
-      data = {id: session_id, status: 3, service_list: service_list_json}
+      data = {id: session_id, status: 1, service_list: service_list_json}
       isSuccess = @db_conn.db_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',

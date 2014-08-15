@@ -1190,7 +1190,7 @@ describe XMPPController do
       
       upnp_session = db.db_upnp_session_access({id: session_id})
       expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(3)
+      expect(upnp_session.status.to_d).to eq(1)
 
       service_list = JSON.parse(upnp_session.service_list.to_s)
       expect(service_list[0]['error_code']).to eq('799')
@@ -1213,7 +1213,7 @@ describe XMPPController do
 
       upnp_session = db.db_upnp_session_access({id: session_id})
       expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(3)
+      expect(upnp_session.status.to_d).to eq(1)
 
       service_list = JSON.parse(upnp_session.service_list.to_s)
       expect(service_list[0]['error_code']).to eq('799')
