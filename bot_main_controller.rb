@@ -18,6 +18,7 @@ FLUENT_BOT_FLOWERROR = "bot.flow-error"
 FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 
 xmpp_connect_ready = FALSE
+threads = Array.new
 
 Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 
@@ -34,6 +35,7 @@ jobThread = Thread.new {
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
+threads << jobThread
 
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
 
@@ -75,6 +77,7 @@ timeoutThread = Thread.new{
   end
 }
 timeoutThread.abort_on_exception = TRUE
+threads << timeoutThread
 
 ddnsThread = Thread.new{
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
@@ -99,6 +102,7 @@ ddnsThread = Thread.new{
   end
 }
 ddnsThread.abort_on_exception = TRUE
+threads << ddnsThread
 
 while !xmpp_connect_ready
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
@@ -120,39 +124,37 @@ Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                          message:"XMPP connection ready",
                                          data: 'N/A'})
 
-sqs = BotQueueAccess.new
-sqs.sqs_listen{
-  |job, data|
+def worker(sqs, db_conn)
+  sqs.sqs_listen{
+    |job, data|
   
-  case job
-    when 'pairing' then
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
-                                                direction: 'N/A',
-                                                to: 'N/A',
-                                                form: 'N/A',
-                                                id: data[:session_id],
-                                                full_domain: 'N/A',
-                                                message:"Get SQS queue of pairing",
-                                                data: 'N/A'})
-      pairThread = Thread.new{
+    case job
+      when 'pairing' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of pairing",
+                                                  data: 'N/A'})
+        
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
         info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
                 session_id: data[:session_id]}
         
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
-      }
-      pairThread.abort_on_exception = FALSE
 
-    when 'unpair' then
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
-                                                direction: 'N/A',
-                                                to: 'N/A',
-                                                form: 'N/A',
-                                                id: 'N/A',
-                                                full_domain: 'N/A',
-                                                message:"Get SQS queue of unpair", data: data})
-      unpairThread = Thread.new{
+      when 'unpair' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: 'N/A',
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of unpair", data: data})
+        
         device_id = data[:device_id]
         device_session = db_conn.db_device_session_access({device_id: device_id})
         xmpp_account = !device_session.nil? ? device_session.xmpp_account : ''
@@ -166,18 +168,16 @@ sqs.sqs_listen{
                 }
         
         XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device_session.nil?
-      }
-      unpairThread.abort_on_exception = FALSE
       
-    when 'upnp_submit' then
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
-                                                direction: 'N/A',
-                                                to: 'N/A',
-                                                form: 'N/A',
-                                                id: data[:session_id],
-                                                full_domain: 'N/A',
-                                                message:"Get SQS queue of upnp-submit", data: data})
-      upnpSubmitThread = Thread.new {
+      when 'upnp_submit' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of upnp-submit", data: data})
+        
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
         service_list = db_conn.db_upnp_session_access({id: session_id}).service_list.to_s
@@ -204,18 +204,16 @@ sqs.sqs_listen{
                 session_id: session_id,
                 field_item: field_item}
         XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil? && !language.nil?
-      }
-      upnpSubmitThread.abort_on_exception = FALSE
       
-    when 'upnp_query' then
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
-                                                direction: 'N/A',
-                                                to: 'N/A',
-                                                form: 'N/A',
-                                                id: data[:session_id],
-                                                full_domain: 'N/A',
-                                                message:"Get SQS queue of upnp-query", data: data})
-      upnpQueryThread = Thread.new{
+      when 'upnp_query' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of upnp-query", data: data})
+        
         session_id = data[:session_id]
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
@@ -224,18 +222,16 @@ sqs.sqs_listen{
                 session_id: data[:session_id]}
         
         XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? && !language.nil?
-      }
-      upnpQueryThread.abort_on_exception = FALSE
       
-    when 'ddns' then
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
-                                                direction: 'N/A',
-                                                to: 'N/A',
-                                                form: 'N/A',
-                                                id: data[:session_id],
-                                                full_domain: 'N/A',
-                                                message:"Get SQS queue of DDNS-query", data: data})
-      ddnsQueryThread = Thread.new{
+      when 'ddns' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of DDNS-query", data: data})
+        
         session_id = data[:session_id]
         ddns_session = db_conn.db_ddns_session_access({id: session_id})
         xmpp_account = db_conn.db_retreive_xmpp_account_by_ddns_session_id(session_id)
@@ -248,7 +244,19 @@ sqs.sqs_listen{
                 full_domain: !ddns_session.nil? ? ddns_session.full_domain : ''}
         
         XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device_session.nil?
-      }
-      ddnsQueryThread.abort_on_exception = TRUE
-  end
-}
+    end
+    
+    job = nil
+    data = nil
+  }
+end
+
+sqs = BotQueueAccess.new
+
+200.times do |d|
+  sqsThread = Thread.new{ worker(sqs, db_conn) }
+  sqsThread.abort_on_exception = TRUE
+  threads << sqsThread
+end
+
+worker(sqs, db_conn)
