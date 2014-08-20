@@ -1,4 +1,4 @@
-FROM_ADDRESS = 'no-reply@pcloud.ecoworkinc.com'
+FROM_ADDRESS = 'mycloud@zyxel.com.tw'
 
 OFFLINE_SUBJECT = 'ZyXEL DDNS Offline Alert'
 OFFLINE_MESSAGE = 'ZyXEL DDNS server is currently offline temporarily and we apologize for the inconvenience.'
