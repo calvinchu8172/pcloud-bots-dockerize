@@ -730,7 +730,7 @@ module XMPPController
           
       isValidZoneName = FALSE
       @route_conn.zones_list.each do |zone|
-        isValidZoneName = TRUE if domain_name.downcase == zone[:name].downcase
+        isValidZoneName = TRUE if domain_name.downcase == zone["name"].downcase
       end
       
       isValidLength = FALSE

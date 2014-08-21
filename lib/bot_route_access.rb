@@ -7,13 +7,12 @@ ROUTE_CONFIG_FILE = '../config/bot_route_config.yml'
 class BotRouteAccess
   def initialize
     @Route = nil
-    @zones_list = Array.new
     config_file = File.join(File.dirname(__FILE__), ROUTE_CONFIG_FILE)
     config = YAML.load(File.read(config_file))
-    
+
     @reserved_hostname = config['reserved_host_name']
+    @zones_list = config['zones_info']
     @Route = self.route_connection(config)
-    self.find_zone_id('')
   end
   
   def route_connection(config)
@@ -37,17 +36,7 @@ class BotRouteAccess
     
     zone_id = nil
     @zones_list.each do |zone|
-      zone_id = zone[:id] if name.downcase == zone[:name].downcase
-    end
-    
-    if zone_id.nil? then
-      list = Array.new
-      zones = @Route.client.list_hosted_zones
-      zones[:hosted_zones].each do |zone|
-        list << {id: zone[:id], name: zone[:name].downcase}
-        zone_id = zone[:id] if name.downcase == zone[:name].downcase
-      end
-      @zones_list = list
+      zone_id = zone["id"] if name.downcase == zone["name"].downcase
     end
     
     return zone_id
