@@ -7,9 +7,6 @@ require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_xmpp_controller'
 require 'fluent-logger'
 
-XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
-XMPP_RESOURCE_ID = '/device'
-
 FLUENT_BOT_SYSINFO = "bot.sys-info"
 FLUENT_BOT_SYSERROR = "bot.sys-error"
 FLUENT_BOT_SYSALERT = "bot.sys-alert"
@@ -141,7 +138,7 @@ def worker(sqs, db_conn)
         
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 session_id: data[:session_id]}
         
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
@@ -162,7 +159,7 @@ def worker(sqs, db_conn)
         ddns = db_conn.db_ddns_access({device_id: device_id})
         full_domain = !ddns.nil? ? ddns.full_domain : nil
         
-        info = {xmpp_account: xmpp_account + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account,
                 session_id: unpair_session.id,
                 full_domain: full_domain
                 }
@@ -199,7 +196,7 @@ def worker(sqs, db_conn)
           end
         end
         
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: session_id,
                 field_item: field_item}
@@ -217,7 +214,7 @@ def worker(sqs, db_conn)
         session_id = data[:session_id]
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: data[:session_id]}
         
@@ -237,7 +234,7 @@ def worker(sqs, db_conn)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_ddns_session_id(session_id)
         device_session = db_conn.db_device_session_access({xmpp_account: xmpp_account})
         
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 session_id: data[:session_id],
                 device_id: !ddns_session.nil? ? ddns_session.device_id : '',
                 ip: !device_session.nil? ? device_session.ip : '',

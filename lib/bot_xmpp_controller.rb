@@ -46,6 +46,8 @@ module XMPPController
     @route_conn = BotRouteAccess.new
     @mail_conn = BotMailAccess.new
     
+    @xmpp_server_domain = '@%s' % client.jid.domain
+    @xmpp_resource_id = '/device'
     Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
   end
   
@@ -117,11 +119,11 @@ module XMPPController
     
     case job
       when KPAIR_START_REQUEST
-        msg = PAIR_START_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
+        msg = PAIR_START_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
-                                                  to: info[:xmpp_account],
+                                                  to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                   form: @bot_xmpp_account,
                                                   id: info[:session_id],
                                                   full_domain: 'N/A',
@@ -147,7 +149,7 @@ module XMPPController
       when KUNPAIR_ASK_REQUEST
         
         unpairThread = Thread.new{
-          xmpp_account = info[:xmpp_account]
+          xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
           session_id = info[:session_id]
           
           if !info[:full_domain].nil?
@@ -235,11 +237,11 @@ module XMPPController
         unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
-        msg = UPNP_ASK_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:session_id]]
+        msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:session_id]]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
-                                                  to: info[:xmpp_account],
+                                                  to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                   from: @bot_xmpp_account,
                                                   id: info[:session_id],
                                                   full_domain: 'N/A',
@@ -247,7 +249,7 @@ module XMPPController
                                                   data: {language: info[:language]}})
         
       when KUPNP_SETTING_REQUEST
-        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, info[:language], info[:field_item], info[:session_id]]
+        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:field_item], info[:session_id]]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
@@ -269,7 +271,7 @@ module XMPPController
           @db_conn.db_ddns_session_update({id: info[:session_id], status: 1})
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                     direction: 'N/A',
-                                                    to: info[:xmpp_account],
+                                                    to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                     from: @bot_xmpp_account,
                                                     id: info[:session_id],
                                                     full_domain: info[:full_domain],
@@ -326,11 +328,11 @@ module XMPPController
           isSuccess = @route_conn.create_record(record_info)
           
           if isSuccess then
-            msg = DDNS_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, host_name, domain_name, info[:session_id]]
+            msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id]]
             write_to_stream msg
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                       direction: 'Bot->Device',
-                                                      to: info[:xmpp_account],
+                                                      to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                       from: @bot_xmpp_account,
                                                       id: info[:session_id],
                                                       full_domain: host_name + '.' + domain_name,
@@ -345,11 +347,11 @@ module XMPPController
               ddns_session = @db_conn.db_ddns_session_access({id: info[:session_id]})
               status = ddns_session.status
               if 2 != status then
-                msg = DDNS_SETTING_REQUEST % [info[:xmpp_account], @bot_xmpp_account, host_name, domain_name, info[:session_id]]
+                msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id]]
                 write_to_stream msg
                 Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                           direction: 'Bot->Device',
-                                                          to: info[:xmpp_account],
+                                                          to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                           from: @bot_xmpp_account,
                                                           id: info[:session_id],
                                                           full_domain: host_name + '.' + domain_name,
@@ -727,7 +729,7 @@ module XMPPController
       dns_valid = regex.match(host_name + '.' + domain_name)
           
       domain_name += '.' if '.' != domain_name[-1, 1]
-          
+
       isValidZoneName = FALSE
       @route_conn.zones_list.each do |zone|
         isValidZoneName = TRUE if domain_name.downcase == zone["name"].downcase

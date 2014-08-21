@@ -36,6 +36,7 @@ describe XMPPController do
   
   bot_xmpp_account = config['bot_xmpp_account']
   device_xmpp_account = 'bot3@xmpp.pcloud.ecoworkinc.com/device'
+  device_xmpp_account_node = 'bot3'
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
@@ -94,7 +95,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id}
       XMPPController.send_request(KPAIR_START_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -228,7 +229,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account,
+      info = {xmpp_account: device_xmpp_account_node,
               full_domain: host_name + '.' + domain_name,
               session_id: unpair_session_id}
       
@@ -272,7 +273,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, language: 'en', session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, language: 'en', session_id: session_id}
       XMPPController.send_request(KUPNP_ASK_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -292,7 +293,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, language: 'en', field_item: '', session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, language: 'en', field_item: '', session_id: session_id}
       XMPPController.send_request(KUPNP_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -321,7 +322,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -416,7 +417,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
