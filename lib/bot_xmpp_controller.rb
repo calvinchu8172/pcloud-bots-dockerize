@@ -148,7 +148,7 @@ module XMPPController
       
       when KUNPAIR_ASK_REQUEST
         
-        unpairThread = Thread.new{
+        EM.defer {
           xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
           session_id = info[:session_id]
           
@@ -234,7 +234,7 @@ module XMPPController
                                                       data: 'N/A'})
           end
         }
-        unpairThread.abort_on_exception = FALSE
+        #unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
         msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:session_id]]
@@ -261,13 +261,13 @@ module XMPPController
                                                   data: {language: info[:language], field_item: info[:field_item]}})
         
       when KDDNS_SETTING_REQUEST
-        domain_S = info[:full_domain].split('.')
-        host_name = domain_S[0]
-        domain_S.shift
-        domain_name = domain_S.join('.')
-        domain_name += '.' if '.' != domain_name[-1, 1]
+        EM.defer {
+          domain_S = info[:full_domain].split('.')
+          host_name = domain_S[0]
+          domain_S.shift
+          domain_name = domain_S.join('.')
+          domain_name += '.' if '.' != domain_name[-1, 1]
         
-        routeThread = Thread.new{
           @db_conn.db_ddns_session_update({id: info[:session_id], status: 1})
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                     direction: 'N/A',
@@ -312,7 +312,8 @@ module XMPPController
                                    data: 'N/A'})
           else
             data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
-            isSuccess = @db_conn.db_ddns_insert(data)
+            new_ddns = @db_conn.db_ddns_insert(data)
+            isSuccess = !new_ddns.nil? ? TRUE : FALSE
             Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'DDNS',
                                    direction: 'N/A',
@@ -326,7 +327,7 @@ module XMPPController
 
           record_info = {host_name: host_name, domain_name: domain_name, ip: info[:ip]}
           isSuccess = @route_conn.create_record(record_info)
-          
+
           if isSuccess then
             msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id]]
             write_to_stream msg
@@ -400,7 +401,6 @@ module XMPPController
                                    data: {user_email: !user_email.nil? ? user_email : 'user email not find'}})
           end
         }
-        routeThread.abort_on_exception = FALSE
         
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
@@ -771,7 +771,7 @@ module XMPPController
           container(data){
             |x|
                 
-            routeThread = Thread.new{
+            EM.defer {
               session_id = x[:session_id]
               ddns_record = @db_conn.db_ddns_access({device_id: device_id})
               record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
@@ -866,7 +866,7 @@ module XMPPController
                                          data: {user_email: user_email}})
               end
             }
-            routeThread.abort_on_exception = TRUE
+            #routeThread.abort_on_exception = TRUE
           }
               
         elsif !device_id.nil? && !old_device_id.nil? then
@@ -881,7 +881,7 @@ module XMPPController
                   }
             container(data){
               |x|
-              routeThread = Thread.new{
+              EM.defer {
                 session_id = x[:session_id]
               
                 ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
@@ -971,7 +971,7 @@ module XMPPController
                                          data: {user_email: user_email}})
                 end
               }
-              routeThread.abort_on_exception = TRUE
+              #routeThread.abort_on_exception = TRUE
             }
           else
             info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
