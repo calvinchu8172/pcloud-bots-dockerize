@@ -250,7 +250,7 @@ end
 
 sqs = BotQueueAccess.new
 
-200.times do |d|
+60.times do |d|
   sqsThread = Thread.new{ worker(sqs, db_conn) }
   sqsThread.abort_on_exception = TRUE
   threads << sqsThread
