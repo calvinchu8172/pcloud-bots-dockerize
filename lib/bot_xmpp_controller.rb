@@ -169,7 +169,6 @@ module XMPPController
                                    full_domain: host_name + '.' + domain_name,
                                    message:"Delete Route53 DDNS record %s as unpair" % [isSuccess ? 'success' : 'failure'] ,
                                    data: 'N/A'})
-            break if !isSuccess
           
             isSuccess = FALSE
             ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
