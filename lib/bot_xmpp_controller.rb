@@ -32,15 +32,12 @@ KDDNS_SETTING_FAILURE_RESPONSE = 'ddns_setting_failure_response'
 module XMPPController
   extend Blather::DSL
   
-  def self.new
+  def self.new(account, password)
     @db_conn = nil
-    @bot_xmpp_account = nil
-    config_file = File.join(File.dirname(__FILE__), BOT_ACCOUNT_CONFIG_FILE)
-    config = YAML.load(File.read(config_file))
+    @bot_xmpp_account = account
+    @bot_xmpp_password = password
     
-    @bot_xmpp_account = config['bot_xmpp_account']
-    
-    setup config['bot_xmpp_account'], config['bot_xmpp_password']
+    setup @bot_xmpp_account, @bot_xmpp_password
     
     @db_conn = BotDBAccess.new
     @route_conn = BotRouteAccess.new

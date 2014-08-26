@@ -19,6 +19,22 @@ threads = Array.new
 
 Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 
+def get_xmpp_config
+  input = ARGV
+  account = nil
+  password = nil
+  #length = input.length - 1
+
+  for i in 0..(input.length - 1)
+    option = input[i]
+    account = input[i + 1] if '-u' == option
+    password = input[i + 1] if '-p' == option
+  end
+  return {jid: account, pw: password}
+end
+
+XMPP_CONFIG = get_xmpp_config
+
 jobThread = Thread.new {
     Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                              direction: 'N/A',
@@ -28,7 +44,7 @@ jobThread = Thread.new {
                                              full_domain: 'N/A',
                                              message:"XMPP Controll running ...",
                                              data: 'N/A'})
-    XMPPController.new
+    XMPPController.new(XMPP_CONFIG[:jid], XMPP_CONFIG[:pw])
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
