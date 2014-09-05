@@ -541,7 +541,7 @@ module XMPPController
   end
   
   #for DDNS settings
-  message :normal?, proc {|m| m.form.result? && 'config' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.result? && 'config_ddns' == m.form.title} do |msg|
     begin
       result_syslog(msg)
       
