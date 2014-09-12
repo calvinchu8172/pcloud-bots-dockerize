@@ -1,0 +1,10 @@
+path: xxx
+xmpp_config:
+  - {jid: 'xxx', pw: 'xxx'}
+
+mail_domain: xxx
+mail_user: xxx
+mail_pw: xxx
+notify_list:
+  - {name: 'xxx', email: 'xxx'}
+

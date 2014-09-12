@@ -7,9 +7,6 @@ require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_xmpp_controller'
 require 'fluent-logger'
 
-XMPP_SERVER_DOMAIN = '@xmpp.pcloud.ecoworkinc.com'
-XMPP_RESOURCE_ID = '/device'
-
 FLUENT_BOT_SYSINFO = "bot.sys-info"
 FLUENT_BOT_SYSERROR = "bot.sys-error"
 FLUENT_BOT_SYSALERT = "bot.sys-alert"
@@ -22,6 +19,22 @@ threads = Array.new
 
 Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 
+def get_xmpp_config
+  input = ARGV
+  account = nil
+  password = nil
+  #length = input.length - 1
+
+  for i in 0..(input.length - 1)
+    option = input[i]
+    account = input[i + 1] if '-u' == option
+    password = input[i + 1] if '-p' == option
+  end
+  return {jid: account, pw: password}
+end
+
+XMPP_CONFIG = get_xmpp_config
+
 jobThread = Thread.new {
     Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                              direction: 'N/A',
@@ -31,7 +44,7 @@ jobThread = Thread.new {
                                              full_domain: 'N/A',
                                              message:"XMPP Controll running ...",
                                              data: 'N/A'})
-    XMPPController.new
+    XMPPController.new(XMPP_CONFIG[:jid], XMPP_CONFIG[:pw])
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
@@ -141,7 +154,7 @@ def worker(sqs, db_conn)
         
         session_id = data[:session_id]
         xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 session_id: data[:session_id]}
         
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
@@ -162,7 +175,7 @@ def worker(sqs, db_conn)
         ddns = db_conn.db_ddns_access({device_id: device_id})
         full_domain = !ddns.nil? ? ddns.full_domain : nil
         
-        info = {xmpp_account: xmpp_account + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account,
                 session_id: unpair_session.id,
                 full_domain: full_domain
                 }
@@ -199,7 +212,7 @@ def worker(sqs, db_conn)
           end
         end
         
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: session_id,
                 field_item: field_item}
@@ -217,7 +230,7 @@ def worker(sqs, db_conn)
         session_id = data[:session_id]
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: data[:session_id]}
         
@@ -237,7 +250,7 @@ def worker(sqs, db_conn)
         xmpp_account = db_conn.db_retreive_xmpp_account_by_ddns_session_id(session_id)
         device_session = db_conn.db_device_session_access({xmpp_account: xmpp_account})
         
-        info = {xmpp_account: xmpp_account.to_s + XMPP_SERVER_DOMAIN + XMPP_RESOURCE_ID,
+        info = {xmpp_account: xmpp_account.to_s,
                 session_id: data[:session_id],
                 device_id: !ddns_session.nil? ? ddns_session.device_id : '',
                 ip: !device_session.nil? ? device_session.ip : '',
@@ -253,7 +266,7 @@ end
 
 sqs = BotQueueAccess.new
 
-200.times do |d|
+60.times do |d|
   sqsThread = Thread.new{ worker(sqs, db_conn) }
   sqsThread.abort_on_exception = TRUE
   threads << sqsThread

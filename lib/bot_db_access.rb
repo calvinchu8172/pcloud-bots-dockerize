@@ -58,8 +58,8 @@ class BotDBAccess
   def db_connection(config = {})
     return nil if config.empty?
     
-    #db_host = config['db_host']
-    db_socket = config['db_socket']
+    db_host = config['db_host']
+    #db_socket = config['db_socket']
     db_name = config['db_name']
     db_userid = config['db_userid']
     db_userpw = config['db_userpw']
@@ -70,8 +70,8 @@ class BotDBAccess
                                             :database => db_name,
                                             :username => db_userid,
                                             :password => db_userpw,
-                                            #:host     => db_host,
-                                            :socket   => db_socket,
+                                            :host     => db_host,
+                                            #:socket   => db_socket,
                                             :reconnect => TRUE,
                                             :pool     => db_pool,
                                             #:reaping_frequency => db_reaping_frequency
@@ -354,7 +354,7 @@ class BotDBAccess
   end
 
   def db_upnp_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
     
     result = UpnpSession.find_by(:id => data[:id])
     if !result.nil? then
@@ -362,6 +362,7 @@ class BotDBAccess
       result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
       result.update(status: data[:status]) if data.has_key?(:status)
       result.update(service_list: data[:service_list]) if data.has_key?(:service_list)
+      result.update(lan_ip: data[:lan_ip]) if data.has_key?(:lan_ip)
       result.update(updated_at: DateTime.now)
     end
     

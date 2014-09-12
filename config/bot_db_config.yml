@@ -3,5 +3,4 @@ db_socket: xxx
 db_name: xxx
 db_userid: xxx
 db_userpw: xxx
-db_pool: 100
-db_reaping_frequency: 2
+db_pool: 200

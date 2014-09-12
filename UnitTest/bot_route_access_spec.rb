@@ -12,10 +12,12 @@ describe BotRouteAccess do
     expect(config).to have_key('access_key_id')
     expect(config).to have_key('secret_access_key')
     expect(config).to have_key('reserved_host_name')
+    expect(config).to have_key('zones_info')
     
     expect(config['access_key_id']).not_to eq('xxx')
     expect(config['secret_access_key']).not_to eq('xxx')
     expect(config['reserved_host_name'].length).not_to eq(0)
+    expect(config['zones_info'].length).not_to eq(0)
   end
   
   let(:route) {BotRouteAccess.new}

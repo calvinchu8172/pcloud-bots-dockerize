@@ -30,12 +30,11 @@ rescue JSON::ParserError
 end
 
 describe XMPPController do
-  
-  config_file = File.join(File.dirname(__FILE__), BOT_ACCOUNT_CONFIG_FILE)
-  config = YAML.load(File.read(config_file))
-  
-  bot_xmpp_account = config['bot_xmpp_account']
+  bot_xmpp_account = 'bot1@xmpp.pcloud.ecoworkinc.com/robot2'
+  bot_xmpp_password = '12345'
   device_xmpp_account = 'bot3@xmpp.pcloud.ecoworkinc.com/device'
+  device_xmpp_account_node = 'bot3'
+  device_xmpp_password = '12345'
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
@@ -48,7 +47,7 @@ describe XMPPController do
   xmpp_connect_ready = FALSE
   
   xmppThread=Thread.new{
-    XMPPController.new
+    XMPPController.new(bot_xmpp_account, bot_xmpp_password)
     XMPPController.run
   }
   xmppThread.abort_on_exception = TRUE
@@ -61,20 +60,10 @@ describe XMPPController do
   end
   puts '    XMPP connection ready'
   
-  it 'Config file check' do
-    expect(config).to be_an_instance_of(Hash)
-    
-    expect(config).to have_key('bot_xmpp_account')
-    expect(config).to have_key('bot_xmpp_password')
-    
-    expect(config['bot_xmpp_account']).not_to eq('xxx')
-    expect(config['bot_xmpp_password']).not_to eq('xxx')
-  end
-  
   it 'Connection to remote XMPP server' do
     client.connect
     sleep(3)
-    isAuth = client.auth('12345')
+    isAuth = client.auth(device_xmpp_password)
     expect(isAuth).to be true
   end
   
@@ -94,7 +83,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id}
       XMPPController.send_request(KPAIR_START_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -197,7 +186,7 @@ describe XMPPController do
     
     it 'Send UNPAIR ASK REQUEST message to device' do
       unpair_session_id = 1
-      host_name = 'mytest3'
+      host_name = 'test%d' % Time.now.to_i
       domain_name = 'demo.ecoworkinc.com.'
       ip = '10.1.1.112'
       ipv4 = nil
@@ -228,7 +217,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account,
+      info = {xmpp_account: device_xmpp_account_node,
               full_domain: host_name + '.' + domain_name,
               session_id: unpair_session_id}
       
@@ -272,7 +261,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, language: 'en', session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, language: 'en', session_id: session_id}
       XMPPController.send_request(KUPNP_ASK_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -292,7 +281,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, language: 'en', field_item: '', session_id: session_id}
+      info = {xmpp_account: device_xmpp_account_node, language: 'en', field_item: '', session_id: session_id}
       XMPPController.send_request(KUPNP_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -321,7 +310,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
@@ -416,7 +405,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
+      info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
       while x.nil? && i < 100
         sleep(0.1)
