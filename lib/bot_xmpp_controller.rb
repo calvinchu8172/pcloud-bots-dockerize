@@ -709,7 +709,7 @@ module XMPPController
   end
   
   # DDNS Setting from device
-  message :normal?, proc {|m| m.form.submit? && 'config' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
       submit_syslog(msg)
       
@@ -1192,7 +1192,7 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.cancel? && 'config' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'config_ddns' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
       
@@ -1228,7 +1228,8 @@ module XMPPController
       xml = MultiXml.parse(msg.form.to_s)
       hasX = xml.has_key?("x")
       hasITEM = xml["x"].has_key?("item") if hasX
-          
+      lan_ip = xml["x"]["field"]["value"] if xml["x"].has_key?("field") && 'lanip' == xml["x"]["field"]["var"]
+ 
       if !xml.nil? && hasX && hasITEM then
         
         if !xml["x"]["item"].instance_of?(Array) then
@@ -1279,7 +1280,7 @@ module XMPPController
         service_list_json = ''
       end
           
-      data = {id: session_id, status: 1, service_list: service_list_json}
+      data = {id: session_id, status: 1, service_list: service_list_json, lan_ip: lan_ip}
       isSuccess = @db_conn.db_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',

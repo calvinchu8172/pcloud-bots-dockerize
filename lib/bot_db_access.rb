@@ -354,7 +354,7 @@ class BotDBAccess
   end
 
   def db_upnp_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
     
     result = UpnpSession.find_by(:id => data[:id])
     if !result.nil? then
@@ -362,6 +362,7 @@ class BotDBAccess
       result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
       result.update(status: data[:status]) if data.has_key?(:status)
       result.update(service_list: data[:service_list]) if data.has_key?(:service_list)
+      result.update(lan_ip: data[:lan_ip]) if data.has_key?(:lan_ip)
       result.update(updated_at: DateTime.now)
     end
     
