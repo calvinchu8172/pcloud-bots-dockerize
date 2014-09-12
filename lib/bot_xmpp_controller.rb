@@ -709,7 +709,7 @@ module XMPPController
   end
   
   # DDNS Setting from device
-  message :normal?, proc {|m| m.form.submit? && 'config' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
       submit_syslog(msg)
       
@@ -1192,7 +1192,7 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.cancel? && 'config' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'config_ddns' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
       
