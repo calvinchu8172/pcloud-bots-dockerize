@@ -133,7 +133,7 @@ EOT
 DDNS_SETTING_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
-    <title>config</title>
+    <title>config_ddns</title>
     <field type='text-single' var='hostname_prefix'>
       <value>%s</value>
     </field>
@@ -149,7 +149,7 @@ EOT
 DDNS_SETTING_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="result">
-    <title>config</title>
+    <title>config_ddns</title>
   </x>
   <thread>%d</thread>
 </message>
@@ -159,7 +159,7 @@ EOT
 DDNS_SETTING_FAILURE_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="cancel">
-    <title>config</title>
+    <title>config_ddns</title>
     <field type='text-single' var='ERROR_CODE'>
       <value>%d</value>
     </field>
