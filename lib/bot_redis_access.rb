@@ -139,7 +139,7 @@ class BotRedisAccess
   end
 
   def rd_upnp_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
     key = UPNP_SESSION_KEY % data[:index]
 
@@ -147,12 +147,13 @@ class BotRedisAccess
     @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
     @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
+    @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
     return @redis.hgetall(key)
   end
 
   def rd_upnp_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
     key = UPNP_SESSION_KEY % data[:index]
 
@@ -160,6 +161,7 @@ class BotRedisAccess
     @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
     @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
+    @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
     return TRUE
   end
@@ -168,7 +170,7 @@ class BotRedisAccess
     return nil if nil == index
 
     key = UPNP_SESSION_KEY % index
-    hash_key = ["user_id", "device_id", "status", "service_list"]
+    hash_key = ["user_id", "device_id", "status", "service_list", "lan_ip"]
 
     hash_key.each do |item|
       @redis.hdel(key, item)

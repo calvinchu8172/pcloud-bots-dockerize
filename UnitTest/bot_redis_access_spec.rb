@@ -192,7 +192,7 @@ describe BotRedisAccess do
     
     it 'Access exist record from UPNP session table' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.110"}
       rd.rd_upnp_session_insert(data)
       result = rd.rd_upnp_session_access(index)
       rd.rd_upnp_session_delete(index)
@@ -203,20 +203,22 @@ describe BotRedisAccess do
       expect(result).to have_key("device_id")
       expect(result).to have_key("status")
       expect(result).to have_key("service_list")
+      expect(result).to have_key("lan_ip")
       
       expect(result['user_id']).to eq("2")
       expect(result['device_id']).to eq("1")
       expect(result['status']).to eq("start")
       expect(result['service_list']).to eq("[]")
+      expect(result['lan_ip']).to eq("10.1.1.110")
     end
     
     it 'Update UPNP session record' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.110"}
       rd.rd_upnp_session_insert(data)
       result_insert = rd.rd_upnp_session_access(index)
       
-      data = {index: index, user_id: 3, device_id: 4, status: "wait", service_list: "[{}]"}
+      data = {index: index, user_id: 3, device_id: 4, status: "wait", service_list: "[{}]", lan_ip: "10.1.1.113"}
       rd.rd_upnp_session_update(data)
       result_updated = rd.rd_upnp_session_access(index)
       
@@ -227,27 +229,31 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("device_id")
       expect(result_insert).to have_key("status")
       expect(result_insert).to have_key("service_list")
+      expect(result_insert).to have_key("lan_ip")
       
       expect(result_insert['user_id']).to eq("2")
       expect(result_insert['device_id']).to eq("1")
       expect(result_insert['status']).to eq("start")
       expect(result_insert['service_list']).to eq("[]")
+      expect(result_insert['lan_ip']).to eq("10.1.1.110")
       
       expect(result_updated).to be_an_instance_of(Hash)
       expect(result_updated).to have_key("user_id")
       expect(result_updated).to have_key("device_id")
       expect(result_updated).to have_key("status")
       expect(result_updated).to have_key("service_list")
+      expect(result_updated).to have_key("lan_ip")
       
       expect(result_updated['user_id']).to eq("3")
       expect(result_updated['device_id']).to eq("4")
       expect(result_updated['status']).to eq("wait")
       expect(result_updated['service_list']).to eq("[{}]")
+      expect(result_updated['lan_ip']).to eq("10.1.1.113")
     end
     
     it 'Delete UPNP session record' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.113"}
       rd.rd_upnp_session_insert(data)
       result_insert = rd.rd_upnp_session_access(index)
       rd.rd_upnp_session_delete(index)
@@ -258,6 +264,7 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("device_id")
       expect(result_insert).to have_key("status")
       expect(result_insert).to have_key("service_list")
+      expect(result_insert).to have_key("lan_ip")
       
       expect(result_deleted).to be_nil
     end
@@ -291,7 +298,7 @@ describe BotRedisAccess do
       expect(result['status']).to eq("start")
     end
     
-    it 'Update UPNP session record' do
+    it 'Update DDNS session record' do
       index = Time.now.to_i
       data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start"}
       rd.rd_ddns_session_insert(data)
@@ -326,7 +333,7 @@ describe BotRedisAccess do
       expect(result_updated['status']).to eq("wait")
     end
     
-    it 'Delete UPNP session record' do
+    it 'Delete DDNS session record' do
       index = Time.now.to_i
       data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start"}
       rd.rd_ddns_session_insert(data)
