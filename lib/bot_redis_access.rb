@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'yaml'
 require 'redis'
+require 'json'
 
 REDIS_CONFIG_FILE = '../config/bot_redis_config.yml'
 
@@ -10,6 +11,17 @@ DEVICE_SESSION_KEY = "device:%d:session"
 PAIRING_SESSION_KEY = "device:%d:pairingsession"
 UPNP_SESSION_KEY = "upnp:%d:session"
 DDNS_SESSION_KEY = "ddns:%d:session"
+UNPAIR_SESSION_KEY = "unpair:%d"
+DDNS_RETRY_SESSION_KEY = "ddns:retry_session"
+DDNS_RETRY_LOCK_KEY = "ddns:retry_lock"
+DDNS_RETRY_LOCL_EXPIRE_TIME = 20
+
+def valid_json? json_
+  JSON.parse(json_)
+  return true
+rescue JSON::ParserError
+  return false
+end
 
 class BotRedisAccess
 
@@ -231,6 +243,137 @@ class BotRedisAccess
     end
 
     return TRUE
+  end
+
+#================ UNPAIR Methods ===============
+#===============================================
+
+  def rd_unpair_session_access(device_id=nil)
+    return nil if nil == device_id
+
+    key = UNPAIR_SESSION_KEY % device_id
+
+    result = @redis.get(key)
+    if !result.nil? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_unpair_session_insert(device_id=nil)
+    return nil if nil == device_id
+
+    key = UNPAIR_SESSION_KEY % device_id
+
+    result = @redis.set(key, "1")
+    if "OK" == result then
+      return device_id
+    else
+      return nil
+    end
+  end
+
+  def rd_unpair_session_update(device_id=nil)
+    return nil if nil == device_id
+
+    key = UNPAIR_SESSION_KEY % device_id
+
+    result = @redis.set(key, "1")
+    if "OK" == result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+  
+  def rd_unpair_session_delete(device_id)
+    return nil if nil == device_id
+
+    key = UNPAIR_SESSION_KEY % device_id
+
+    result = @redis.del(key)
+    if 1 == result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+  
+#============== DDNS RETRY Methods =============
+#===============================================
+  
+  def rd_ddns_retry_session_access()
+    key = DDNS_RETRY_SESSION_KEY
+    result = @redis.srandmember(key, 100)
+    
+    if !result.empty? then
+      return result
+    else
+      return nil
+    end
+  end
+  
+  def rd_ddns_retry_session_insert(value=nil)
+    return nil if nil == value || !valid_json?(value)
+    
+    key = DDNS_RETRY_SESSION_KEY
+    result = @redis.sadd(key, value)
+    
+    if result then
+      return value
+    else
+      return nil
+    end
+  end
+  
+  def rd_ddns_retry_session_delete(value=nil)
+    return nil if nil == value || !valid_json?(value)
+    
+    key = DDNS_RETRY_SESSION_KEY
+    result = @redis.srem(key, value)
+    if result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+  
+#=========== DDNS RETRY LOCK Methods ===========
+#===============================================
+  
+  def rd_ddns_retry_lock_set
+    key = DDNS_RETRY_LOCK_KEY
+    
+    result = @redis.setex(key, DDNS_RETRY_LOCL_EXPIRE_TIME, "1")
+    
+    if "OK" == result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+  
+  def rd_ddns_retry_lock_isSet
+    key = DDNS_RETRY_LOCK_KEY
+    result = @redis.get(key)
+    
+    if !result.nil? then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+  
+  def rd_ddns_retry_lock_delete
+    key = DDNS_RETRY_LOCK_KEY
+    result = @redis.del(key)
+    
+    if 1 == result then
+      return TRUE
+    else
+      return FALSE
+    end
   end
   
   def close
