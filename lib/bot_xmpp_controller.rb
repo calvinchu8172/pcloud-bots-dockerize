@@ -652,56 +652,56 @@ module XMPPController
     begin
       submit_syslog(msg)
       
-      session_id = msg.thread
-      pair_session = @db_conn.db_pairing_session_access({id: session_id})
+      device_id = msg.thread
+      pair_session = @rd_conn.rd_pairing_session_access(device_id)
             
       if !pair_session.nil? then
-        data = {id: session_id, status: 4}
-        isSuccess = @db_conn.db_pairing_session_update(data)
+        data = {device_id: device_id, status: 'timeout'}
+        isSuccess = @rd_conn.rd_pairing_session_update(data)
         Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
                                from: msg.from.to_s,
-                               id: session_id,
+                               id: device_id,
                                full_domain: 'N/A',
-                               message:"Update the status of pairing session to 'FAILURE' %s as receive PAIR TIMEOUT RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                               message:"Update the status of pairing session to 'TIMEOUT' %s as receive PAIR TIMEOUT RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                                data: 'N/A'})
             
         if isSuccess
-          info = {xmpp_account: msg.from, session_id: session_id}
+          info = {xmpp_account: msg.from, session_id: device_id}
           send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
                                  from: @bot_xmpp_account,
-                                 id: session_id,
+                                 id: device_id,
                                  full_domain: 'N/A',
                                  message:"Send PAIR TIMEOUT SUCCESS RESPONSE message to device as update pairing session table success",
                                  data: 'N/A'})
         else
-          info = {xmpp_account: msg.from, error_code: 897, session_id: session_id}
+          info = {xmpp_account: msg.from, error_code: 897, session_id: device_id}
           send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
           Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
                                  from: @bot_xmpp_account,
-                                 id: session_id,
+                                 id: device_id,
                                  full_domain: 'N/A',
                                  message:"Send PAIR TIMEOUT FAILURE RESPONSE message to device as update pairing session table failure",
                                  data: {error_code: 897}})
         end
       else
-        info = {xmpp_account: msg.from, error_code: 898, session_id: session_id}
+        info = {xmpp_account: msg.from, error_code: 898, session_id: device_id}
         send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
         Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
                                from: @bot_xmpp_account,
-                               id: session_id,
+                               id: device_id,
                                full_domain: 'N/A',
                                message:"Send PAIR TIMEOUT FAILURE RESPONSE message to device as pairing session id not find",
                                data: {error_code: 898}})
@@ -1062,16 +1062,16 @@ module XMPPController
     begin
       cancel_syslog(msg)
       
-      session_id = msg.thread
-      data = {id: session_id, status: 4}
+      device_id = msg.thread
+      data = {device_id: device_id, status: 'failure'}
       error_code = msg.form.field('ERROR_CODE').value
-      isSuccess = @db_conn.db_pairing_session_update(data)
+      isSuccess = @rd_conn.rd_pairing_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'PAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: session_id,
+                             id: device_id,
                              full_domain: 'N/A',
                              message:"Update the status of pairing session to FAILURE %s as receive START COMPLETED FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
