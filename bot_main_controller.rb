@@ -4,6 +4,7 @@ $stdout.sync = true
 
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
+require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
 require 'fluent-logger'
 
@@ -53,6 +54,7 @@ threads << jobThread
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
 
 db_conn = BotDBAccess.new
+rd_conn = BotRedisAccess.new
 
 timeoutThread = Thread.new{
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
@@ -137,25 +139,26 @@ Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                          message:"XMPP connection ready",
                                          data: 'N/A'})
 
-def worker(sqs, db_conn)
+def worker(sqs, db_conn, rd_conn)
   sqs.sqs_listen{
     |job, data|
   
     case job
       when 'pairing' then
+        device_id = data[:device_id]
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'N/A',
                                                   to: 'N/A',
                                                   form: 'N/A',
-                                                  id: data[:session_id],
+                                                  id: device_id,
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of pairing",
                                                   data: 'N/A'})
         
-        session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_pair_session_id(session_id)
+        device = rd_conn.rd_device_session_access(device_id)
+        xmpp_account = nil != device ? device["xmpp_account"] : nil
         info = {xmpp_account: xmpp_account.to_s,
-                session_id: data[:session_id]}
+                device_id: device_id}
         
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
 
@@ -267,9 +270,9 @@ end
 sqs = BotQueueAccess.new
 
 60.times do |d|
-  sqsThread = Thread.new{ worker(sqs, db_conn) }
+  sqsThread = Thread.new{ worker(sqs, db_conn, rd_conn) }
   sqsThread.abort_on_exception = TRUE
   threads << sqsThread
 end
 
-worker(sqs, db_conn)
+worker(sqs, db_conn, rd_conn)
