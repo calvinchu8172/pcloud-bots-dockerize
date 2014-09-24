@@ -17,7 +17,6 @@ describe BotDBAccess do
     expect(config).to have_key('db_userid')
     expect(config).to have_key('db_userpw')
     expect(config).to have_key('db_pool')
-    expect(config).to have_key('db_reaping_frequency')
     
     expect(config['db_host']).not_to eq('xxx')
     expect(config['db_socket']).not_to eq('xxx')
@@ -25,7 +24,6 @@ describe BotDBAccess do
     expect(config['db_userid']).not_to eq('xxx')
     expect(config['db_userpw']).not_to eq('xxx')
     expect(config['db_pool']).not_to eq('xxx')
-    expect(config['db_reaping_frequency']).not_to eq('xxx')
   end
   
   it 'Initialize DB class' do
@@ -46,15 +44,8 @@ describe BotDBAccess do
     pair_methods = ['db_pairing_access',
                     'db_pairing_insert',
                     'db_pairing_update',
-                    'db_pairing_delete',
-                    'db_pairing_session_access',
-                    'db_pairing_session_insert',
-                    'db_pairing_session_update',
-                    'db_pairing_session_delete',
-                    'db_pairing_session_access_timeout',
-                    'db_retreive_xmpp_account_by_pair_session_id']
-    
-    pair_session_id = nil
+                    'db_pairing_delete']
+
     pair_id = nil
     pair_data = {user_id: 'test@ecoworkinc.com', device_id: 123456789}
     
@@ -102,44 +93,6 @@ describe BotDBAccess do
       
       isSuccess = db.db_pairing_delete(0)
       expect(isSuccess).to be false
-    end
-    
-    it 'Access non-exist record of Pairing Session table' do
-      data = {user_id: 2, device_id: 123456789}
-      session = db.db_pairing_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into Pairing Session table' do
-      data = {user_id: 2, device_id: 123456789, expire_at: DateTime.now}
-      session = db.db_pairing_session_insert(data)
-      expect(session).to respond_to(:id)
-      pair_session_id = session.id
-    end
-    
-    it 'Update Pairing Session record' do
-      status = 4
-      time = DateTime.now
-      data = {id: pair_session_id, user_id: 2, device_id: 123456789, status: status, expire_at: time}
-      isSuccess = db.db_pairing_session_update(data)
-      expect(isSuccess).to be true
-      
-      session = db.db_pairing_session_access({id: pair_session_id})
-      expect(session).to respond_to(:status)
-      expect(session.status.to_d).to eq(status)
-    end
-    
-    it 'Delete Pairing Session record' do
-      isSuccess = db.db_pairing_session_delete(pair_session_id)
-      expect(isSuccess).to be true
-      pair_session_id = nil
-    end
-    
-    it 'Retrieve timeout of Pairing session record'
-    
-    it 'Retrive XMPP account by pairing session id' do
-      xmpp_account = db.db_retreive_xmpp_account_by_pair_session_id(1)
-      expect(xmpp_account).to be_an_instance_of(String)
     end
   end
   
@@ -385,57 +338,10 @@ describe BotDBAccess do
     end
   end
   
-  context "About Upnair Session table" do
-    unpair_methods = ['db_unpair_session_access',
-                      'db_unpair_session_insert',
-                      'db_unpair_session_update',
-                      'db_unpair_session_delete',
-                      'db_retrive_user_local_by_upnp_session_id']
-    
-    unpair_session_id = nil
-    
-    it 'Existence of Pair & Unpair Session methods check' do
-      unpair_methods.each do |x|
-        expect(db).to respond_to(x.to_sym)
-      end
-    end
-    
-    it 'Access non-exist record from Unpair Session table' do
-      data = {device_id: 123456789}
-      session = db.db_unpair_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into Unpair Session table' do
-      data = {device_id: 123456789}
-      session = db.db_unpair_session_insert(data)
-      expect(session).to respond_to(:id)
-      unpair_session_id = session.id
-    end
-    
-    it 'Update Unpair Session record' do
-      device_id = 1234567
-      data = {id: unpair_session_id, device_id: device_id}
-      isSuccess = db.db_unpair_session_update(data)
-      expect(isSuccess).to be true
-      
-      access = db.db_unpair_session_access({id: unpair_session_id})
-      expect(access.device_id.to_d).to eq(device_id)
-      device_id = nil
-    end
-    
-    it 'Delete Unpair Session record' do
-      isSuccess = db.db_unpair_session_delete(unpair_session_id)
-      expect(isSuccess).to be true
-      
-      isSuccess = db.db_unpair_session_delete(0)
-      expect(isSuccess).to be false
-    end
-    
-    it 'Retrieve user local by Unpair Session id' do
+  context "About User info access" do
+    it 'Retrieve user local by UPNP Session id' do
       user_local = db.db_retrive_user_local_by_upnp_session_id(1)
       expect(user_local).to be_an_instance_of(String)
-      unpair_session_id = nil
     end
     
     it 'Retrieve user email by DDNS Session id' do

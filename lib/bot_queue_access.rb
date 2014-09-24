@@ -41,7 +41,7 @@ class BotQueueAccess
         msg = JSON.parse(message.body)
         if msg["job"] == "pairing" && block_given? then
           job = msg["job"]
-          data = {session_id: msg["session_id"]}
+          data = {device_id: msg["device_id"]}
           yield(job, data)
 
         elsif msg["job"] == "unpair" && block_given? then
