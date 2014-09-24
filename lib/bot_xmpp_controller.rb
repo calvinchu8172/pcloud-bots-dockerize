@@ -486,17 +486,32 @@ module XMPPController
       result_syslog(msg)
       
       device_id = msg.thread
-      data = {device_id: device_id, status: "waiting"}
-      isSuccess = @rd_conn.rd_pairing_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
-                            {event: 'PAIR',
-                             direction: 'Device->Bot',
-                             to: @bot_xmpp_account,
-                             from: msg.from.to_s,
-                             id: device_id,
-                             full_domain: 'N/A',
-                             message:"Update the status of pairing session table to WAIT %s as receive PAIR START RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
-                             data: 'N/A'})
+      device = @rd_conn.rd_pairing_session_access(device_id)
+      expire_time = device["start_expire_at"] if !device.nil?
+      if !device.nil? then
+        data = {device_id: device_id, status: expire_time.to_i > Time.now.to_i ? "waiting" : "timeout"}
+        isSuccess = @rd_conn.rd_pairing_session_update(data)
+        status = data[:status]
+        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: device_id,
+                               full_domain: 'N/A',
+                               message:"Update the status of pairing session table to %s %s as receive PAIR START RESPONSE message from device" % [status, isSuccess ? 'success' : 'failure'] ,
+                               data: 'N/A'})
+      else
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'PAIR',
+                               direction: 'N/A',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: device_id,
+                               full_domain: 'N/A',
+                               message:"Update the status of pairing session table to WAITING failure, session id not find",
+                               data: {error_code: 898}})
+      end
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
