@@ -86,7 +86,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account_node, device_id: device_id}
       XMPPController.send_request(KPAIR_START_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i+=1
       end
@@ -106,7 +106,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, email: 'example@ecoworkinc.com', session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -127,7 +127,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -149,7 +149,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -170,7 +170,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -223,7 +223,7 @@ describe XMPPController do
               session_id: unpair_session_id}
       
       XMPPController.send_request(KUNPAIR_ASK_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -264,7 +264,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account_node, language: 'en', session_id: session_id}
       XMPPController.send_request(KUPNP_ASK_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -284,7 +284,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account_node, language: 'en', field_item: '', session_id: session_id}
       XMPPController.send_request(KUPNP_SETTING_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -313,7 +313,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -408,7 +408,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account_node, session_id: session_id, ip: '10.1.1.111', full_domain: full_domain, device_id: 987654321}
       XMPPController.send_request(KDDNS_SETTING_REQUEST, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -489,7 +489,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -512,7 +512,7 @@ describe XMPPController do
       i = 0
       info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
       XMPPController.send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -629,7 +629,7 @@ describe XMPPController do
       i = 0
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, device_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -670,7 +670,7 @@ describe XMPPController do
       i = 0
       msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, device_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -705,7 +705,7 @@ describe XMPPController do
       i = 0
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, device_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -731,7 +731,7 @@ describe XMPPController do
       i = 0
       msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, 0]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -754,7 +754,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -776,7 +776,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -798,7 +798,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'mytest212321321321321321321321321321321321321321312312ssdsdsdsd2', domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -820,7 +820,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'my', domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -842,7 +842,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'www', domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -873,7 +873,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -909,7 +909,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -940,7 +940,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -1022,7 +1022,7 @@ describe XMPPController do
       i = 0
       msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
       client.send msg
-      while x.nil? && i < 100
+      while x.nil? && i < 200
         sleep(0.1)
         i += 1
       end
@@ -1252,7 +1252,7 @@ describe XMPPController do
       
       msg = UPNP_ASK_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
-      sleep(DELAY_TIME)
+      sleep(DELAY_TIME + 1.0)
       
       upnp_session = db.db_upnp_session_access({id: session_id})
       expect(upnp_session).not_to be_nil
