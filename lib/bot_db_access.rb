@@ -147,78 +147,6 @@ class BotDBAccess
     result.destroy if !result.nil?
     return !result.nil? ? TRUE : FALSE
   end
-  
-  def db_pairing_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:user_id) && !data.has_key?(:device_id)) 
-    
-    rows = PairingSession.where(data).first
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_pairing_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:user_id) || !data.has_key?(:device_id) || !data.has_key?(:expire_at)
-    
-    rows = self.db_pairing_session_access(data)
-    if rows.nil? then
-      isSuccess = PairingSession.create(data)
-      return self.db_pairing_session_access(data) if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_pairing_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:expire_at))
-    
-    result = PairingSession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(user_id: data[:user_id]) if data.has_key?(:user_id)
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(status: data[:status]) if data.has_key?(:status)
-      result.update(expire_at: data[:expire_at]) if data.has_key?(:expire_at)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_pairing_session_delete(id = nil)
-    return nil if id.nil?
-    
-    result = PairingSession.find_by(:id => id)
-    result.destroy if !result.nil?
-    return !result.nil? ? TRUE : FALSE
-  end
-
-  def db_pairing_session_access_timeout
-    rows = PairingSession.where(["(`status` = 0 OR `status` = 1) AND `expire_at` < ?", DateTime.now])
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_retreive_xmpp_account_by_pair_session_id(id = nil)
-    return nil if id.nil?
-    
-    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `pairing_sessions` WHERE \
-                 `pairing_sessions`.`id`=%d AND \
-                 `pairing_sessions`.`device_id`=`device_sessions`.`device_id`" % id
-    rows = UpnpSession.find_by_sql(sql_string).first
-    
-    if !rows.nil? && rows.respond_to?(:xmpp_account) then
-      return rows.xmpp_account
-    else
-      return nil
-    end
-  end
-  
 #=============== Device Methods ===============
 #===============================================  
   
@@ -507,54 +435,8 @@ class BotDBAccess
     end
   end
   
-#=============== DDNS Methods ===============
+#============== User Info Methods ==============
 #===============================================
-  def db_unpair_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id))
-    
-    rows = UnPairingSession.where(data).first
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_unpair_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id)
-    
-    rows = self.db_unpair_session_access(data)
-    
-    if rows.nil? then
-      isSuccess = UnPairingSession.create(data)
-      return self.db_unpair_session_access(data) if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_unpair_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:device_id)
-    
-    result = UnPairingSession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_unpair_session_delete(id=nil)
-    return nil if id.nil?
-    
-    result = UnPairingSession.find_by(:id => id)
-    result.destroy if !result.nil?
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
   def db_retrive_user_local_by_upnp_session_id(id)
     return nil if id.nil?
     
