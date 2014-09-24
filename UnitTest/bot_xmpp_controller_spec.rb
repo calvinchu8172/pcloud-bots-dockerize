@@ -333,7 +333,7 @@ describe XMPPController do
       title = xml['x']['title']
       hostname_prefix = xml['x']['field'][0]['value']
       hostname_suffix = xml['x']['field'][1]['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(hostname_prefix).to eq(host_name)
       expect(hostname_suffix).to eq(domain_name)
       
@@ -428,7 +428,7 @@ describe XMPPController do
       title = xml['x']['title']
       hostname_prefix = xml['x']['field'][0]['value']
       hostname_suffix = xml['x']['field'][1]['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(hostname_prefix).to eq(host_name)
       expect(hostname_suffix).to eq(domain_name)
       
@@ -500,7 +500,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       type = xml['x']['type']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(type).to eq('result')
     end
     
@@ -523,7 +523,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error.to_d).to eq(error_code)
     end
   end
@@ -765,7 +765,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(998)
     end
     
@@ -787,7 +787,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(999)
     end
     
@@ -809,7 +809,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(999)
     end
     
@@ -831,7 +831,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(999)
     end
     
@@ -853,7 +853,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(999)
     end
     
@@ -884,7 +884,7 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       error_code = xml['x']['field']['value']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       expect(error_code.to_d).to eq(995)
       
       isSuccess = db.db_ddns_delete(ddns.id)
@@ -919,7 +919,7 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       
       isSuccess = db.db_ddns_delete(ddns.id)
       expect(isSuccess).to be true
@@ -954,7 +954,7 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       
       resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
       
@@ -1037,7 +1037,7 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
-      expect(title).to eq('config')
+      expect(title).to eq('config_ddns')
       
       resolv_i = Resolv::DNS.new(:nameserver => ['168.95.1.1'])
       
