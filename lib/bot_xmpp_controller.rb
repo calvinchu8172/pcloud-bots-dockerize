@@ -30,6 +30,18 @@ KDDNS_SETTING_REQUEST = 'ddns_setting_request'
 KDDNS_SETTING_SUCCESS_RESPONSE = 'ddns_setting_success_response'
 KDDNS_SETTING_FAILURE_RESPONSE = 'ddns_setting_failure_response'
 
+KSTATUS_START = 'start'
+KSTATUS_WAITING = 'waiting'
+KSTATUS_CANCEL = 'cancel'
+KSTATUS_TIMEOUT = 'timeout'
+KSTATUS_FAILURE = 'failure'
+KSTATUS_DONE = 'done'
+KSTATUS_OFFLINE = 'offline'
+KSTATUS_FORM = 'form'
+KSTATUS_SUBMIT = 'submit'
+KSTATUS_UPDATED = 'updated'
+KSTATUS_SUCCESS = 'success'
+
 module XMPPController
   extend Blather::DSL
   
@@ -489,7 +501,7 @@ module XMPPController
       device = @rd_conn.rd_pairing_session_access(device_id)
       expire_time = device["start_expire_at"] if !device.nil?
       if !device.nil? then
-        data = {device_id: device_id, status: expire_time.to_i > Time.now.to_i ? "waiting" : "timeout"}
+        data = {device_id: device_id, status: expire_time.to_i > Time.now.to_i ? KSTATUS_WAITING : KSTATUS_TIMEOUT}
         isSuccess = @rd_conn.rd_pairing_session_update(data)
         status = data[:status]
         Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
@@ -592,7 +604,7 @@ module XMPPController
             
       if !device.nil? then
         if expire_time.to_i > Time.now.to_i
-          data = {device_id: device_id, status: 'done'}
+          data = {device_id: device_id, status: KSTATUS_DONE}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
           Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
@@ -629,7 +641,7 @@ module XMPPController
                                  message:"Send PAIR COMPLETED SUCCESS RESPONSE message to device after pairing successful",
                                  data: {email: user.nil? ? 'user email invalid' : user.email}})
         else
-          data = {device_id: device_id, status: 'timeout'}
+          data = {device_id: device_id, status: KSTATUS_TIMEOUT}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
             
           info = {xmpp_account: msg.from, error_code: 899, session_id: device_id}
@@ -671,7 +683,7 @@ module XMPPController
       pair_session = @rd_conn.rd_pairing_session_access(device_id)
             
       if !pair_session.nil? then
-        data = {device_id: device_id, status: 'timeout'}
+        data = {device_id: device_id, status: KSTATUS_TIMEOUT}
         isSuccess = @rd_conn.rd_pairing_session_update(data)
         Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
@@ -1034,7 +1046,7 @@ module XMPPController
       cancel_syslog(msg)
       
       device_id = msg.thread
-      data = {device_id: device_id, status: 'failure'}
+      data = {device_id: device_id, status: KSTATUS_FAILURE}
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = @rd_conn.rd_pairing_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
@@ -1056,7 +1068,7 @@ module XMPPController
       cancel_syslog(msg)
       
       device_id = msg.thread
-      data = {device_id: device_id, status: 'failure'}
+      data = {device_id: device_id, status: KSTATUS_FAILURE}
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = @rd_conn.rd_pairing_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
@@ -1078,7 +1090,7 @@ module XMPPController
       cancel_syslog(msg)
       
       device_id = msg.thread
-      data = {device_id: device_id, status: 'failure'}
+      data = {device_id: device_id, status: KSTATUS_FAILURE}
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = @rd_conn.rd_pairing_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
