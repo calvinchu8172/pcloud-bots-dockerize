@@ -56,44 +56,6 @@ XMPPController.when_ready { xmpp_connect_ready = TRUE }
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
-timeoutThread = Thread.new{
-  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-                                           direction: 'N/A',
-                                           to: 'N/A',
-                                           form: 'N/A',
-                                           id: 'N/A',
-                                           full_domain: 'N/A',
-                                           message:"Updating timeout pairing session ...",
-                                           data: 'N/A'})
-  loop do
-    sleep(30.0)
-    data = db_conn.db_pairing_session_access_timeout
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-                                             direction: 'N/A',
-                                             to: 'N/A',
-                                             form: 'N/A',
-                                             id: 'N/A',
-                                             full_domain: 'N/A',
-                                             message:"Search timeout pairing session ...",
-                                             data: 'N/A'})
-    
-    data.find_each do |row|
-      data = {id: row.id, status: 4}
-      isSuccess = db_conn.db_pairing_session_update(data)
-      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-                                               direction: 'N/A',
-                                               to: 'N/A',
-                                               form: 'N/A',
-                                               id: 'N/A',
-                                               full_domain: 'N/A',
-                                               message:"Update timeout pairing session id:%d %s ..." % [row.id, isSuccess ? 'success' : 'failure'],
-                                               data: 'N/A'})
-    end
-  end
-}
-timeoutThread.abort_on_exception = TRUE
-threads << timeoutThread
-
 ddnsThread = Thread.new{
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                            direction: 'N/A',
