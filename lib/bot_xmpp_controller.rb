@@ -210,7 +210,7 @@ module XMPPController
           
           df = EM::DefaultDeferrable.new
           periodic_timer = EM.add_periodic_timer(15) {
-            unpair_session = @db_conn.db_unpair_session_access({id: session_id})
+            unpair_session = @rd_conn.rd_unpair_session_access(session_id)
             if !unpair_session.nil? then
               write_to_stream msg
               Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
@@ -229,10 +229,10 @@ module XMPPController
             df.set_deferred_status :succeeded, "[%s] Unpair times is up - %s" % [DateTime.now, info[:xmpp_account]]
           }
           df.callback do |x|
-            unpair_session = @db_conn.db_unpair_session_access({id: session_id})
+            unpair_session = @rd_conn.rd_unpair_session_access(session_id)
             
             if !unpair_session.nil? then
-              @db_conn.db_unpair_session_delete(unpair_session.id)
+              @rd_conn.rd_unpair_session_delete(session_id)
             end
             
             EM.cancel_timer(periodic_timer)
@@ -533,15 +533,21 @@ module XMPPController
     begin
       result_syslog(msg)
       
-      session_id = msg.thread
+      device_id = msg.thread
       isSuccess = FALSE
-      isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
+      unpair_session = @rd_conn.rd_unpair_session_access(device_id)
+      if !unpair_session.nil? then
+        isSuccess = @rd_conn.rd_unpair_session_delete(device_id)
+      else
+        isSuccess = TRUE
+      end
+      
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: session_id,
+                             id: device_id,
                              full_domain: 'N/A',
                              message:"Delete record from unpair session table %s as receive UNPAIR SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
@@ -1111,16 +1117,22 @@ module XMPPController
     begin
       cancel_syslog(msg)
       
-      session_id = msg.thread
+      device_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = FALSE
-      isSuccess = @db_conn.db_unpair_session_delete(session_id) if !session_id.nil?
+      unpair_session = @rd_conn.rd_unpair_session_access(device_id)
+      if !unpair_session.nil? then
+        isSuccess = @rd_conn.rd_unpair_session_delete(device_id)
+      else
+        isSuccess = TRUE
+      end
+      
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: session_id,
+                             id: device_id,
                              full_domain: 'N/A',
                              message:"Delete the record of unpair session %s as receive UNPAIR FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})

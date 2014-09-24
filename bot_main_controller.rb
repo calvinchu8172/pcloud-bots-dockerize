@@ -134,18 +134,18 @@ def worker(sqs, db_conn, rd_conn)
                                                   message:"Get SQS queue of unpair", data: data})
         
         device_id = data[:device_id]
-        device_session = db_conn.db_device_session_access({device_id: device_id})
-        xmpp_account = !device_session.nil? ? device_session.xmpp_account : ''
-        unpair_session = db_conn.db_unpair_session_insert({device_id: device_id})
+        device = rd_conn.rd_device_session_access(device_id)
+        xmpp_account = !device.nil? ? device["xmpp_account"] : ''
+        rd_conn.rd_unpair_session_insert(device_id) if !device.nil?
         ddns = db_conn.db_ddns_access({device_id: device_id})
         full_domain = !ddns.nil? ? ddns.full_domain : nil
         
         info = {xmpp_account: xmpp_account,
-                session_id: unpair_session.id,
+                session_id: device_id,
                 full_domain: full_domain
                 }
         
-        XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device_session.nil?
+        XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device.nil?
       
       when 'upnp_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
