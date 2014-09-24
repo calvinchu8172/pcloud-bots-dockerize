@@ -8,7 +8,7 @@ require 'json'
 REDIS_CONFIG_FILE = '../config/bot_redis_config.yml'
 
 DEVICE_SESSION_KEY = "device:%d:session"
-PAIRING_SESSION_KEY = "device:%d:pairingsession"
+PAIRING_SESSION_KEY = "device:%d:pairing_session"
 UPNP_SESSION_KEY = "upnp:%d:session"
 DDNS_SESSION_KEY = "ddns:%d:session"
 UNPAIR_SESSION_KEY = "unpair:%d"
