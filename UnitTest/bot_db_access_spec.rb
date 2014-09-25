@@ -194,8 +194,7 @@ describe BotDBAccess do
                     'db_ddns_session_access',
                     'db_ddns_session_insert',
                     'db_ddns_session_update',
-                    'db_ddns_session_delete',
-                    'db_retreive_xmpp_account_by_ddns_session_id']
+                    'db_ddns_session_delete',]
     
     ddns_id = nil
     ddns_session_id = nil
@@ -273,17 +272,12 @@ describe BotDBAccess do
       isSuccess = db.db_ddns_session_delete(0)
       expect(isSuccess).to be false
     end
-    
-    it 'Retrive XMPP account by DDNS session id' do
-      xmpp_account = db.db_retreive_xmpp_account_by_ddns_session_id(1)
-      expect(xmpp_account).to be_an_instance_of(String)
-      ddns_session_id = nil
-    end
   end
   
   context "About User info access" do
-    it 'Retrieve user local by UPNP Session id' do
-      user_local = db.db_retrive_user_local_by_upnp_session_id(1)
+    
+    it 'Retrieve user local by device id' do
+      user_local = db.db_retrive_user_local_by_device_id('123456789')
       expect(user_local).to be_an_instance_of(String)
     end
     

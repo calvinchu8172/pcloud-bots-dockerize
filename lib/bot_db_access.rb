@@ -10,24 +10,12 @@ class Pairing < ActiveRecord::Base
   self.table_name = "pairings"
 end
 
-class PairingSession < ActiveRecord::Base
-  self.table_name = "pairing_sessions"
-end
-
-class UnPairingSession < ActiveRecord::Base
-  self.table_name = "unpairing_sessions"
-end
-
 class Devices < ActiveRecord::Base
   self.table_name = "devices"
 end
 
 class DeviceSession < ActiveRecord::Base
   self.table_name = "device_sessions"
-end
-
-class UpnpSession < ActiveRecord::Base
-  self.table_name = "upnp_sessions"
 end
 
 class User < ActiveRecord::Base
@@ -355,30 +343,15 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
   
-  def db_retreive_xmpp_account_by_ddns_session_id(id=nil)
-    return nil if id.nil?
-    
-    sql_string = "SELECT `device_sessions`.`xmpp_account` AS `xmpp_account` FROM `device_sessions`, `ddns_sessions` WHERE \
-                 `ddns_sessions`.`id`=%d AND \
-                 `ddns_sessions`.`device_id`=`device_sessions`.`device_id`" % id
-    rows = UpnpSession.find_by_sql(sql_string).first
-    
-    if !rows.nil? && rows.respond_to?(:xmpp_account) then
-      return rows.xmpp_account
-    else
-      return nil
-    end
-  end
-  
 #============== User Info Methods ==============
 #===============================================
-  def db_retrive_user_local_by_upnp_session_id(id)
-    return nil if id.nil?
+  def db_retrive_user_local_by_device_id(device_id = nil)
+    return nil if device_id.nil?
     
-    sql_string = "SELECT `users`.`language` AS `language` FROM `upnp_sessions`, `users` WHERE \
-                 `upnp_sessions`.`id`=%d AND \
-                 `upnp_sessions`.`user_id`=`users`.`id`" % id
-    rows = UpnpSession.find_by_sql(sql_string).first
+    sql_string = "SELECT `users`.`language` AS `language` FROM `pairings`, `users` WHERE \
+                 `pairings`.`device_id`=%d AND \
+                 `pairings`.`user_id`=`users`.`id`" % device_id
+    rows = Pairing.find_by_sql(sql_string).first
     
     if !rows.nil? && rows.respond_to?(:language) then
       return rows.language
@@ -395,7 +368,7 @@ class BotDBAccess
                  `ddns_sessions`.`device_id`=`pairings`.`device_id` AND \
                  `users`.`id`=`pairings`.`user_id`" % id
     
-    rows = UpnpSession.find_by_sql(sql_string).first
+    rows = DDNSSession.find_by_sql(sql_string).first
     
     if !rows.nil? && rows.respond_to?(:email) then
       return rows.email
@@ -412,7 +385,7 @@ class BotDBAccess
                  `device_sessions`.`device_id`=`pairings`.`device_id` AND \
                  `users`.`id`=`pairings`.`user_id`" % account
     
-    rows = UpnpSession.find_by_sql(sql_string).first
+    rows = DeviceSession.find_by_sql(sql_string).first
     
     if !rows.nil? && rows.respond_to?(:email) then
       return rows.email
