@@ -290,6 +290,11 @@ describe BotDBAccess do
       user_email = db.db_retrive_user_email_by_xmpp_account('bot2')
       expect(user_email).to be_an_instance_of(String)
     end
+
+    it 'Retrieve user email by device id' do
+      user_email = db.db_retrive_user_email_by_device_id('123456789')
+      expect(user_email).to be_an_instance_of(String)
+    end
   end
   
   ddns_retry_session_id = nil

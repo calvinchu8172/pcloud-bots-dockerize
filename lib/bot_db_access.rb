@@ -379,14 +379,14 @@ class BotDBAccess
   
   def db_retrive_user_email_by_xmpp_account(account=nil)
     return nil if account.nil?
-    
+
     sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `device_sessions`, `users` WHERE \
                  `device_sessions`.`xmpp_account`='%s' AND \
                  `device_sessions`.`device_id`=`pairings`.`device_id` AND \
                  `users`.`id`=`pairings`.`user_id`" % account
     
     rows = DeviceSession.find_by_sql(sql_string).first
-    
+
     if !rows.nil? && rows.respond_to?(:email) then
       return rows.email
     else
@@ -394,6 +394,19 @@ class BotDBAccess
     end
   end
 
+  def db_retrive_user_email_by_device_id(device_id=nil)
+    return nil if device_id.nil?
+
+    sql_string = "SELECT `users`.`email` AS `email` FROM `users`, `pairings` WHERE `pairings`.`device_id`=%d \
+                 AND `pairings`.`user_id`=`users`.`id`" % device_id
+    rows = User.find_by_sql(sql_string).first
+
+    if !rows.nil? && rows.respond_to?(:email) then
+      return rows.email
+    else
+      return nil
+    end
+  end
 #=============== DDNS Retry Methods ============
 #===============================================
   def db_ddns_retry_session_access(data={})
