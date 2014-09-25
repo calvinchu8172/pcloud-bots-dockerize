@@ -186,63 +186,6 @@ describe BotDBAccess do
     end
   end
   
-  context "About Upnp Session table" do
-    upnp_methods = ['db_upnp_session_access',
-                    'db_upnp_session_insert',
-                    'db_upnp_session_update',
-                    'db_upnp_session_delete',
-                    'db_retreive_xmpp_account_by_upnp_session_id'
-                    ]
-    
-    upnp_session_id = nil
-    
-    it 'Existence of Upnp methods check' do
-      upnp_methods.each do |x|
-        expect(db).to respond_to(x.to_sym)
-      end
-    end
-    
-    it 'Access non-exist record from Upnp session table' do
-      data = {device_id: 1234567, user_id: 2, status: 1, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration"},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration"},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration"}]'}
-      session = db.db_upnp_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into Upnp session table' do
-      data = {device_id: 1234567, user_id: 2, status: 1, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration"},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration"},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration"}]'}
-      session = db.db_upnp_session_insert(data)
-      expect(session).to respond_to(:id)
-      upnp_session_id = session.id
-      
-      access = db.db_upnp_session_access({id: upnp_session_id})
-      expect(access).to respond_to(:id)
-      expect(access.status).to eq(1)
-    end
-    
-    it 'Update Upnp session record' do
-      data = {id: upnp_session_id, device_id: 1234567, user_id: 2, status: 4, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration"},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration"},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration"}]'}
-      isSuccess = db.db_upnp_session_update(data)
-      expect(isSuccess).to be true
-      
-      access = db.db_upnp_session_access({id: upnp_session_id})
-      expect(access.status).to eq(4)
-    end
-    
-    it 'Delete Upnp session record' do
-      isSuccess = db.db_upnp_session_delete(upnp_session_id)
-      expect(isSuccess).to be true
-      
-      isSuccess = db.db_upnp_session_delete(0)
-      expect(isSuccess).to be false
-    end
-    
-    it 'Retrive XMPP account by upnp session id' do
-      xmpp_account = db.db_retreive_xmpp_account_by_upnp_session_id(1)
-      expect(xmpp_account).to be_an_instance_of(String)
-      upnp_session_id = nil
-    end
-  end
-  
   context "About DDNS & DDNS Session table" do
     ddns_methods = ['db_ddns_access',
                     'db_ddns_insert',
