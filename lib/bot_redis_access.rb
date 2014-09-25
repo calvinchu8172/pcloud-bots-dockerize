@@ -56,14 +56,19 @@ class BotRedisAccess
   def rd_pairing_session_update(data={})
     return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
 
-    key = PAIRING_SESSION_KEY % data[:device_id]
+    isExist = self.rd_pairing_session_access(data[:device_id])
+    if isExist then
+      key = PAIRING_SESSION_KEY % data[:device_id]
 
-    @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
-    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
-    @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
-    @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
+      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
+      @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
 
-    return TRUE
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
   def rd_pairing_session_delete(device_id = nil)
@@ -107,12 +112,17 @@ class BotRedisAccess
   def rd_device_session_update(data={})
     return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:ip) && !data.has_key?(:xmpp_account))
 
-    key = DEVICE_SESSION_KEY % data[:device_id]
+    isExist = self.rd_device_session_access(data[:device_id])
+    if isExist then
+      key = DEVICE_SESSION_KEY % data[:device_id]
 
-    @redis.hset(key, "ip", data[:ip]) if data.has_key?(:ip)
-    @redis.hset(key, "xmpp_account", data[:xmpp_account]) if data.has_key?(:xmpp_account)
+      @redis.hset(key, "ip", data[:ip]) if data.has_key?(:ip)
+      @redis.hset(key, "xmpp_account", data[:xmpp_account]) if data.has_key?(:xmpp_account)
 
-    return TRUE
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
   def rd_device_session_delete(device_id = nil)
@@ -161,15 +171,21 @@ class BotRedisAccess
   def rd_upnp_session_update(data={})
     return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
-    key = UPNP_SESSION_KEY % data[:index]
+    isExist = self.rd_upnp_session_access(data[:index])
+    
+    if isExist then
+      key = UPNP_SESSION_KEY % data[:index]
 
-    @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
-    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
-    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
-    @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
-    @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
+      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+      @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
+      @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
-    return TRUE
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
   def rd_upnp_session_delete(index = nil)
@@ -216,14 +232,20 @@ class BotRedisAccess
   def rd_ddns_session_update(data={})
     return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status))
 
-    key = DDNS_SESSION_KEY % data[:index]
+    isExist = self.rd_ddns_session_access(data[:index])
+    
+    if isExist then
+      key = DDNS_SESSION_KEY % data[:index]
 
-    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
-    @redis.hset(key, "host_name", data[:host_name]) if data.has_key?(:host_name)
-    @redis.hset(key, "domain_name", data[:domain_name]) if data.has_key?(:domain_name)
-    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+      @redis.hset(key, "host_name", data[:host_name]) if data.has_key?(:host_name)
+      @redis.hset(key, "domain_name", data[:domain_name]) if data.has_key?(:domain_name)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
 
-    return TRUE
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
   def rd_ddns_session_delete(index=nil)

@@ -97,6 +97,15 @@ describe BotRedisAccess do
       expect(result_updated['waiting_expire_at']).to eq("2014-01-15 13:53:34")
     end
     
+    it 'Update nonexistent pairing session record' do
+      device_id = Time.now.to_i
+      
+      data = {device_id: device_id, user_id: 2, status: "wait", start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
+      result = rd.rd_pairing_session_update(data)
+      
+      expect(result).to be false
+    end
+    
     it 'Delete pairing session record' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: "start", start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
@@ -164,6 +173,15 @@ describe BotRedisAccess do
       
       expect(result_updated['ip']).to eq("10.1.1.104")
       expect(result_updated['xmpp_account']).to eq("bot3")
+    end
+    
+    it 'Update nonexistent device session record' do
+      device_id = Time.now.to_i
+      
+      data = {device_id: device_id, ip: "10.1.1.104", xmpp_account: "bot3"}
+      result = rd.rd_device_session_update(data)
+      
+      expect(result).to be false
     end
     
     it 'Delete device session record' do
@@ -251,6 +269,15 @@ describe BotRedisAccess do
       expect(result_updated['lan_ip']).to eq("10.1.1.113")
     end
     
+    it 'Update nonexistent UPNP session record' do
+      index = Time.now.to_i
+      
+      data = {index: index, user_id: 3, device_id: 4, status: "wait", service_list: "[{}]", lan_ip: "10.1.1.113"}
+      result = rd.rd_upnp_session_update(data)
+      
+      expect(result).to be false
+    end
+    
     it 'Delete UPNP session record' do
       index = Time.now.to_i
       data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.113"}
@@ -331,6 +358,15 @@ describe BotRedisAccess do
       expect(result_updated['host_name']).to eq("myhostname")
       expect(result_updated['domain_name']).to eq("ecoworkinc.com")
       expect(result_updated['status']).to eq("wait")
+    end
+    
+    it 'Update nonexistent DDNS session record' do
+      index = Time.now.to_i
+      
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "wait"}
+      result = rd.rd_ddns_session_update(data)
+      
+      expect(result).to be false
     end
     
     it 'Delete DDNS session record' do
