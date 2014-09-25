@@ -162,7 +162,7 @@ def worker(sqs, db_conn, rd_conn)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
         service_list = upnp["service_list"].to_s if !upnp.nil?
-        language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
+        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
         
         field_item = ""
         
@@ -197,10 +197,10 @@ def worker(sqs, db_conn, rd_conn)
         
         xmpp_account = nil
         session_id = data[:session_id]
-        language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         upnp = rd_conn.rd_upnp_session_access(session_id)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
+        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
         info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: data[:session_id]}
@@ -215,10 +215,12 @@ def worker(sqs, db_conn, rd_conn)
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of DDNS-query", data: data})
-        
+        device = nil
+        xmpp_account = nil
         session_id = data[:session_id]
         ddns_session = db_conn.db_ddns_session_access({id: session_id})
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_ddns_session_id(session_id)
+        device = rd_conn.rd_device_session_access(ddns_session.device_id.to_i) if !ddns_session.nil?
+        xmpp_account = device["xmpp_account"] if !device.nil?
         device_session = db_conn.db_device_session_access({xmpp_account: xmpp_account})
         
         info = {xmpp_account: xmpp_account.to_s,
