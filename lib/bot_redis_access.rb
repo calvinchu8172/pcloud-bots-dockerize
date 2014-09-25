@@ -4,6 +4,7 @@ require 'rubygems'
 require 'yaml'
 require 'redis'
 require 'json'
+require_relative './bot_unit'
 
 REDIS_CONFIG_FILE = '../config/bot_redis_config.yml'
 
@@ -15,13 +16,6 @@ UNPAIR_SESSION_KEY = "unpair:%d:session"
 DDNS_RETRY_SESSION_KEY = "ddns:retry_session"
 DDNS_RETRY_LOCK_KEY = "ddns:retry_lock"
 DDNS_RETRY_LOCL_EXPIRE_TIME = 20
-
-def valid_json? json_
-  JSON.parse(json_)
-  return true
-rescue JSON::ParserError
-  return false
-end
 
 class BotRedisAccess
 

@@ -3,15 +3,9 @@
 require 'aws-sdk'
 require 'json'
 require 'yaml'
+require_relative './bot_unit'
 
 SQS_CONFIG_FILE = '../config/bot_queue_config.yml'
-
-def valid_json? json_
-  JSON.parse(json_)
-  return true
-rescue JSON::ParserError
-  return false
-end
 
 class BotQueueAccess
   
