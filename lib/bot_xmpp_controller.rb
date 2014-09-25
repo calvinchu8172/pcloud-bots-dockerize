@@ -70,6 +70,10 @@ module XMPPController
     yield(data)
   end
   
+  def self.alive
+    return TRUE
+  end
+
   def self.retry_ddns_register
     ddnss = @db_conn.db_retrive_retry_ddns
     ddnss.each do |ddns|

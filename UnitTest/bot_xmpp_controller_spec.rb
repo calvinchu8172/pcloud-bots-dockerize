@@ -1,6 +1,7 @@
 require_relative '../lib/bot_xmpp_controller'
 require_relative '../lib/bot_route_access'
 require_relative '../lib/bot_db_access'
+require_relative '../lib/bot_unit'
 require_relative '../lib/bot_pair_protocol_template'
 require_relative './bot_xmpp_spec_protocol_template'
 require 'aws-sdk'
@@ -21,13 +22,6 @@ FLUENT_BOT_FLOWERROR = "bot.flow-error"
 FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 
 Jabber::debug = FALSE
-
-def valid_json? json_
-  JSON.parse(json_)
-  return true
-rescue JSON::ParserError
-  return false
-end
 
 describe XMPPController do
   bot_xmpp_account = 'bot7@xmpp.pcloud.ecoworkinc.com/robot'
@@ -581,21 +575,37 @@ describe XMPPController do
     end
     
     it 'Receive UPNP SET SUCCESS response' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {index: index,device_id: device_id, user_id: 2, status:'start', service_list: '{}', lan_ip: '10.1.1.110'}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
       
-      msg = UPNP_ASK_RESPONSE_SUCCESS % [bot_xmpp_account, device_xmpp_account, session_id]
+      msg = UPNP_ASK_RESPONSE_SUCCESS % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME)
       
-      upnp_session = db.db_upnp_session_access({id: session_id})
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
+
       expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(4)
+      expect(upnp_session["status"]).to eq('updated')
       
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive UPNP SET SUCCESS response, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = UPNP_ASK_RESPONSE_SUCCESS % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_upnp_session_delete(index)
+      expect(hasDeleted).to be true
     end
     
     it 'Receive DDNS SETTINGS SUCCESS message' do
@@ -1157,67 +1167,104 @@ describe XMPPController do
     end
     
     it 'Receive UPNP GET FAILURE response' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '{}'}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index ,device_id: device_id, user_id: 2, status: 'start', service_list: '{}', lan_ip: '10.1.1.110'}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
       
-      msg = UPNP_ASK_GET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
+      msg = UPNP_ASK_GET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, index]
       client.send msg
       sleep(DELAY_TIME)
       
-      upnp_session = db.db_upnp_session_access({id: session_id})
-      expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(3)
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
 
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session["status"]).to eq('failure')
+
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive UPNP GET FAILURE response, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = UPNP_ASK_GET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, 999, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_upnp_session_delete(index)
+      expect(hasDeleted).to be true
     end
 
     it 'Receive UPNP SET FAILURE response' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index, device_id: device_id, user_id: 2, status: 'start', service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]', lan_ip: '10.1.1.110'}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
       
-      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, session_id]
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME)
       
-      upnp_session = db.db_upnp_session_access({id: session_id})
-      expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(1)
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
 
-      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session["status"]).to eq('form')
+
+      service_list = JSON.parse(upnp_session["service_list"])
       expect(service_list[0]['error_code']).to eq('799')
       expect(service_list[1]['error_code']).to eq('')
       expect(service_list[2]['error_code']).to eq('798')
 
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
     end
     
     it 'Receive UPNP SET FAILURE response - single item' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
-      upnp_session = db.db_upnp_session_insert(data)
-      expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
+      device_id = Time.now.to_i
+      index = Time.now.to_i
 
-      msg = UPNP_ASK_SET_RESPONSE_FAILURE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, session_id]
+      data = {index: index, device_id: device_id, user_id: 2, status: 'start', service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]', lan_ip: '10.1.1.110'}
+      upnp_session = rd.rd_upnp_session_insert(data)
+      expect(upnp_session).not_to be_nil
+
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME)
 
-      upnp_session = db.db_upnp_session_access({id: session_id})
-      expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(1)
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
 
-      service_list = JSON.parse(upnp_session.service_list.to_s)
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session["status"]).to eq('form')
+
+      service_list = JSON.parse(upnp_session["service_list"])
       expect(service_list[0]['error_code']).to eq('799')
       expect(service_list[1]['error_code']).to eq('')
       expect(service_list[2]['error_code']).to eq('')
 
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive UPNP SET FAILURE response, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = UPNP_ASK_SET_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_upnp_session_delete(index)
+      expect(hasDeleted).to be true
     end
     
     it 'Receive DDNS FAILURE response' do
@@ -1245,80 +1292,105 @@ describe XMPPController do
   context 'Receive FORM message' do
     
     it 'Receive UPNP service list' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: ''}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index, device_id: device_id, user_id: 2, status: 'start', service_list: '', lan_ip: ''}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
       
-      msg = UPNP_ASK_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
+      msg = UPNP_ASK_RESPONSE % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME + 1.0)
       
-      upnp_session = db.db_upnp_session_access({id: session_id})
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
+
       expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(1)
+      expect(upnp_session["status"]).to eq('form')
       
-      isValid = valid_json? upnp_session.service_list.to_s
+      isValid = valid_json? upnp_session["service_list"]
       expect(isValid).to be true
-      service_list = JSON.parse(upnp_session.service_list.to_s)
+      service_list = JSON.parse(upnp_session["service_list"])
       expect(service_list[0].has_key?("service_name")).to be true
       expect(service_list[0].has_key?("status")).to be true
       expect(service_list[0].has_key?("enabled")).to be true
       expect(service_list[0].has_key?("description")).to be true
       expect(service_list[0].has_key?("path")).to be true
+      expect(service_list[0].has_key?("port")).to be true
       expect(service_list[0].has_key?("error_code")).to be true
       
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
     end
     
     it 'Receive UPNP service list - single item' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: ''}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index, device_id: device_id, user_id: 2, status: 'start', service_list: '', lan_ip: ''}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
  
-      msg = UPNP_ASK_RESPONSE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, session_id]
+      msg = UPNP_ASK_RESPONSE_SINGLE_ITEM % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME)
  
-      upnp_session = db.db_upnp_session_access({id: session_id})
-      expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(1)
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
 
-      isValid = valid_json? upnp_session.service_list.to_s
+      expect(upnp_session).not_to be_nil
+      expect(upnp_session["status"]).to eq('form')
+
+      isValid = valid_json? upnp_session["service_list"]
       expect(isValid).to be true
-      service_list = JSON.parse(upnp_session.service_list.to_s)
+      service_list = JSON.parse(upnp_session["service_list"])
       expect(service_list[0].has_key?("service_name")).to be true
       expect(service_list[0].has_key?("status")).to be true
       expect(service_list[0].has_key?("enabled")).to be true
       expect(service_list[0].has_key?("description")).to be true
       expect(service_list[0].has_key?("path")).to be true
+      expect(service_list[0].has_key?("port")).to be true
       expect(service_list[0].has_key?("error_code")).to be true
 
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
     end
     
     it 'Receive UPNP service list - empty form' do
-      data = {device_id: 1234567, user_id: 2, status:0, service_list: '[{"service_name":"FTP","status":true,"enabled":true,"description":"FTP configuration", "error_code":""},{"service_name":"DDNS","status":true,"enabled":false,"description":"DDNS configuration", "error_code":""},{"service_name":"HTTP","status":true,"enabled":false,"description":"HTTP configuration", "error_code":""}]'}
-      upnp_session = db.db_upnp_session_insert(data)
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index, device_id: device_id, user_id: 2, status: 'start', service_list: '', lan_ip: ''}
+      upnp_session = rd.rd_upnp_session_insert(data)
       expect(upnp_session).not_to be_nil
-      session_id = upnp_session.id
       
-      msg = UPNP_ASK_EMPTY_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
+      msg = UPNP_ASK_EMPTY_RESPONSE % [bot_xmpp_account, device_xmpp_account, index]
       client.send msg
       sleep(DELAY_TIME)
       
-      upnp_session = db.db_upnp_session_access({id: session_id})
+      upnp_session = rd.rd_upnp_session_access(index)
+      hasDeleted = rd.rd_upnp_session_delete(index)
+
       expect(upnp_session).not_to be_nil
-      expect(upnp_session.status.to_d).to eq(1)
+      expect(upnp_session["status"]).to eq('form')
       
-      isValid = valid_json? upnp_session.service_list.to_s
+      isValid = valid_json? upnp_session["service_list"]
       expect(isValid).to be false
       
-      isSuccess = db.db_upnp_session_delete(session_id)
-      expect(isSuccess).to be true
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive UPNP service list, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = UPNP_ASK_EMPTY_RESPONSE % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_upnp_session_delete(index)
+      expect(hasDeleted).to be true
     end
   end
   
