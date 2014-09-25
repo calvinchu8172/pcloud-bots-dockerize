@@ -155,10 +155,13 @@ def worker(sqs, db_conn, rd_conn)
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of upnp-submit", data: data})
-        
+        xmpp_account = nil
+        service_list = nil
         session_id = data[:session_id]
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
-        service_list = db_conn.db_upnp_session_access({id: session_id}).service_list.to_s
+        upnp = rd_conn.rd_upnp_session_access(session_id)
+        device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
+        xmpp_account = device["xmpp_account"] if !device.nil?
+        service_list = upnp["service_list"].to_s if !upnp.nil?
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
         
         field_item = ""
@@ -192,9 +195,12 @@ def worker(sqs, db_conn, rd_conn)
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of upnp-query", data: data})
         
+        xmpp_account = nil
         session_id = data[:session_id]
         language = db_conn.db_retrive_user_local_by_upnp_session_id(session_id)
-        xmpp_account = db_conn.db_retreive_xmpp_account_by_upnp_session_id(session_id)
+        upnp = rd_conn.rd_upnp_session_access(session_id)
+        device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
+        xmpp_account = device["xmpp_account"] if !device.nil?
         info = {xmpp_account: xmpp_account.to_s,
                 language: language.to_s,
                 session_id: data[:session_id]}

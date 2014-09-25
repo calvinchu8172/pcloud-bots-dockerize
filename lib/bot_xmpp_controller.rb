@@ -70,6 +70,10 @@ module XMPPController
     yield(data)
   end
   
+  def self.alive
+    return TRUE
+  end
+
   def self.retry_ddns_register
     ddnss = @db_conn.db_retrive_retry_ddns
     ddnss.each do |ddns|
@@ -561,8 +565,8 @@ module XMPPController
       result_syslog(msg)
       
       session_id = msg.thread
-      data = {id: session_id, status:4}
-      isSuccess = @db_conn.db_upnp_session_update(data)
+      data = {index: session_id, status: KSTATUS_UPDATED}
+      isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
@@ -1148,8 +1152,8 @@ module XMPPController
       
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
-      data = {id: session_id, status: 3}
-      isSuccess = @db_conn.db_upnp_session_update(data)
+      data = {index: session_id, status: KSTATUS_FAILURE}
+      isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
@@ -1173,59 +1177,71 @@ module XMPPController
       session_id = msg.thread
       error_code_record = Array.new
       
-      upnp_session = @db_conn.db_upnp_session_access({id: session_id})
-      service_list = JSON.parse(upnp_session.service_list.to_s)
+      upnp_session = @rd_conn.rd_upnp_session_access(session_id)
+      if !upnp_session.nil? then
+        service_list = JSON.parse(upnp_session["service_list"].to_s)
       
-      MultiXml.parser = :rexml
-      xml = MultiXml.parse(msg.form.to_s)
-      hasX = xml.has_key?("x")
-      hasITEM = xml["x"].has_key?("item") if hasX
+        MultiXml.parser = :rexml
+        xml = MultiXml.parse(msg.form.to_s)
+        hasX = xml.has_key?("x")
+        hasITEM = xml["x"].has_key?("item") if hasX
       
-      if !xml.nil? && hasX && hasITEM then
+        if !xml.nil? && hasX && hasITEM then
         
-        if !xml["x"]["item"].instance_of?(Array) then
-          items = Array.new
-          items << xml["x"]["item"]
-          xml["x"]["item"] = items
-        end
+          if !xml["x"]["item"].instance_of?(Array) then
+            items = Array.new
+            items << xml["x"]["item"]
+            xml["x"]["item"] = items
+          end
         
-        xml["x"]["item"].each do |item|
-          servicename = nil
-          error_code = nil
+          xml["x"]["item"].each do |item|
+            servicename = nil
+            error_code = nil
           
-          item["field"].each do |field|
-            var = field["var"]
-            case var
-              when 'servicename'
-                servicename = field["value"]
-              when 'ERROR_CODE'
-                error_code = field["value"]
+            item["field"].each do |field|
+              var = field["var"]
+              case var
+                when 'servicename'
+                  servicename = field["value"]
+                when 'ERROR_CODE'
+                  error_code = field["value"]
+              end
             end
-          end
           
-          service_list.each do |service|
-            if service["service_name"] == servicename then
-              service["error_code"] = error_code
+            service_list.each do |service|
+              if service["service_name"] == servicename then
+                service["error_code"] = error_code
+              end
             end
-          end
           
-          error_code_record << {service_name: servicename, error_code: error_code}
+            error_code_record << {service_name: servicename, error_code: error_code}
+          end
         end
-      end
       
-      service_list_json = JSON.generate(service_list)
+        service_list_json = JSON.generate(service_list)
       
-      data = {id: session_id, status: 1, service_list: service_list_json}
-      isSuccess = @db_conn.db_upnp_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+        data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json}
+        isSuccess = @rd_conn.rd_upnp_session_update(data)
+        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: session_id,
+                               full_domain: 'N/A',
+                               message:"Update the status of upnp session to FAILURE %s as receive UPNP SET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                               data: {error_code: JSON.generate(error_code_record)}})
+      else
+        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
                              id: session_id,
                              full_domain: 'N/A',
-                             message:"Update the status of upnp session to FAILURE %s as receive UPNP SET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
-                             data: {error_code: JSON.generate(error_code_record)}})
+                             message:"Update the status of upnp session failure, session id not find",
+                             data: {error_code: 798}})
+      end
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
@@ -1319,8 +1335,8 @@ module XMPPController
         service_list_json = ''
       end
           
-      data = {id: session_id, status: 1, service_list: service_list_json, lan_ip: lan_ip}
-      isSuccess = @db_conn.db_upnp_session_update(data)
+      data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, lan_ip: lan_ip}
+      isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
