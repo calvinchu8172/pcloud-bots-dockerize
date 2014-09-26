@@ -13,6 +13,7 @@ PAIRING_SESSION_KEY = "device:%d:pairing_session"
 UPNP_SESSION_KEY = "upnp:%d:session"
 DDNS_SESSION_KEY = "ddns:%d:session"
 UNPAIR_SESSION_KEY = "unpair:%d:session"
+DDNS_SESSION_INDEX_KEY = "ddns:session:index"
 DDNS_RETRY_SESSION_KEY = "ddns:retry_session"
 DDNS_RETRY_LOCK_KEY = "ddns:retry_lock"
 DDNS_RETRY_LOCL_EXPIRE_TIME = 20
@@ -20,6 +21,8 @@ DDNS_RETRY_LOCL_EXPIRE_TIME = 20
 DDNS_BATCH_SESSION_KEY = "ddns:batch_session"
 DDNS_BATCH_LOCK_KEY = "ddns:batch_lock"
 DDNS_BATCH_LOCK_EXPIRE_TIME = 20
+
+XMPP_SESSION_KEY = "xmpp:%s:session"
 
 class BotRedisAccess
 
@@ -85,6 +88,61 @@ class BotRedisAccess
     end
 
     return TRUE
+  end
+
+#================ XMPP Methods =================
+#===============================================
+
+  def rd_xmpp_session_access(account=nil)
+    return nil if nil == account
+
+    key = XMPP_SESSION_KEY % account
+    result = @redis.get(key)
+
+    if !result.nil? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_xmpp_session_insert(account=nil, device_id=nil)
+    return nil if nil == account || nil == device_id
+
+    key = XMPP_SESSION_KEY % account
+    result = @redis.set(key, device_id)
+
+    if "OK" == result then
+      return device_id
+    else
+      return nil
+    end
+  end
+
+  def rd_xmpp_session_update(account=nil, device_id=nil)
+    return nil if nil == account || nil == device_id
+
+    key = XMPP_SESSION_KEY % account
+    result = @redis.set(key, device_id)
+
+    if "OK" == result then
+      return device_id
+    else
+      return nil
+    end
+  end
+
+  def rd_xmpp_session_delete(account=nil)
+    return nil if nil == account
+
+    key = XMPP_SESSION_KEY % account
+    result = @redis.del(key)
+
+    if 1 == result then
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
 #=============== Device Methods ================
@@ -207,6 +265,11 @@ class BotRedisAccess
 
 #================ DDNS Methods =================
 #===============================================  
+  def rd_ddns_session_index_get
+    key = DDNS_SESSION_INDEX_KEY
+    return @redis.incr(key)
+  end
+
   def rd_ddns_session_access(index = nil)
     return nil if nil == index
 
@@ -322,6 +385,16 @@ class BotRedisAccess
 
 #============== DDNS BATCH Methods =============
 #===============================================
+  def rd_ddns_batch_session_count
+    key = DDNS_BATCH_SESSION_KEY
+    result =@redis.zcount(key, '-inf', '+inf')
+
+    if result then
+      return result
+    else
+      return 0
+    end
+  end
 
   def rd_ddns_batch_session_access()
     key = DDNS_BATCH_SESSION_KEY

@@ -298,6 +298,13 @@ describe BotRedisAccess do
   end
   
   context "Verify DDNS session table" do
+    it 'Get DDNS session index' do
+      previous = rd.rd_ddns_session_index_get
+      result = rd.rd_ddns_session_index_get
+
+      expect(result.to_i).to eq(previous.to_i + 1)
+    end
+
     it 'Access non-exist record from DDNS session table' do
       index = Time.now.to_i
       result = rd.rd_ddns_session_access(index)
@@ -433,7 +440,63 @@ describe BotRedisAccess do
     end 
   end
   
+  context "Verify XMPP session table" do
+    it 'Access non-exist record from XMPP session table' do
+      account = 'bot%d' % Time.now.to_i
+      result = rd.rd_xmpp_session_access(account)
+
+      expect(result).to be_nil
+    end
+
+    it 'Access exist record from XMPP session table' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result = rd.rd_xmpp_session_access(account)
+      rd.rd_xmpp_session_delete(account)
+
+      expect(result).to eq(device_id.to_s)
+    end
+
+    it 'Update XMPP session record' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+      new_device_id = device_id + 1
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result_insert = rd.rd_xmpp_session_access(account)
+
+      rd.rd_xmpp_session_update(account, new_device_id)
+      result_updated = rd.rd_xmpp_session_access(account)
+
+      rd.rd_xmpp_session_delete(account)
+
+      expect(result_insert).to eq(device_id.to_s)
+      expect(result_updated).to eq(new_device_id.to_s)
+    end
+
+    it 'Delete Unpair session record' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result_insert = rd.rd_xmpp_session_access(account)
+      rd.rd_xmpp_session_delete(account)
+      result_deleted = rd.rd_xmpp_session_access(account)
+
+      expect(result_insert).to eq(device_id.to_s)
+      expect(result_deleted).to be_nil
+    end
+  end
+
   context "Verify DDNS BATCH session table" do
+    it 'Get DDNS BATCH session count number' do
+      result = rd.rd_ddns_batch_session_count
+
+      expect(result).not_to be_nil
+    end
+
     it 'Access non-exist record from DDNS BATCH session table' do
       result = rd.rd_ddns_batch_session_access()
       
