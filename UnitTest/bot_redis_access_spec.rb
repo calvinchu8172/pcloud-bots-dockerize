@@ -433,55 +433,57 @@ describe BotRedisAccess do
     end 
   end
   
-  context "Verify DDNS RETRY session table" do
-    it 'Access non-exist record from DDNS RETRY session table' do
-      result = rd.rd_ddns_retry_session_access()
+  context "Verify DDNS BATCH session table" do
+    it 'Access non-exist record from DDNS BATCH session table' do
+      result = rd.rd_ddns_batch_session_access()
       
       expect(result).to be_nil
     end
     
-    it 'Access exist record from DDNS RETRY session table' do
-      value = '{"name":"hibari", "age":34}'
+    it 'Access exist record from DDNS BATCH session table' do
+      index = Time.now.to_i
+      value = '{"name":"hibari", "age":%d}' % index
       
-      rd.rd_ddns_retry_session_insert(value)
-      result = rd.rd_ddns_retry_session_access()
-      rd.rd_ddns_retry_session_delete(value)
+      rd.rd_ddns_batch_session_insert(value, index)
+      result = rd.rd_ddns_batch_session_access()
+      rd.rd_ddns_batch_session_delete(value)
       
       expect(result).to be_an_instance_of(Array)
     end
     
-    it 'Delete DDNS RETRY session record' do
-      value = '{"name":"hibari", "age":34}'
+    it 'Delete DDNS BATCH session record' do
+      index = Time.now.to_i
+      value = '{"name":"hibari", "age":%d}' % index
       
-      rd.rd_ddns_retry_session_insert(value)
-      result_insert = rd.rd_ddns_retry_session_access()
-      rd.rd_ddns_retry_session_delete(value)
-      result_delete = rd.rd_ddns_retry_session_access()
+      rd.rd_ddns_batch_session_insert(value, index)
+      result_insert = rd.rd_ddns_batch_session_access()
+      rd.rd_ddns_batch_session_delete(value)
+      result_delete = rd.rd_ddns_batch_session_access()
       
       expect(result_insert).to be_an_instance_of(Array)
       expect(result_delete).to be_nil
     end 
   end
   
-  context "Verify DDNS RETRY LOCK table" do
-    it 'Access non-exist record from DDNS RETRY LOCK table' do
-      result = rd.rd_ddns_retry_lock_isSet()
+  context "Verify DDNS BATCH LOCK table" do
+    it 'Access non-exist record from DDNS BATCH LOCK table' do
+      result = rd.rd_ddns_batch_lock_isSet
       expect(result).to be false
     end
     
-    it 'Access exist record from DDNS RETRY LOCK table' do
-      rd.rd_ddns_retry_lock_set
-      result = rd.rd_ddns_retry_lock_isSet
-      rd.rd_ddns_retry_lock_delete
+    it 'Access exist record from DDNS BATCH LOCK table' do
+      rd.rd_ddns_batch_lock_set
+      result = rd.rd_ddns_batch_lock_isSet
+      rd.rd_ddns_batch_lock_delete
       
       expect(result).to be true
     end
     
     it 'Delete DDNS RETRY LOCK record' do
-      rd.rd_ddns_retry_lock_set
-      result_set = rd.rd_ddns_retry_lock_isSet
-      rd.rd_ddns_retry_lock_delete
-      result_delete = rd.rd_ddns_retry_lock_isSet
+      rd.rd_ddns_batch_lock_set
+      result_set = rd.rd_ddns_batch_lock_isSet
+      rd.rd_ddns_batch_lock_delete
+      result_delete = rd.rd_ddns_batch_lock_isSet
       
       expect(result_set).to be true
       expect(result_delete).to be false

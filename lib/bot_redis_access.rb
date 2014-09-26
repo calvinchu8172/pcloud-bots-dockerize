@@ -17,6 +17,10 @@ DDNS_RETRY_SESSION_KEY = "ddns:retry_session"
 DDNS_RETRY_LOCK_KEY = "ddns:retry_lock"
 DDNS_RETRY_LOCL_EXPIRE_TIME = 20
 
+DDNS_BATCH_SESSION_KEY = "ddns:batch_session"
+DDNS_BATCH_LOCK_KEY = "ddns:batch_lock"
+DDNS_BATCH_LOCK_EXPIRE_TIME = 20
+
 class BotRedisAccess
 
   def initialize
@@ -315,13 +319,13 @@ class BotRedisAccess
       return FALSE
     end
   end
-  
-#============== DDNS RETRY Methods =============
+
+#============== DDNS BATCH Methods =============
 #===============================================
-  
-  def rd_ddns_retry_session_access()
-    key = DDNS_RETRY_SESSION_KEY
-    result = @redis.srandmember(key, 100)
+
+  def rd_ddns_batch_session_access()
+    key = DDNS_BATCH_SESSION_KEY
+    result = @redis.zrange(key, 0, -1)
     
     if !result.empty? then
       return result
@@ -329,40 +333,37 @@ class BotRedisAccess
       return nil
     end
   end
-  
-  def rd_ddns_retry_session_insert(value=nil)
-    return nil if nil == value || !valid_json?(value)
+
+  def rd_ddns_batch_session_insert(value=nil, index=nil)
+    return nil if nil == value || nil == index
     
-    key = DDNS_RETRY_SESSION_KEY
-    result = @redis.sadd(key, value)
+    key = DDNS_BATCH_SESSION_KEY
+    result = @redis.zadd(key, index.to_i, value)
     
-    if result then
-      return value
-    else
-      return nil
-    end
-  end
-  
-  def rd_ddns_retry_session_delete(value=nil)
-    return nil if nil == value || !valid_json?(value)
-    
-    key = DDNS_RETRY_SESSION_KEY
-    result = @redis.srem(key, value)
     if result then
       return TRUE
     else
       return FALSE
     end
   end
-  
-#=========== DDNS RETRY LOCK Methods ===========
+    
+  def rd_ddns_batch_session_delete(value)
+    key = DDNS_BATCH_SESSION_KEY
+    result = @redis.zrem(key, value)
+    
+    if result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+
+#=========== DDNS BATCH LOCK Methods ===========
 #===============================================
-  
-  def rd_ddns_retry_lock_set
-    key = DDNS_RETRY_LOCK_KEY
-    
-    result = @redis.setex(key, DDNS_RETRY_LOCL_EXPIRE_TIME, "1")
-    
+  def rd_ddns_batch_lock_set
+    key = DDNS_BATCH_LOCK_KEY
+    result = @redis.setex(key, DDNS_BATCH_LOCK_EXPIRE_TIME, "1")
+
     if "OK" == result then
       return TRUE
     else
@@ -370,10 +371,10 @@ class BotRedisAccess
     end
   end
   
-  def rd_ddns_retry_lock_isSet
-    key = DDNS_RETRY_LOCK_KEY
+  def rd_ddns_batch_lock_isSet
+    key = DDNS_BATCH_LOCK_KEY
     result = @redis.get(key)
-    
+
     if !result.nil? then
       return TRUE
     else
@@ -381,10 +382,10 @@ class BotRedisAccess
     end
   end
   
-  def rd_ddns_retry_lock_delete
-    key = DDNS_RETRY_LOCK_KEY
+  def rd_ddns_batch_lock_delete
+    key = DDNS_BATCH_LOCK_KEY
     result = @redis.del(key)
-    
+
     if 1 == result then
       return TRUE
     else
