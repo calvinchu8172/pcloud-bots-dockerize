@@ -282,34 +282,34 @@ module XMPPController
           session_id = info[:session_id]
           
           if !info[:full_domain].nil?
-            domain_S = info[:full_domain].split('.')
-            host_name = domain_S[0]
-            domain_S.shift
-            domain_name = domain_S.join('.')
-            domain_name += '.' if '.' != domain_name[-1, 1]
-          
-            isSuccess = @route_conn.delete_record({host_name: host_name, domain_name: domain_name})
-            Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+            index = @rd_conn.rd_ddns_session_index_get
+            ddns_record = @db_conn.db_ddns_access({device_id: info[:session_id]})
+            ip = ddns_record.ip_address
+
+            batch_data = {index: index, device_id: info[:session_id], full_domain: info[:full_domain], ip: ip, action: 'delete', hasMailed: false}
+            isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+
+            Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                   {event: 'UNPAIR',
                                    direction: 'N/A',
                                    to: 'N/A',
                                    from: 'N/A',
                                    id: 'N/A',
-                                   full_domain: host_name + '.' + domain_name,
-                                   message:"Delete Route53 DDNS record %s as unpair" % [isSuccess ? 'success' : 'failure'] ,
+                                   full_domain: info[:full_domain],
+                                   message:"Delete Route53 DDNS record %s as unpair" % [isDeleted ? 'success' : 'failure'] ,
                                    data: 'N/A'})
           
-            isSuccess = FALSE
+            isDeleted = FALSE
             ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
-            isSuccess = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
-            Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            isDeleted = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
+            Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'UNPAIR',
                                    direction: 'N/A',
                                    to: 'N/A',
                                    from: 'N/A',
                                    id: !ddns.nil? ? ddns.id : 'N/A',
-                                   full_domain: host_name + '.' + domain_name,
-                                   message:"Delete DB DDNS record as unpair %s" % [isSuccess ? 'success' : 'failure'] ,
+                                   full_domain: info[:full_domain],
+                                   message:"Delete DB DDNS record as unpair %s" % [isDeleted ? 'success' : 'failure'] ,
                                    data: 'N/A'})
           end
           
