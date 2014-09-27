@@ -14,10 +14,6 @@ class Devices < ActiveRecord::Base
   self.table_name = "devices"
 end
 
-class DeviceSession < ActiveRecord::Base
-  self.table_name = "device_sessions"
-end
-
 class User < ActiveRecord::Base
   self.table_name = "users"
 end
@@ -190,59 +186,6 @@ class BotDBAccess
     
     return !result.nil? ? TRUE : FALSE
   end
-  
-  def db_device_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account))
-    
-    rows = DeviceSession.where(data).first
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_device_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip) || !data.has_key?(:xmpp_account) || !data.has_key?(:password)
-
-    rows = self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]})
-    if rows.nil? then
-      isSuccess = DeviceSession.create(:device_id => data[:device_id],
-                                       :ip => data[:ip],
-                                       :xmpp_account => data[:xmpp_account],
-                                       :password => data[:password]
-                                       )
-      
-      return self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]}) if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_device_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account) && !data.has_key?(:password))
-    
-    result = DeviceSession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(ip: data[:ip]) if data.has_key?(:ip)
-      result.update(xmpp_account: data[:xmpp_account]) if data.has_key?(:xmpp_account)
-      result.update(password: data[:password]) if data.has_key?(:password)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_device_session_delete(id = nil)
-    return nil if id.nil?
-    
-    result = DeviceSession.find_by(:id => id)
-    result.destroy if !result.nil?
-    
-    return !result.nil? ? TRUE : FALSE
-  end
 
 #=============== DDNS Methods ===============
 #===============================================
@@ -370,23 +313,6 @@ class BotDBAccess
     
     rows = DDNSSession.find_by_sql(sql_string).first
     
-    if !rows.nil? && rows.respond_to?(:email) then
-      return rows.email
-    else
-      return nil
-    end
-  end
-  
-  def db_retrive_user_email_by_xmpp_account(account=nil)
-    return nil if account.nil?
-
-    sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `device_sessions`, `users` WHERE \
-                 `device_sessions`.`xmpp_account`='%s' AND \
-                 `device_sessions`.`device_id`=`pairings`.`device_id` AND \
-                 `users`.`id`=`pairings`.`user_id`" % account
-    
-    rows = DeviceSession.find_by_sql(sql_string).first
-
     if !rows.nil? && rows.respond_to?(:email) then
       return rows.email
     else

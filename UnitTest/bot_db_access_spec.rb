@@ -100,14 +100,9 @@ describe BotDBAccess do
     device_methods = ['db_device_access',
                       'db_device_insert',
                       'db_device_update',
-                      'db_device_delete',
-                      'db_device_session_access',
-                      'db_device_session_insert',
-                      'db_device_session_update',
-                      'db_device_session_delete']
+                      'db_device_delete']
     
     device_id = nil
-    device_session_id = nil
     
     it 'Existence of Device & Device Session methods check' do
       device_methods.each do |x|
@@ -147,41 +142,6 @@ describe BotDBAccess do
       device_id = nil
       
       isSuccess = db.db_device_delete(0)
-      expect(isSuccess).to be false
-    end
-    
-    it 'Access non-exist record of Device Session table' do
-      data = {device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot3', password: '12345'}
-      session = db.db_device_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into Device Session table and re-test access method' do
-      data = {device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot3', password: '12345'}
-      session = db.db_device_session_insert(data)
-      expect(session).to respond_to(:id)
-      expect(session.xmpp_account).to eq('bot3')
-      device_session_id = session.id
-      
-      access = db.db_device_session_access({id: device_session_id})
-      expect(access).to respond_to(:id)
-    end
-    
-    it 'Update Device Session record' do
-      data = {id: device_session_id, device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot4', password: '12345'}
-      isSuccess = db.db_device_session_update(data)
-      expect(isSuccess).to be true
-      
-      session = db.db_device_session_access({id: device_session_id})
-      expect(session.xmpp_account).to eq('bot4')
-    end
-    
-    it 'Delete Device session record' do
-      isSuccess = db.db_device_session_delete(device_session_id)
-      expect(isSuccess).to be true
-      device_session_id = nil
-      
-      isSuccess = db.db_device_session_delete(0)
       expect(isSuccess).to be false
     end
   end
@@ -283,11 +243,6 @@ describe BotDBAccess do
     
     it 'Retrieve user email by DDNS Session id' do
       user_email = db.db_retrive_user_email_by_ddns_session_id(1)
-      expect(user_email).to be_an_instance_of(String)
-    end
-    
-    it 'Retrieve user email by XMPP account' do
-      user_email = db.db_retrive_user_email_by_xmpp_account('bot2')
       expect(user_email).to be_an_instance_of(String)
     end
 
