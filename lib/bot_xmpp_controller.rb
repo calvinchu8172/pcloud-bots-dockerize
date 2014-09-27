@@ -120,14 +120,11 @@ module XMPPController
             ddns = JSON.parse(data)
         
             session_id = ddns["index"]
-            device_id = ddns["device_id"]
             full_domain = ddns["full_domain"]
             domain_name = find_domainname(full_domain)
             action = ddns["action"]
-      
-            device = @rd_conn.rd_device_session_access(device_id)
-            ip = device["ip"]
-            
+            ip = ddns["ip"]
+
             isInclouded = tempR.include?(full_domain)
             if zone_name == domain_name && !isInclouded then
               records << {full_domain: full_domain, ip: ip, action: action, index: session_id}
@@ -170,9 +167,7 @@ module XMPPController
               full_domain = ddns["full_domain"]
               hasMailed = ddns["hasMailed"]
               action = ddns["action"]
-
-              device = @rd_conn.rd_device_session_access(device_id)
-              ip = device["ip"]
+              ip = ddns["ip"]
 
               user_email = @db_conn.db_retrive_user_email_by_device_id(device_id)
           
@@ -229,8 +224,10 @@ module XMPPController
                   @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_FAILURE}) if !ddns_session.nil?
                   
                   @rd_conn.rd_ddns_batch_session_delete(data)
-                  retry_data = {index: session_id, device_id: device_id, full_domain: full_domain, action: 'update', hasMailed: true}
+                  retry_data = {index: session_id, device_id: device_id, full_domain: full_domain, ip: ip, action: 'update', hasMailed: true}
                   @rd_conn.rd_ddns_batch_session_insert(JSON.generate(retry_data), session_id)
+                else
+                  @rd_conn.rd_ddns_batch_session_delete(data) if 'delete' == action
                 end
               end
             end
@@ -408,7 +405,10 @@ module XMPPController
           
           ddns_record = @db_conn.db_ddns_access({device_id: info[:device_id].to_i})
           
-          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], action: 'update', hasMailed: false}
+          device = @rd_conn.rd_device_session_access(info[:device_id])
+          ip = device["ip"]
+          
+          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update', hasMailed: false}
           @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), info[:session_id])
           
           isSuccess = FALSE
@@ -424,43 +424,45 @@ module XMPPController
             old_full_domain = ddns_record.full_domain.to_s
 
             data = {id: ddns_record.id, full_domain: info[:full_domain], ip_address: info[:ip]}
-            isSuccess =  @db_conn.db_ddns_update(data)
-            Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            isUpdated =  @db_conn.db_ddns_update(data)
+            Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'DDNS',
                                    direction: 'N/A',
                                    to: 'N/A',
                                    from: 'N/A',
                                    id: ddns_record.id,
                                    full_domain: info[:full_domain],
-                                   message:"Update DB DDNS setting %s" % [isSuccess ? 'success' : 'failure'] ,
+                                   message:"Update DB DDNS setting %s" % [isUpdated ? 'success' : 'failure'] ,
                                    data: {ip: info[:ip]}})
             
             if old_full_domain != info[:full_domain]
               index = @rd_conn.rd_ddns_session_index_get
-              batch_data = {index: index, device_id: info[:device_id], full_domain: old_full_domain, action: 'delete', hasMailed: false}
-              isSuccess = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
-              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+              ip = ddns_record.ip_address
+
+              batch_data = {index: index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+              isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+              Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
                                      from: 'N/A',
                                      id: 'N/A',
                                      full_domain: old_full_domain,
-                                     message:"Delete previous DDNS setting in Route53 %s" % [isSuccess ? 'success' : 'failure'] ,
+                                     message:"Delete previous DDNS setting in Route53 %s" % [isDeleted ? 'success' : 'failure'] ,
                                      data: 'N/A'})
             end
           else
             data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
             new_ddns = @db_conn.db_ddns_insert(data)
-            isSuccess = !new_ddns.nil? ? TRUE : FALSE
-            Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            isInserted = !new_ddns.nil? ? TRUE : FALSE
+            Fluent::Logger.post(isInserted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'DDNS',
                                    direction: 'N/A',
                                    to: 'N/A',
                                    from: 'N/A',
                                    id: 'N/A',
                                    full_domain: info[:full_domain],
-                                   message:"Insert new DDNS setting into DB %s" % [isSuccess ? 'success' : 'failure'] ,
+                                   message:"Insert new DDNS setting into DB %s" % [isInserted ? 'success' : 'failure'] ,
                                    data: {device_id: info[:device_id], ip: info[:ip]}})
           end
 
@@ -884,10 +886,10 @@ module XMPPController
         device_id = nil
         old_device_id = nil
         xmpp_account = msg.from.node
-        device = @db_conn.db_device_session_access({xmpp_account: xmpp_account})
-        device_ip = device.ip if !device.nil?
-        device_id = device.device_id if !device.nil?
-            
+        device_id = @rd_conn.rd_xmpp_session_access(xmpp_account).to_i
+        device = @rd_conn.rd_device_session_access(device_id)
+        device_ip = device["ip"] if !device.nil?
+        
         ddns_record = @db_conn.db_ddns_access({full_domain: host_name + '.' + domain_name})
         old_device_id = ddns_record.device_id if !ddns_record.nil?
             
@@ -907,8 +909,24 @@ module XMPPController
             EM.defer {
               session_id = x[:session_id]
               ddns_record = @db_conn.db_ddns_access({device_id: device_id})
-              record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
-              isSuccess = @route_conn.create_record(record_info)
+
+              index = @rd_conn.rd_ddns_session_index_get
+              device = @rd_conn.rd_device_session_access(x[:device_id])
+              ip = device["ip"]
+              session_data = {index: index, device_id: x[:device_id], host_name: x[:host_name], domain_name: x[:domain_name], status: KSTATUS_START}
+              @rd_conn.rd_ddns_session_insert(session_data)
+              batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
+              @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+
+              isSuccess = FALSE
+              i = 0
+              while !isSuccess && i < 100
+                result = @rd_conn.rd_ddns_session_access(index)
+                isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
+                i+=1
+                sleep(0.1)
+              end
+              
               Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                     {event: 'DDNS',
                                      direction: 'N/A',
@@ -918,47 +936,44 @@ module XMPPController
                                      full_domain: x[:host_name] + '.' + x[:domain_name],
                                      message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
                                      data: {ip: x[:device_ip]}})
-              
+                
               if !ddns_record.nil? && isSuccess then
-                domain_S = ddns_record.full_domain.to_s.split('.')
-                host_name = domain_S[0]
-                domain_S.shift
-                domain_name = domain_S.join('.')
-                domain_name += '.' if '.' != domain_name[-1, 1]
+                old_full_domain = ddns_record.full_domain
 
                 data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
-                isSuccess =  @db_conn.db_ddns_update(data)
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                isUpdated =  @db_conn.db_ddns_update(data)
+                Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
                                        from: 'N/A',
                                        id: ddns_record.id,
                                        full_domain: x[:host_name] + '.' + x[:domain_name],
-                                       message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                       message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isUpdated ? 'success' : 'failure'],
                                        data: {ip: x[:device_ip]}})
 
-                if host_name != x[:host_name] || domain_name != x[:domain_name] then
-                  record_info = {host_name: host_name, domain_name: domain_name}
-                  isSuccess = @route_conn.delete_record(record_info)
-                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                if old_full_domain != x[:host_name] + '.' + x[:domain_name] then
+                  index = @rd_conn.rd_ddns_session_index_get
+                  ip = ddns_record.ip_address
+
+                  batch_data = {index: index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                  isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+
+                  Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                         {event: 'DDNS',
                                          direction: 'N/A',
                                          to: 'N/A',
                                          from: 'N/A',
                                          id: 'N/A',
-                                         full_domain: host_name + '.' + domain_name,
-                                         message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                         full_domain: old_full_domain,
+                                         message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isDeleted ? 'success' : 'failure'],
                                          data: 'N/A'})
                 end
               end
-                
+              
               if isSuccess then
                 record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
-                @db_conn.db_ddns_insert(record) if ddns_record.nil?
-
-                ddns_retry_session = @db_conn.db_ddns_retry_session_access({full_domain: x[:host_name] + '.' + x[:domain_name]})
-                @db_conn.db_ddns_retry_session_delete(ddns_retry_session.id) if !ddns_retry_session.nil?
+                @db_conn.db_ddns_insert(record)
 
                 info = {xmpp_account: x[:msg_from], session_id: session_id}
                 send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
@@ -983,20 +998,6 @@ module XMPPController
                                        full_domain: x[:host_name] + '.' + x[:domain_name],
                                        message:"Send DDNS SETTING FAILURE RESPONSE message to device as create Route53 DDNS record failure",
                                        data: {error_code: 997}})
-
-                @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
-
-                user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
-                isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
-                                        {event: 'DDNS',
-                                         direction: 'N/A',
-                                         to: 'N/A',
-                                         from: 'N/A',
-                                         id: 'N/A',
-                                         full_domain: 'N/A',
-                                         message:"Send DDNS offline email to user %s" % [isSuccess ? 'success' : 'failure'],
-                                         data: {user_email: user_email}})
               end
             }
             #routeThread.abort_on_exception = TRUE
@@ -1016,10 +1017,25 @@ module XMPPController
               |x|
               EM.defer {
                 session_id = x[:session_id]
-              
                 ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
-                record_info = {host_name: x[:host_name], domain_name: x[:domain_name], ip: x[:device_ip]}
-                isSuccess = @route_conn.create_record(record_info)
+                
+                index = @rd_conn.rd_ddns_session_index_get
+                device = @rd_conn.rd_device_session_access(x[:device_id])
+                ip = device["ip"]
+                session_data = {index: index, device_id: x[:device_id], host_name: x[:host_name], domain_name: x[:domain_name], status: KSTATUS_START}
+                @rd_conn.rd_ddns_session_insert(session_data)
+                batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
+                @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+              
+                isSuccess = FALSE
+                i = 0
+                while !isSuccess && i < 100
+                  result = @rd_conn.rd_ddns_session_access(index)
+                  isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
+                  i+=1
+                  sleep(0.1)
+                end
+                
                 Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                       {event: 'DDNS',
                                        direction: 'N/A',
@@ -1031,35 +1047,36 @@ module XMPPController
                                        data: {ip: x[:device_ip]}})
               
                 if !ddns_record.nil? && isSuccess then
-                  domain_S = ddns_record.full_domain.to_s.split('.')
-                  host_name = domain_S[0]
-                  domain_S.shift
-                  domain_name = domain_S.join('.')
-                  domain_name += '.' if '.' != domain_name[-1, 1]
+                  old_full_domain = ddns_record.full_domain.to_s
+                  host_name = find_hostname(old_full_domain)
+                  domain_name = find_domainname(old_full_domain)
 
                   data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
-                  isSuccess =  @db_conn.db_ddns_update(data)
-                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                  isUpdated =  @db_conn.db_ddns_update(data)
+                  Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                         {event: 'DDNS',
                                          direction: 'N/A',
                                          to: 'N/A',
                                          from: 'N/A',
                                          id: ddns_record.id,
                                          full_domain: x[:host_name] + '.' + x[:domain_name],
-                                         message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                         message:"Update DDNS table %s as received DDNS SETTING REQUEST message from device" % [isUpdated ? 'success' : 'failure'],
                                          data: {ip: x[:device_ip]}})
 
-                  if host_name != x[:host_name] || domain_name != x[:domain_name] then
-                    record_info = {host_name: host_name, domain_name: domain_name}
-                    isSuccess = @route_conn.delete_record(record_info)
-                    Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                  if old_full_domain != x[:host_name] + '.' + x[:domain_name]then
+                    index = @rd_conn.rd_ddns_session_index_get
+                    ip = ddns_record.ip_address
+
+                    batch_data = {index: index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                    isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+                    Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                           {event: 'DDNS',
                                            direction: 'N/A',
                                            to: 'N/A',
                                            from: 'N/A',
                                            id: 'N/A',
-                                           full_domain: host_name + '.' + domain_name,
-                                           message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                           full_domain: old_full_domain,
+                                           message:"Delete previous record from DDNS table %s as received DDNS SETTING REQUEST message from device" % [isDeleted ? 'success' : 'failure'],
                                            data: 'N/A'})
                   end
                 end
@@ -1088,20 +1105,6 @@ module XMPPController
                                          full_domain: x[:host_name] + '.' + x[:domain_name],
                                          message:"Send DDNS SETTING FAILURE RESPONSE message to device as create Route53 DDNS record failure",
                                          data: {error_code: 997}})
-
-                  @db_conn.db_ddns_retry_session_insert({device_id: x[:device_id], full_domain: x[:host_name] + '.' + x[:domain_name]})
-
-                  user_email = @db_conn.db_retrive_user_email_by_xmpp_account(x[:xmpp_account])
-                  isSuccess = @mail_conn.send_offline_mail(user_email) if !user_email.nil?
-                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
-                                        {event: 'DDNS',
-                                         direction: 'N/A',
-                                         to: 'N/A',
-                                         from: 'N/A',
-                                         id: 'N/A',
-                                         full_domain: 'N/A',
-                                         message:"Send DDNS offline email to user %s" % [isSuccess ? 'success' : 'failure'],
-                                         data: {user_email: user_email}})
                 end
               }
               #routeThread.abort_on_exception = TRUE
@@ -1353,8 +1356,7 @@ module XMPPController
       
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
-      data = {id: session_id, status:3}
-      isSuccess = @db_conn.db_ddns_session_update(data)
+      isSuccess = TRUE
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'DDNS',
                              direction: 'Device->Bot',
