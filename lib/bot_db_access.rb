@@ -14,24 +14,12 @@ class Devices < ActiveRecord::Base
   self.table_name = "devices"
 end
 
-class DeviceSession < ActiveRecord::Base
-  self.table_name = "device_sessions"
-end
-
 class User < ActiveRecord::Base
   self.table_name = "users"
 end
 
 class DDNS < ActiveRecord::Base
   self.table_name = "ddns"
-end
-
-class DDNSSession < ActiveRecord::Base
-  self.table_name = "ddns_sessions"
-end
-
-class DDNSRetrySession < ActiveRecord::Base
-  self.table_name = "ddns_retry_sessions"
 end
 
 class BotDBAccess
@@ -190,59 +178,6 @@ class BotDBAccess
     
     return !result.nil? ? TRUE : FALSE
   end
-  
-  def db_device_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account))
-    
-    rows = DeviceSession.where(data).first
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_device_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:ip) || !data.has_key?(:xmpp_account) || !data.has_key?(:password)
-
-    rows = self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]})
-    if rows.nil? then
-      isSuccess = DeviceSession.create(:device_id => data[:device_id],
-                                       :ip => data[:ip],
-                                       :xmpp_account => data[:xmpp_account],
-                                       :password => data[:password]
-                                       )
-      
-      return self.db_device_session_access({device_id: data[:device_id], ip: data[:ip], xmpp_account: data[:xmpp_account]}) if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_device_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:ip) && !data.has_key?(:xmpp_account) && !data.has_key?(:password))
-    
-    result = DeviceSession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(ip: data[:ip]) if data.has_key?(:ip)
-      result.update(xmpp_account: data[:xmpp_account]) if data.has_key?(:xmpp_account)
-      result.update(password: data[:password]) if data.has_key?(:password)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_device_session_delete(id = nil)
-    return nil if id.nil?
-    
-    result = DeviceSession.find_by(:id => id)
-    result.destroy if !result.nil?
-    
-    return !result.nil? ? TRUE : FALSE
-  end
 
 #=============== DDNS Methods ===============
 #===============================================
@@ -295,54 +230,6 @@ class BotDBAccess
     return !result.nil? ? TRUE : FALSE
   end
   
-  def db_ddns_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:full_domain) && !data.has_key?(:status))
-    
-    rows = DDNSSession.where(data).first
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_ddns_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:full_domain) || !data.has_key?(:status)
-    
-    rows = self.db_ddns_session_access(data)
-    
-    if rows.nil? then
-      isSuccess = DDNSSession.create(data)
-      return self.db_ddns_session_access(data) if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_ddns_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:device_id) && !data.has_key?(:full_domain) && !data.has_key?(:status))
-    
-    result = DDNSSession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(full_domain: data[:full_domain]) if data.has_key?(:full_domain)
-      result.update(status: data[:status]) if data.has_key?(:status)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_ddns_session_delete(id=nil)
-    return nil if id.nil?
-    
-    result = DDNSSession.find_by(:id => id)
-    result.destroy if !result.nil?
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
 #============== User Info Methods ==============
 #===============================================
   def db_retrive_user_local_by_device_id(device_id = nil)
@@ -359,96 +246,16 @@ class BotDBAccess
       return nil
     end
   end
-  
-  def db_retrive_user_email_by_ddns_session_id(id=nil)
-    return nil if id.nil?
-    
-    sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `ddns_sessions`, `users` WHERE \
-                 `ddns_sessions`.`id`=%d AND \
-                 `ddns_sessions`.`device_id`=`pairings`.`device_id` AND \
-                 `users`.`id`=`pairings`.`user_id`" % id
-    
-    rows = DDNSSession.find_by_sql(sql_string).first
-    
-    if !rows.nil? && rows.respond_to?(:email) then
-      return rows.email
-    else
-      return nil
-    end
-  end
-  
-  def db_retrive_user_email_by_xmpp_account(account=nil)
-    return nil if account.nil?
-    
-    sql_string = "SELECT `users`.`email` AS `email` FROM `pairings`, `device_sessions`, `users` WHERE \
-                 `device_sessions`.`xmpp_account`='%s' AND \
-                 `device_sessions`.`device_id`=`pairings`.`device_id` AND \
-                 `users`.`id`=`pairings`.`user_id`" % account
-    
-    rows = DeviceSession.find_by_sql(sql_string).first
-    
-    if !rows.nil? && rows.respond_to?(:email) then
-      return rows.email
-    else
-      return nil
-    end
-  end
 
-#=============== DDNS Retry Methods ============
-#===============================================
-  def db_ddns_retry_session_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:full_domain))
-    
-    rows = DDNSRetrySession.where(data).first
-    
-    if !rows.nil? then
-      return rows
-    else
-      return nil
-    end
-  end
-  
-  def db_ddns_retry_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || !data.has_key?(:full_domain)
-    
-    rows = self.db_ddns_retry_session_access(data)
-    
-    if rows.nil? then
-      record = DDNSRetrySession.new(data)
-      isSuccess = record.save
-      
-      return record if isSuccess
-    else
-      return rows
-    end
-  end
-  
-  def db_ddns_retry_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || !data.has_key?(:device_id) || !data.has_key?(:full_domain)
-    
-    result = DDNSRetrySession.find_by(:id => data[:id])
-    if !result.nil? then
-      result.update(device_id: data[:device_id]) if data.has_key?(:device_id)
-      result.update(full_domain: data[:full_domain]) if data.has_key?(:full_domain)
-      result.update(updated_at: DateTime.now)
-    end
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_ddns_retry_session_delete(id=nil)
-    return nil if id.nil?
-    
-    result = DDNSRetrySession.find_by(:id => id)
-    result.destroy if !result.nil?
-    
-    return !result.nil? ? TRUE : FALSE
-  end
-  
-  def db_retrive_retry_ddns
-    data = DDNSRetrySession.limit(100).all
-    if !data.nil? then
-      return data
+  def db_retrive_user_email_by_device_id(device_id=nil)
+    return nil if device_id.nil?
+
+    sql_string = "SELECT `users`.`email` AS `email` FROM `users`, `pairings` WHERE `pairings`.`device_id`=%d \
+                 AND `pairings`.`user_id`=`users`.`id`" % device_id
+    rows = User.find_by_sql(sql_string).first
+
+    if !rows.nil? && rows.respond_to?(:email) then
+      return rows.email
     else
       return nil
     end

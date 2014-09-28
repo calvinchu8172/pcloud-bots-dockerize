@@ -100,14 +100,9 @@ describe BotDBAccess do
     device_methods = ['db_device_access',
                       'db_device_insert',
                       'db_device_update',
-                      'db_device_delete',
-                      'db_device_session_access',
-                      'db_device_session_insert',
-                      'db_device_session_update',
-                      'db_device_session_delete']
+                      'db_device_delete']
     
     device_id = nil
-    device_session_id = nil
     
     it 'Existence of Device & Device Session methods check' do
       device_methods.each do |x|
@@ -149,55 +144,15 @@ describe BotDBAccess do
       isSuccess = db.db_device_delete(0)
       expect(isSuccess).to be false
     end
-    
-    it 'Access non-exist record of Device Session table' do
-      data = {device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot3', password: '12345'}
-      session = db.db_device_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into Device Session table and re-test access method' do
-      data = {device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot3', password: '12345'}
-      session = db.db_device_session_insert(data)
-      expect(session).to respond_to(:id)
-      expect(session.xmpp_account).to eq('bot3')
-      device_session_id = session.id
-      
-      access = db.db_device_session_access({id: device_session_id})
-      expect(access).to respond_to(:id)
-    end
-    
-    it 'Update Device Session record' do
-      data = {id: device_session_id, device_id: 1234567, ip: '10.1.1.113', xmpp_account: 'bot4', password: '12345'}
-      isSuccess = db.db_device_session_update(data)
-      expect(isSuccess).to be true
-      
-      session = db.db_device_session_access({id: device_session_id})
-      expect(session.xmpp_account).to eq('bot4')
-    end
-    
-    it 'Delete Device session record' do
-      isSuccess = db.db_device_session_delete(device_session_id)
-      expect(isSuccess).to be true
-      device_session_id = nil
-      
-      isSuccess = db.db_device_session_delete(0)
-      expect(isSuccess).to be false
-    end
   end
   
   context "About DDNS & DDNS Session table" do
     ddns_methods = ['db_ddns_access',
                     'db_ddns_insert',
                     'db_ddns_update',
-                    'db_ddns_delete',
-                    'db_ddns_session_access',
-                    'db_ddns_session_insert',
-                    'db_ddns_session_update',
-                    'db_ddns_session_delete',]
+                    'db_ddns_delete']
     
     ddns_id = nil
-    ddns_session_id = nil
     
     it 'Existence of DDNS & DDNS Session methods check' do
       ddns_methods.each do |x|
@@ -239,89 +194,32 @@ describe BotDBAccess do
       isSuccess = db.db_ddns_delete(0)
       expect(isSuccess).to be false
     end
-    
-    it 'Access non-exist record from DDNS Session table' do
-      data = {device_id: 12345678, full_domain: 'mytest3.demo.ecoworkinc.com.', status: 0}
-      session = db.db_ddns_session_access(data)
-      expect(session).to be_nil
-    end
-    
-    it 'Add new record into DDNS Session table and re-test access method' do
-      data = {device_id: 12345678, full_domain: 'mytest3.demo.ecoworkinc.com.', status: 0}
-      session = db.db_ddns_session_insert(data)
-      expect(session).to respond_to(:id)
-      ddns_session_id = session.id
-      
-      access = db.db_ddns_session_access({id: ddns_session_id})
-      expect(access).to respond_to(:id)
-    end
-    
-    it 'Update DDNS Session record' do
-      data = {id: ddns_session_id, device_id: 12345678, full_domain: 'mytest3.demo.ecoworkinc.com.', status: 1}
-      isSuccess = db.db_ddns_session_update(data)
-      expect(isSuccess).to be true
-      
-      access = db.db_ddns_session_access({id: ddns_session_id})
-      expect(access.status.to_d).to eq(1)
-    end
-    
-    it 'Delete DDNS Session record' do
-      isSuccess = db.db_ddns_session_delete(ddns_session_id)
-      expect(isSuccess).to be true
-      
-      isSuccess = db.db_ddns_session_delete(0)
-      expect(isSuccess).to be false
-    end
   end
   
   context "About User info access" do
     
     it 'Retrieve user local by device id' do
-      user_local = db.db_retrive_user_local_by_device_id('123456789')
+      device_id = Time.now.to_i
+      user_id = 1
+      pairing = db.db_pairing_insert(user_id, device_id)
+      user_local = db.db_retrive_user_local_by_device_id(device_id)
+      isDeleted = db.db_pairing_delete(pairing.id)
+
+      expect(pairing).not_to be_nil
       expect(user_local).to be_an_instance_of(String)
+      expect(isDeleted).to be true
     end
-    
-    it 'Retrieve user email by DDNS Session id' do
-      user_email = db.db_retrive_user_email_by_ddns_session_id(1)
+
+    it 'Retrieve user email by device id' do
+      device_id = Time.now.to_i
+      user_id = 1
+      pairing = db.db_pairing_insert(user_id, device_id)
+      user_email = db.db_retrive_user_email_by_device_id(device_id)
+      isDeleted = db.db_pairing_delete(pairing.id)
+
+      expect(pairing).not_to be_nil
       expect(user_email).to be_an_instance_of(String)
-    end
-    
-    it 'Retrieve user email by XMPP account' do
-      user_email = db.db_retrive_user_email_by_xmpp_account('bot2')
-      expect(user_email).to be_an_instance_of(String)
-    end
-  end
-  
-  ddns_retry_session_id = nil
-  ddns_retry_data = {device_id: 123456789, full_domain: 'test123.demo.ecoworokinc.com.'}
-  
-  context "About DDNS Retry Session table" do
-    it 'Access non-exist record from DDNS Retry Session table' do
-      ddns = db.db_ddns_retry_session_access({id: 0})
-      expect(ddns).to be_nil
-    end
-    
-    it 'Add new record into DDNS Retry Session table' do
-      
-      ddns = db.db_ddns_retry_session_insert(ddns_retry_data)
-      expect(ddns).not_to be_nil
-      ddns_retry_session_id = ddns.id
-    end
-    
-    it 'Update DDNS Retry Session record' do
-      ddns_retry_data[:id] = ddns_retry_session_id
-      isSuccess = db.db_ddns_retry_session_update(ddns_retry_data)
-      expect(isSuccess).to be true
-    end
-    
-    it 'Access all retry DDNS session' do
-      ddnss = db.db_retrive_retry_ddns
-      expect(ddnss).not_to be_nil
-    end
-    
-    it 'Delete DDNS Retry Session record' do
-      isSuccess = db.db_ddns_retry_session_delete(ddns_retry_session_id)
-      expect(isSuccess).to be true
+      expect(isDeleted).to be true
     end
   end
 end

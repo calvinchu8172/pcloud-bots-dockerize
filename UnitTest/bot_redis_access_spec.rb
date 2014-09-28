@@ -298,6 +298,13 @@ describe BotRedisAccess do
   end
   
   context "Verify DDNS session table" do
+    it 'Get DDNS session index' do
+      previous = rd.rd_ddns_session_index_get
+      result = rd.rd_ddns_session_index_get
+
+      expect(result.to_i).to eq(previous.to_i + 1)
+    end
+
     it 'Access non-exist record from DDNS session table' do
       index = Time.now.to_i
       result = rd.rd_ddns_session_access(index)
@@ -433,55 +440,113 @@ describe BotRedisAccess do
     end 
   end
   
-  context "Verify DDNS RETRY session table" do
-    it 'Access non-exist record from DDNS RETRY session table' do
-      result = rd.rd_ddns_retry_session_access()
+  context "Verify XMPP session table" do
+    it 'Access non-exist record from XMPP session table' do
+      account = 'bot%d' % Time.now.to_i
+      result = rd.rd_xmpp_session_access(account)
+
+      expect(result).to be_nil
+    end
+
+    it 'Access exist record from XMPP session table' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result = rd.rd_xmpp_session_access(account)
+      rd.rd_xmpp_session_delete(account)
+
+      expect(result).to eq(device_id.to_s)
+    end
+
+    it 'Update XMPP session record' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+      new_device_id = device_id + 1
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result_insert = rd.rd_xmpp_session_access(account)
+
+      rd.rd_xmpp_session_update(account, new_device_id)
+      result_updated = rd.rd_xmpp_session_access(account)
+
+      rd.rd_xmpp_session_delete(account)
+
+      expect(result_insert).to eq(device_id.to_s)
+      expect(result_updated).to eq(new_device_id.to_s)
+    end
+
+    it 'Delete Unpair session record' do
+      device_id = Time.now.to_i
+      account = 'bot%d' % device_id
+
+      rd.rd_xmpp_session_insert(account, device_id)
+      result_insert = rd.rd_xmpp_session_access(account)
+      rd.rd_xmpp_session_delete(account)
+      result_deleted = rd.rd_xmpp_session_access(account)
+
+      expect(result_insert).to eq(device_id.to_s)
+      expect(result_deleted).to be_nil
+    end
+  end
+
+  context "Verify DDNS BATCH session table" do
+    it 'Get DDNS BATCH session count number' do
+      result = rd.rd_ddns_batch_session_count
+
+      expect(result).not_to be_nil
+    end
+
+    it 'Access non-exist record from DDNS BATCH session table' do
+      result = rd.rd_ddns_batch_session_access()
       
       expect(result).to be_nil
     end
     
-    it 'Access exist record from DDNS RETRY session table' do
-      value = '{"name":"hibari", "age":34}'
+    it 'Access exist record from DDNS BATCH session table' do
+      index = Time.now.to_i
+      value = '{"name":"hibari", "age":%d}' % index
       
-      rd.rd_ddns_retry_session_insert(value)
-      result = rd.rd_ddns_retry_session_access()
-      rd.rd_ddns_retry_session_delete(value)
+      rd.rd_ddns_batch_session_insert(value, index)
+      result = rd.rd_ddns_batch_session_access()
+      rd.rd_ddns_batch_session_delete(value)
       
       expect(result).to be_an_instance_of(Array)
     end
     
-    it 'Delete DDNS RETRY session record' do
-      value = '{"name":"hibari", "age":34}'
+    it 'Delete DDNS BATCH session record' do
+      index = Time.now.to_i
+      value = '{"name":"hibari", "age":%d}' % index
       
-      rd.rd_ddns_retry_session_insert(value)
-      result_insert = rd.rd_ddns_retry_session_access()
-      rd.rd_ddns_retry_session_delete(value)
-      result_delete = rd.rd_ddns_retry_session_access()
+      rd.rd_ddns_batch_session_insert(value, index)
+      result_insert = rd.rd_ddns_batch_session_access()
+      rd.rd_ddns_batch_session_delete(value)
+      result_delete = rd.rd_ddns_batch_session_access()
       
       expect(result_insert).to be_an_instance_of(Array)
       expect(result_delete).to be_nil
     end 
   end
   
-  context "Verify DDNS RETRY LOCK table" do
-    it 'Access non-exist record from DDNS RETRY LOCK table' do
-      result = rd.rd_ddns_retry_lock_isSet()
+  context "Verify DDNS BATCH LOCK table" do
+    it 'Access non-exist record from DDNS BATCH LOCK table' do
+      result = rd.rd_ddns_batch_lock_isSet
       expect(result).to be false
     end
     
-    it 'Access exist record from DDNS RETRY LOCK table' do
-      rd.rd_ddns_retry_lock_set
-      result = rd.rd_ddns_retry_lock_isSet
-      rd.rd_ddns_retry_lock_delete
+    it 'Access exist record from DDNS BATCH LOCK table' do
+      rd.rd_ddns_batch_lock_set
+      result = rd.rd_ddns_batch_lock_isSet
+      rd.rd_ddns_batch_lock_delete
       
       expect(result).to be true
     end
     
     it 'Delete DDNS RETRY LOCK record' do
-      rd.rd_ddns_retry_lock_set
-      result_set = rd.rd_ddns_retry_lock_isSet
-      rd.rd_ddns_retry_lock_delete
-      result_delete = rd.rd_ddns_retry_lock_isSet
+      rd.rd_ddns_batch_lock_set
+      result_set = rd.rd_ddns_batch_lock_isSet
+      rd.rd_ddns_batch_lock_delete
+      result_delete = rd.rd_ddns_batch_lock_isSet
       
       expect(result_set).to be true
       expect(result_delete).to be false

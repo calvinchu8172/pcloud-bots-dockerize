@@ -56,30 +56,30 @@ XMPPController.when_ready { xmpp_connect_ready = TRUE }
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
-ddnsThread = Thread.new{
-  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-                                           direction: 'N/A',
-                                           to: 'N/A',
-                                           form: 'N/A',
-                                           id: 'N/A',
-                                           full_domain: 'N/A',
-                                           message:"Start re-update DDNS record ...",
-                                           data: 'N/A'})
-  loop do
-    sleep(30)
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-                                             direction: 'N/A',
-                                             to: 'N/A',
-                                             form: 'N/A',
-                                             id: 'N/A',
-                                             full_domain: 'N/A',
-                                             message:"Retry register DDNS record ...",
-                                             data: 'N/A'})
-    XMPPController.retry_ddns_register
-  end
-}
-ddnsThread.abort_on_exception = TRUE
-threads << ddnsThread
+#ddnsThread = Thread.new{
+#  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+#                                           direction: 'N/A',
+#                                           to: 'N/A',
+#                                           form: 'N/A',
+#                                           id: 'N/A',
+#                                           full_domain: 'N/A',
+#                                           message:"Start re-update DDNS record ...",
+#                                           data: 'N/A'})
+#  loop do
+#    sleep(1)
+#    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+#                                             direction: 'N/A',
+#                                             to: 'N/A',
+#                                             form: 'N/A',
+#                                             id: 'N/A',
+#                                             full_domain: 'N/A',
+#                                             message:"Retry register DDNS record ...",
+#                                             data: 'N/A'})
+#    XMPPController.retry_ddns_register
+#  end
+#}
+#ddnsThread.abort_on_exception = TRUE
+#threads << ddnsThread
 
 while !xmpp_connect_ready
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
@@ -218,18 +218,17 @@ def worker(sqs, db_conn, rd_conn)
         device = nil
         xmpp_account = nil
         session_id = data[:session_id]
-        ddns_session = db_conn.db_ddns_session_access({id: session_id})
-        device = rd_conn.rd_device_session_access(ddns_session.device_id.to_i) if !ddns_session.nil?
+        ddns_session = rd_conn.rd_ddns_session_access(session_id)
+        device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
-        device_session = db_conn.db_device_session_access({xmpp_account: xmpp_account})
         
         info = {xmpp_account: xmpp_account.to_s,
-                session_id: data[:session_id],
-                device_id: !ddns_session.nil? ? ddns_session.device_id : '',
-                ip: !device_session.nil? ? device_session.ip : '',
-                full_domain: !ddns_session.nil? ? ddns_session.full_domain : ''}
+                session_id: session_id,
+                device_id: !ddns_session.nil? ? ddns_session["device_id"] : '',
+                ip: !device.nil? ? device["ip"] : '',
+                full_domain: !ddns_session.nil? ? ddns_session["host_name"] + '.' + ddns_session["domain_name"] : ''}
         
-        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device_session.nil?
+        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device.nil?
     end
     
     job = nil

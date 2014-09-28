@@ -62,6 +62,64 @@ describe BotRouteAccess do
     dns_data[:domain_name] = 'demo.ecoworkinc.com.'
   end
   
+  it 'Create DNS record in batch mode' do
+    records = Array.new
+    domain = 'demo.ecoworkinc.com.'
+
+    10.times.each do |t|
+      host_name = "test%d" % Time.now.to_i
+      records << {full_domain: "%s.%s" % [host_name, domain], ip: '10.1.1.11%d' % t, action: 'update'}
+      puts '        ' + "create DNS data %s.%s" % [host_name, domain]
+      sleep(1.1)
+    end
+
+    isSuccess = route.batch_create_records({domain_name: domain, records: records})
+    expect(isSuccess).to be true
+
+    records.each do |record|
+      i = 0
+      ipv4 = nil
+      while ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(record[:full_domain])
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+
+      expect(ipv4).to be_an_instance_of(Resolv::IPv4)
+    end
+
+    10.times.each do |t|
+      records[t][:action] = 'delete'
+    end
+
+    hasDeleted = route.batch_create_records({domain_name: domain, records: records})
+    expect(hasDeleted).to be true
+
+    records.each do |record|
+      i = 0
+      ipv4 = ''
+      while !ipv4.nil?
+        begin
+          ipv4 = resolv_i.getaddress(record[:full_domain])
+        rescue Resolv::ResolvError => error
+          ipv4 = nil
+          puts '        ' + error.to_s
+        end
+        sleep(1)
+        i += 1
+        break if i > 120
+      end
+
+      expect(ipv4).to be_nil
+    end
+  end
+
   it "Update DNS record #{dns_data[:host_name]}.#{dns_data[:domain_name]} - #{dns_data[:ip]}" do
     dns_data[:ip] = '10.1.1.115'
     isSuccess = route.update_record(dns_data)
