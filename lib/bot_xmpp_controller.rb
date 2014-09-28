@@ -893,7 +893,7 @@ module XMPPController
         ddns_record = @db_conn.db_ddns_access({full_domain: host_name + '.' + domain_name})
         old_device_id = ddns_record.device_id if !ddns_record.nil?
             
-        if !device_id.nil? && old_device_id.nil? then
+        if !device_id.nil? && old_device_id.nil? && !device_ip.nil? then
           data = {host_name: host_name,
                   domain_name: domain_name,
                   device_ip: device_ip,
@@ -908,7 +908,7 @@ module XMPPController
                 
             EM.defer {
               session_id = x[:session_id]
-              ddns_record = @db_conn.db_ddns_access({device_id: device_id})
+              ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
 
               index = @rd_conn.rd_ddns_session_index_get
               device = @rd_conn.rd_device_session_access(x[:device_id])
@@ -936,7 +936,7 @@ module XMPPController
                                      full_domain: x[:host_name] + '.' + x[:domain_name],
                                      message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
                                      data: {ip: x[:device_ip]}})
-                
+
               if !ddns_record.nil? && isSuccess then
                 old_full_domain = ddns_record.full_domain
 
@@ -1003,7 +1003,7 @@ module XMPPController
             #routeThread.abort_on_exception = TRUE
           }
               
-        elsif !device_id.nil? && !old_device_id.nil? then
+        elsif !device_id.nil? && !old_device_id.nil? && !device_ip.nil? then
           if device_id == old_device_id then
             data = {host_name: host_name,
                     domain_name: domain_name,
@@ -1146,7 +1146,7 @@ module XMPPController
                                id: 'N/A',
                                full_domain: host_name + '.' + domain_name,
                                message:"Send DDNS SETTING FAILURE RESPONSE message to device as DNS format invalid",
-                               data: {error_code: 995}})
+                               data: {error_code: 999}})
       end
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
