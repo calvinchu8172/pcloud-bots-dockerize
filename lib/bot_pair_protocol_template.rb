@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# PAIR_START_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+# PAIR_START_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID', 'VERSION']
 PAIR_START_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
@@ -10,6 +10,7 @@ PAIR_START_REQUEST = <<EOT
     </field>
   </x>
   <thread>%d</thread>
+  <api_version>%s</api_version>
 </message>
 EOT
 
@@ -74,23 +75,25 @@ PAIR_TIMEOUT_FAILURE_FAILURE = <<EOT
 </message>
 EOT
 
-#UNPAIR_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
+#UNPAIR_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID', 'VERSION']
 UNPAIR_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
     <title>unpair</title>
   </x>
   <thread>%d</thread>
+  <api_version>%s</api_version>
 </message>
 EOT
 
-#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE','SESSION_ID']
+#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE','SESSION_ID', 'VERSION']
 UPNP_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="%s">
   <x xmlns="jabber:x:data" type="submit">
     <title>get_upnp_service</title>
   </x>
   <thread>%d</thread>
+  <api_version>%s</api_version>
 </message>
 EOT
 
@@ -129,7 +132,7 @@ UPNP_SETTING_REQUEST = <<EOT
 </message>
 EOT
 
-#DDNS_SETTING_REQUEST % ['RESPONSE_ID', 'REQUEST_ID', 'HOSTNAME', 'DOMAINNAME','SESSION_ID']
+#DDNS_SETTING_REQUEST % ['RESPONSE_ID', 'REQUEST_ID', 'HOSTNAME', 'DOMAINNAME','SESSION_ID', 'VERSION']
 DDNS_SETTING_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
@@ -142,6 +145,7 @@ DDNS_SETTING_REQUEST = <<EOT
     </field>
   </x>
   <thread>%d</thread>
+  <api_version>%s</api_version>
 </message>
 EOT
 

@@ -43,6 +43,8 @@ KSTATUS_SUBMIT = 'submit'
 KSTATUS_UPDATED = 'updated'
 KSTATUS_SUCCESS = 'success'
 
+XMPP_API_VERSION = 'v1.0'
+
 module XMPPController
   extend Blather::DSL
   
@@ -248,7 +250,7 @@ module XMPPController
       when KPAIR_START_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id = info[:device_id]
-        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, device_id]
+        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, device_id, XMPP_API_VERSION]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
@@ -313,7 +315,7 @@ module XMPPController
                                    data: 'N/A'})
           end
           
-          msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id]
+          msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id, XMPP_API_VERSION]
           write_to_stream msg
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
                                                     direction: 'Bot->Device',
@@ -365,7 +367,7 @@ module XMPPController
         #unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
-        msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:session_id]]
+        msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:session_id], XMPP_API_VERSION]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
@@ -467,7 +469,7 @@ module XMPPController
           end
 
           if isSuccess then
-            msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id]]
+            msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id], XMPP_API_VERSION]
             write_to_stream msg
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                       direction: 'Bot->Device',
