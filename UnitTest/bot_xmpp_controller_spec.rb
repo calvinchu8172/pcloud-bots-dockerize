@@ -21,6 +21,8 @@ FLUENT_BOT_FLOWINFO = "bot.flow-info"
 FLUENT_BOT_FLOWERROR = "bot.flow-error"
 FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 
+KPAIR_WAITING_EXPIRE_TIME = 20.0
+
 Jabber::debug = FALSE
 
 describe XMPPController do
@@ -88,11 +90,13 @@ describe XMPPController do
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
       
-      action = xml['x']['field']['value']
+      action = xml['x']['field'][0]['value']
+      timeout = xml['x']['field'][1]['value']
       expect(xml).to be_an_instance_of(Hash)
       expect(action).to eq('start')
+      expect(timeout.to_i).to eq(600)
     end
-  
+
     it 'Send PAIR COMPLETED SUCCESS RESPONSE message to device' do
       session_id = 1
       
@@ -136,47 +140,86 @@ describe XMPPController do
       expect(error.to_d).to eq(error_code)
     end
     
-    it 'Send PAIR TIMEOUT SUCCESS RESPONSE message to device' do
-      session_id = 1
+    it 'Send PAIR TIMEOUT REQUEST message to device' do
+      device_id = Time.now.to_i
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, session_id: session_id}
-      XMPPController.send_request(KPAIR_TIMEOUT_SUCCESS_RESPONSE, info)
+      info = {xmpp_account: device_xmpp_account_node, title: 'pair', tag: device_id}
+      XMPPController.send_request(KSESSION_TIMEOUT_REQUEST, info)
       while x.nil? && i < 200
         sleep(0.1)
-        i += 1
+        i+=1
       end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
       
-      expect(xml).to be_an_instance_of(Hash)
       action = xml['x']['field']['value']
+      expect(xml).to be_an_instance_of(Hash)
+      expect(action).to eq('timeout')
+    end
+
+    it 'Send PAIR CANCEL REQUEST message to device' do
+      device_id = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, title: 'pair', tag: device_id}
+      XMPPController.send_request(KSESSION_CANCEL_REQUEST, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      action = xml['x']['field']['value']
+      expect(xml).to be_an_instance_of(Hash)
       expect(action).to eq('cancel')
     end
     
-    it 'Send PAIR TIMEOUT FAILURE FAILURE message to device' do
-      session_id = 1
-      error_code = 998
+    it 'Send PAIR CANCEL SUCCESS RESPONSE message to device' do
+      device_id = Time.now.to_i
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, error_code: error_code, session_id: session_id}
-      XMPPController.send_request(KPAIR_TIMEOUT_FAILURE_RESPONSE, info)
+      info = {xmpp_account: device_xmpp_account, title: 'pair', tag: device_id}
+      XMPPController.send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
       while x.nil? && i < 200
         sleep(0.1)
-        i += 1
+        i+=1
       end
       
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
       
+      action = xml['x']['field']['value']
       expect(xml).to be_an_instance_of(Hash)
-      action = xml['x']['field'][0]['value']
-      error = xml['x']['field'][1]['value']
       expect(action).to eq('cancel')
-      expect(error.to_d).to eq(error_code)
+    end
+
+    it 'Send PAIR CANCEL FAILURE RESPONSE message to device' do
+      device_id = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'pair', tag: device_id}
+      XMPPController.send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      action = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+      expect(xml).to be_an_instance_of(Hash)
+      expect(action).to eq('cancel')
+      expect(error_code.to_i).to eq(799)
     end
     
     it 'Send UNPAIR ASK REQUEST message to device' do
@@ -572,7 +615,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
-    it 'Receive PAIR START SUCCESS response, timeout test' do
+    it 'Receive PAIR START SUCCESS response, start timeout test' do
       device_id = 1
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i - 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
@@ -591,6 +634,84 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+    it 'Receive PAIR START SUCCESS response, waiting timeout test' do
+      device_id = 1
+      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      pair_session = rd.rd_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+
+      x = nil
+      msg = PAIR_START_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, device_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      j = 20
+      while j > 0
+        puts '        waiting %d second' % j
+        sleep(5)
+        j -= 5
+      end
+      puts '        waiting 0 second'
+
+      i = 0
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      value = xml['x']['field']['value']
+
+      pair_session = rd.rd_pairing_session_access(device_id)
+      hasDeleted = rd.rd_pairing_session_delete(device_id)
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('pair')
+      expect(value).to eq('timeout')
+      expect(pair_session).not_to be_nil
+      expect(pair_session["status"]).to eq('timeout')
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive PAIR TIMEOUT SUCCESS response' do
+      device_id = Time.now.to_i
+      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      pair_session = rd.rd_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+
+      msg = SESSION_TIMEOUT_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'pair', device_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      pair_session = rd.rd_pairing_session_access(device_id)
+      hasDeleted = rd.rd_pairing_session_delete(device_id)
+      isAlive = XMPPController.alive
+
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
+    it 'Receive PAIR CANCEL SUCCESS response' do
+      device_id = Time.now.to_i
+      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      pair_session = rd.rd_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+
+      msg = SESSION_CANCEL_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'pair', device_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      pair_session = rd.rd_pairing_session_access(device_id)
+      hasDeleted = rd.rd_pairing_session_delete(device_id)
+      isAlive = XMPPController.alive
+
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
     it 'Receive UNPAIR SUCCESS response' do
       device_id = Time.now.to_i
       unpair_session = rd.rd_unpair_session_insert(device_id)
@@ -668,7 +789,7 @@ describe XMPPController do
     it 'Receive PAIR COMPLETED SUCCESS response' do
       device_id = Time.now.to_i
       user_id = 2
-      data = {device_id: device_id, user_id: user_id, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      data = {device_id: device_id, user_id: user_id, status: 'waiting', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
 
@@ -707,9 +828,9 @@ describe XMPPController do
       expect(value).to eq('completed')
     end
 
-    it 'Receive PAIR COMPLETED SUCCESS response, but timeout' do
+    it 'Receive PAIR COMPLETED SUCCESS response, but timeout, error code 899' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i - 1 * 60, waiting_expire_at: Time.now.to_i - 1 * 60}
+      data = {device_id: device_id, user_id: 2, status: 'waiting', start_expire_at: Time.now.to_i - 1 * 60, waiting_expire_at: Time.now.to_i - 1 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       
@@ -742,15 +863,39 @@ describe XMPPController do
       expect(error_code.to_d).to eq(899)
     end
     
-    it 'Receive PAIR TIMEOUT response' do
+    it 'Receive PAIR COMPLETED SUCCESS response, but device id incorrect, error code 898' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      
+      x = nil
+      i = 0
+      msg = PAIR_COMPLETED_REQUEST % [bot_xmpp_account, device_xmpp_account, device_id]
+      client.send msg
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      value = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+      expect(title).to eq('pair')
+      expect(value).to eq('completed')
+      expect(error_code.to_d).to eq(898)
+    end
+
+    it 'Receive PAIR CANCEL REQUEST from device' do
+      device_id = Time.now.to_i
+      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 1 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
       
       x = nil
       i = 0
-      msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, device_id]
+      msg = SESSION_CANCEL_REQUEST % [bot_xmpp_account, device_xmpp_account, 'pair', device_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -760,40 +905,20 @@ describe XMPPController do
       pair_session = rd.rd_pairing_session_access(device_id)
       hasDeleted = rd.rd_pairing_session_delete(device_id)
 
-      expect(pair_session).not_to be_nil
-      expect(pair_session["status"]).to eq('timeout')
-
-      expect(hasDeleted).to be true
-
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
-      
-      expect(xml).to be_an_instance_of(Hash)
+
       title = xml['x']['title']
-      cancel = xml['x']['field']['value']
-      expect(title).to eq('pair')
-      expect(cancel).to eq('cancel')
-      
-      x = nil
-      i = 0
-      msg = PAIR_TIMEOUT_REQUEST % [bot_xmpp_account, device_xmpp_account, 0]
-      client.send msg
-      while x.nil? && i < 200
-        sleep(0.1)
-        i += 1
-      end
-      
-      xml = MultiXml.parse(x.to_s)
-      
+      action = xml['x']['field']['value']
+
+      expect(pair_session).not_to be_nil
+      expect(pair_session["status"]).to eq('cancel')
+      expect(hasDeleted).to be true
       expect(xml).to be_an_instance_of(Hash)
-      title = xml['x']['title']
-      cancel = xml['x']['field'][0]['value']
-      error_code = xml['x']['field'][1]['value']
       expect(title).to eq('pair')
-      expect(cancel).to eq('cancel')
-      expect(error_code.to_d).to eq(898)
+      expect(action).to eq('cancel')
     end
-    
+
     it 'Receive DDNS SETTING error response, code - 998, ip not found' do
       index = Time.now.to_i
       session_id = index
@@ -806,7 +931,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -828,7 +953,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, '', domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -850,7 +975,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'ut212321321321321321321321321321321321321321312312ssdsdsdsd231323131231321', domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'ut212321321321321321321321321321321321321321312312ssdsdsdsd231323131231321', domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -872,7 +997,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'my', domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'my', domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -894,7 +1019,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'www', domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, 'www', domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -936,7 +1061,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -989,7 +1114,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -1037,7 +1162,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -1137,7 +1262,7 @@ describe XMPPController do
       
       x = nil
       i = 0
-      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id]
+      msg = DDNS_SETTING_REQUEST % [bot_xmpp_account, device_xmpp_account, host_name, domain_name, session_id, XMPP_API_VERSION]
       client.send msg
       while x.nil? && i < 200
         sleep(0.1)
@@ -1231,10 +1356,9 @@ describe XMPPController do
 
       expect(pair_session).not_to be_nil
       expect(pair_session["status"]).to eq('failure')
-      
       expect(hasDeleted).to be true
     end
-    
+
     it 'Receive PAIR COMPLETED FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1254,22 +1378,39 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+    it 'Receive PAIR TIMEOUT FAILURE response' do
+      device_id = Time.now.to_i
+      data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
+      pair_session = rd.rd_pairing_session_insert(data)
+      expect(pair_session).not_to be_nil
+
+      msg = SESSION_TIMEOUT_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'pair', 999, device_id]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      pair_session = rd.rd_pairing_session_access(device_id)
+      hasDeleted = rd.rd_pairing_session_delete(device_id)
+      isAlive = XMPPController.alive
+
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
     it 'Receive PAIR CANCEL FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
 
-      msg = PAIR_TIMEOUT_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, device_id]
+      msg = SESSION_CANCEL_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'pair', 999, device_id]
       client.send msg
       sleep(DELAY_TIME)
 
       pair_session = rd.rd_pairing_session_access(device_id)
       hasDeleted = rd.rd_pairing_session_delete(device_id)
+      isAlive = XMPPController.alive
 
-      expect(pair_session).not_to be_nil
-      expect(pair_session["status"]).to eq('failure')
-
+      expect(isAlive).to be true
       expect(hasDeleted).to be true
     end
     
