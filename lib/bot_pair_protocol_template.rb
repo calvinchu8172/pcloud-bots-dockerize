@@ -57,13 +57,16 @@ SESSION_TIMEOUT_REQUEST = <<EOT
 </message>
 EOT
 
-# PAIR_START_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID', 'VERSION']
+# PAIR_START_REQUEST % ['DEVICE_ID', 'BOT_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
 PAIR_START_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="submit">
     <title>pair</title>
     <field type='hidden' var='action'>
       <value>start</value>
+    </field>
+    <field type='hidden' var='timeout'>
+      <value>%d</value>
     </field>
   </x>
   <thread>%d</thread>

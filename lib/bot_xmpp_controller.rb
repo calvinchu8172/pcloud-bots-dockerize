@@ -19,8 +19,6 @@ BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
-KPAIR_TIMEOUT_SUCCESS_RESPONSE = 'pair_timeout_success_response'
-KPAIR_TIMEOUT_FAILURE_RESPONSE = 'pair_timeout_failure_response'
 KPAIR_WAITING_EXPIRE_TIME = 720
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
@@ -317,7 +315,7 @@ module XMPPController
       when KPAIR_START_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id = info[:device_id]
-        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, device_id, XMPP_API_VERSION]
+        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, 600, device_id, XMPP_API_VERSION]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
