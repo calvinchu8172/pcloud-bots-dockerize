@@ -115,7 +115,7 @@ def worker(sqs, db_conn, rd_conn)
                                                   id: device_id,
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of pairing",
-                                                  data: 'N/A'})
+                                                  data: data})
         
         device = rd_conn.rd_device_session_access(device_id)
         xmpp_account = nil != device ? device["xmpp_account"] : nil
@@ -229,6 +229,32 @@ def worker(sqs, db_conn, rd_conn)
                 full_domain: !ddns_session.nil? ? ddns_session["host_name"] + '.' + ddns_session["domain_name"] : ''}
         
         XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device.nil?
+
+      when 'cancel' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'CANCEL',
+                                                  direction: 'N/A',
+                                                  to: 'N/A',
+                                                  form: 'N/A',
+                                                  id: data[:tag],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of cancel", data: data})
+
+        tag = data[:tag]
+        title = data[:title]
+        if 'pair' == title then
+          device_id = tag
+          device = nil
+          device = rd_conn.rd_device_session_access(device_id)
+          xmpp_account = !device.nil? ? device["xmpp_account"] : nil
+          info = {xmpp_account: xmpp_account.to_s,
+                  tag: device_id,
+                  title: title}
+          XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
+        end
+
+        if 'upnp' == title then
+          #index = tag
+        end
     end
     
     job = nil
