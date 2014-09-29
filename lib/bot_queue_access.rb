@@ -38,6 +38,11 @@ class BotQueueAccess
           data = {device_id: msg["device_id"]}
           yield(job, data)
 
+        elsif msg["job"] == "cancel" && block_given? then
+          job = msg["job"]
+          data = {title: msg["title"], tag: msg["tag"]}
+          yield(job, data)
+
         elsif msg["job"] == "unpair" && block_given? then
           job = msg["job"]
           data = {device_id: msg["device_id"]}

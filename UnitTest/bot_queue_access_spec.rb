@@ -34,6 +34,12 @@ describe BotQueueAccess do
     expect(send_message).to respond_to(:message_id)
   end
   
+  it 'Send Cancel message to SQS' do
+    cancel_body = '{"job":"cancel", "title":"pair", "tag":1}'
+    send_message = queue.send_message(cancel_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
   it 'Send Unpair message to SQS' do
     unpair_body = '{"job":"unpair", "device_id":1}'
     send_message = queue.send_message(unpair_body)
