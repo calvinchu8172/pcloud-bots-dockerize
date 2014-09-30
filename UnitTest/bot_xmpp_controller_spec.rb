@@ -205,7 +205,7 @@ describe XMPPController do
 
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, title: 'pair', tag: device_id}
+      info = {xmpp_account: device_xmpp_account, title: 'pair', error_code: 799, tag: device_id}
       XMPPController.send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
       while x.nil? && i < 200
         sleep(0.1)
