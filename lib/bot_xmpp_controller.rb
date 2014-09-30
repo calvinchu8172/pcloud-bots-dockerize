@@ -724,6 +724,7 @@ module XMPPController
     }
 
 # Result message handler
+# HANDLER: Result:Pair:Start
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -780,7 +781,8 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
+# HANDLER: Result:Pair:Cancel
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -803,6 +805,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Pair:Timeout
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -825,6 +828,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Unpair
   message :normal?, proc {|m| m.form.result? && 'unpair' == m.form.title} do |msg|
     begin
       result_syslog(msg)
@@ -852,6 +856,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Result:Get_upnp_service:Timeout
   message :normal?, proc {|m| m.form.result? && 'get_upnp_service' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -874,6 +879,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Get_upnp_service:Cancel
   message :normal?, proc {|m| m.form.result? && 'get_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -896,6 +902,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Set_upnp_service:!nil:Timeout
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -918,6 +925,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Set_upnp_service:!nil:Cancel
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -940,6 +948,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Result:Set_upnp_service:nil
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
@@ -962,6 +971,7 @@ module XMPPController
   end
   
   #for DDNS settings
+# HANDLER: Result:Config_ddns
   message :normal?, proc {|m| m.form.result? && 'config_ddns' == m.form.title} do |msg|
     begin
       result_syslog(msg)
@@ -984,6 +994,7 @@ module XMPPController
   end
 
 # Submit message handler
+# HANDLER: Submit:Pair:Completed
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'completed' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
@@ -1066,6 +1077,7 @@ module XMPPController
   end
 
   # Pair timeout
+# HANDLER: Submit:Pair:Cancel
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
@@ -1130,7 +1142,8 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
+# HANDLER: Submit:Get_upnp_service:Cancel
   message :normal?, proc {|m| m.form.submit? && 'get_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
@@ -1195,6 +1208,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Submit:Set_upnp_service:Cancel
   message :normal?, proc {|m| m.form.submit? && 'set_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
@@ -1260,6 +1274,7 @@ module XMPPController
   end
 
   # DDNS Setting from device
+# HANDLER: Submit:Config_ddns
   message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
       submit_syslog(msg)
@@ -1562,6 +1577,7 @@ module XMPPController
   end
   
   # Cancel message handler
+# HANDLER: Cancel:Pair:Start
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1588,6 +1604,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:Pair:Timeout
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1611,6 +1628,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Cancel:Pair:Completed
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'completed' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1633,6 +1651,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Cancel:Pair:Cancel
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1655,7 +1674,8 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
+# HANDLER: Cancel:Unpair
   message :normal?, proc {|m| m.form.cancel? && 'unpair' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
@@ -1685,6 +1705,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Cancel:Get_upnp_service:nil
   message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
@@ -1707,6 +1728,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Cancel:Get_upnp_service:!nil:Timeout
   message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1729,6 +1751,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:Get_upnp_service:!nil:Cancel
   message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1753,6 +1776,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:Set_upnp_service:!nil:Cancel
   message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1777,6 +1801,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:Set_upnp_service:nil
   message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
@@ -1856,6 +1881,7 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:Set_upnp_service:!nil:Timeout
   message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
@@ -1878,6 +1904,7 @@ module XMPPController
     end
   end
   
+# HANDLER: Cancel:Config_ddns
   message :normal?, proc {|m| m.form.cancel? && 'config_ddns' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
@@ -1900,6 +1927,7 @@ module XMPPController
   end
   
   # Form message handler
+# HANDLER: Form:Get_upnp_service
   message :normal?, proc {|m| m.form.form? && 'get_upnp_service' == m.form.title} do |msg|
     begin
       form_syslog(msg)
