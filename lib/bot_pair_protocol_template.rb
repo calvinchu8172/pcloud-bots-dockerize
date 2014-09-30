@@ -146,11 +146,14 @@ UNPAIR_ASK_REQUEST = <<EOT
 </message>
 EOT
 
-#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE','SESSION_ID', 'VERSION']
+#UPNP_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
 UPNP_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="%s">
   <x xmlns="jabber:x:data" type="submit">
     <title>get_upnp_service</title>
+    <field type='hidden' var='timeout'>
+      <value>%d</value>
+    </field>
   </x>
   <thread>%d</thread>
   <api_version>%s</api_version>
@@ -181,12 +184,15 @@ UPNP_FIELD_ITEM = <<EOT
 </item>
 EOT
 
-#UPNP_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE', 'FIELD_ITEM', 'SESSION_ID']
+#UPNP_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'LANGUAGE', 'FIELD_ITEM', 'EXPIRE_TIME', 'SESSION_ID']
 UPNP_SETTING_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="%s">
   <x xmlns="jabber:x:data" type="submit">
     <title>set_upnp_service</title>
     %s
+    <field type='hidden' var='timeout'>
+      <value>%d</value>
+    </field>
   </x>
   <thread>%d</thread>
 </message>
