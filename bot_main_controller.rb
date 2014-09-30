@@ -56,31 +56,6 @@ XMPPController.when_ready { xmpp_connect_ready = TRUE }
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
-#ddnsThread = Thread.new{
-#  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-#                                           direction: 'N/A',
-#                                           to: 'N/A',
-#                                           form: 'N/A',
-#                                           id: 'N/A',
-#                                           full_domain: 'N/A',
-#                                           message:"Start re-update DDNS record ...",
-#                                           data: 'N/A'})
-#  loop do
-#    sleep(1)
-#    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
-#                                             direction: 'N/A',
-#                                             to: 'N/A',
-#                                             form: 'N/A',
-#                                             id: 'N/A',
-#                                             full_domain: 'N/A',
-#                                             message:"Retry register DDNS record ...",
-#                                             data: 'N/A'})
-#    XMPPController.retry_ddns_register
-#  end
-#}
-#ddnsThread.abort_on_exception = TRUE
-#threads << ddnsThread
-
 while !xmpp_connect_ready
   Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                            direction: 'N/A',
