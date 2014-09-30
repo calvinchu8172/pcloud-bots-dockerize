@@ -252,8 +252,18 @@ def worker(sqs, db_conn, rd_conn)
           XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
         end
 
-        if 'upnp' == title then
-          #index = tag
+        if ['get_upnp_service', 'set_upnp_service'].include?(title) then
+          index = tag
+          upnp = rd_conn.rd_upnp_session_access(index)
+          device_id = !upnp.nil? ? upnp["device_id"] : nil
+
+          device = nil
+          device = rd_conn.rd_device_session_access(device_id)
+          xmpp_account = !device.nil? ? device["xmpp_account"] : nil
+          info = {xmpp_account: xmpp_account.to_s,
+                  tag: device_id,
+                  title: title}
+          XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
         end
     end
     

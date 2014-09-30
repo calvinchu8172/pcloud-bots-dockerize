@@ -287,7 +287,8 @@ module XMPPController
         to = info[:xmpp_account]
         title = info[:title]
         tag = info[:tag]
-        msg = SESSION_CANCEL_FAILURE_RESPONSE % [to, @bot_xmpp_account, title, 799, tag]
+        error_code = info[:error_code]
+        msg = SESSION_CANCEL_FAILURE_RESPONSE % [to, @bot_xmpp_account, title, error_code, tag]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
@@ -781,7 +782,8 @@ module XMPPController
   end
   
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
-    result_syslog(msg)
+    begin
+      result_syslog(msg)
 
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
@@ -796,6 +798,9 @@ module XMPPController
                                message:"Receive PAIR CALCEL RESPONSE message from device success",
                                data: 'N/A'})
       end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
   end
 
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
@@ -869,6 +874,28 @@ module XMPPController
     end
   end
 
+  message :normal?, proc {|m| m.form.result? && 'get_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      result_syslog(msg)
+
+      session_id = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(session_id)
+      if !upnp.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: session_id,
+                               full_domain: 'N/A',
+                               message:"Receive GET UPNP SERVICE LIST CALCEL RESPONSE message from device success",
+                               data: 'N/A'})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
@@ -884,6 +911,28 @@ module XMPPController
                                id: index,
                                full_domain: 'N/A',
                                message:"Receive UPNP SETTING TIMEOUT SUCCESS RESPONSE message from device success",
+                               data: 'N/A'})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      result_syslog(msg)
+
+      session_id = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(session_id)
+      if !upnp.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: session_id,
+                               full_domain: 'N/A',
+                               message:"Receive SET UPNP SERVICE LIST CALCEL RESPONSE message from device success",
                                data: 'N/A'})
       end
     rescue Exception => error
@@ -1082,6 +1131,134 @@ module XMPPController
     end
   end
   
+  message :normal?, proc {|m| m.form.submit? && 'get_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      submit_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      status = !upnp.nil? ? upnp["status"] : nil
+
+      if !upnp.nil? && KSTATUS_START == status then
+        data = {index: index, status: KSTATUS_CANCEL}
+        isUpdated = @rd_conn.rd_upnp_session_update(data)
+        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Update the status of get upnp service list session to 'CANCEL' %s as receive GET UPNP SERVICE LIST CANCEL RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
+                               data: 'N/A'})
+
+        if isUpdated
+          info = {xmpp_account: msg.from, title: 'get_upnp_service', tag: index}
+          send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send GET UPNP SERVICE LIST CANCEL SUCCESS RESPONSE message to device as update upnp session table success",
+                                 data: 'N/A'})
+        else
+          info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 797, tag: index}
+          send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send GET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message to device as update upnp session table failure",
+                                 data: {error_code: 797}})
+        end
+      else
+        info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 798, tag: index}
+        send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'UPNP',
+                               direction: 'Bot->Device',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Send GET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message to device as upnp session id not find or status wrong",
+                               data: {error_code: 798}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.submit? && 'set_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      submit_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      status = !upnp.nil? ? upnp["status"] : nil
+
+      if !upnp.nil? && KSTATUS_SUBMIT == status then
+        data = {index: index, status: KSTATUS_CANCEL}
+        isUpdated = @rd_conn.rd_upnp_session_update(data)
+        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Update the status of set upnp service list session to 'CANCEL' %s as receive SET UPNP SERVICE LIST CANCEL RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
+                               data: 'N/A'})
+
+        if isUpdated
+          info = {xmpp_account: msg.from, title: 'set_upnp_service', tag: index}
+          send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send SET UPNP SERVICE LIST CANCEL SUCCESS RESPONSE message to device as update upnp session table success",
+                                 data: 'N/A'})
+        else
+          info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 797, tag: index}
+          send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send SET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message to device as update upnp session table failure",
+                                 data: {error_code: 797}})
+        end
+      else
+        info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 798, tag: index}
+        send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'UPNP',
+                               direction: 'Bot->Device',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Send SET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message to device as upnp session id not find or status wrong",
+                               data: {error_code: 798}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
   # DDNS Setting from device
   message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
@@ -1545,6 +1722,54 @@ module XMPPController
                                id: index,
                                full_domain: 'N/A',
                                message:"Receive UPNP GET SETTING TIMEOUT FAILURE RESPONSE message from device success",
+                               data: {error_code: error_code}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      index = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      if !upnp.nil? then
+        error_code = msg.form.field('ERROR_CODE').value
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive GET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message from device success",
+                               data: {error_code: error_code}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'cancel' == m.form.field('action').value} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      index = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      if !upnp.nil? then
+        error_code = msg.form.field('ERROR_CODE').value
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive SET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message from device success",
                                data: {error_code: error_code}})
       end
     rescue Exception => error
