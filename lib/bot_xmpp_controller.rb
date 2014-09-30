@@ -25,6 +25,7 @@ KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
 KUPNP_ASK_REQUEST = 'upnp_ask_request'
 KUPNP_SETTING_REQUEST = 'upnp_setting_request'
+KUPNP_EXPIRE_TIME = 360
 
 KDDNS_SETTING_REQUEST = 'ddns_setting_request'
 KDDNS_SETTING_SUCCESS_RESPONSE = 'ddns_setting_success_response'
@@ -424,7 +425,8 @@ module XMPPController
         #unpairThread.abort_on_exception = FALSE
         
       when KUPNP_ASK_REQUEST
-        msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:session_id], XMPP_API_VERSION]
+        session_id = info[:session_id]
+        msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], 300, session_id, XMPP_API_VERSION]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
@@ -434,9 +436,41 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send UPNP ASK REQUEST message to device" ,
                                                   data: {language: info[:language]}})
+
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(KUPNP_EXPIRE_TIME * 1) {
+          df.set_deferred_status :succeeded, session_id
+        }
+        df.callback do |x|
+          index = x
+          upnp = @rd_conn.rd_upnp_session_access(index)
+          status = !upnp.nil? ? upnp["status"] : nil
+
+          if KSTATUS_START == status || KSTATUS_TIMEOUT == status then
+            data = {index: index, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_upnp_session_update(data)
+
+            device_id = upnp["device_id"]
+            device = @rd_conn.rd_device_session_access(device_id)
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'get_upnp_service', tag: index}
+            send_request(KSESSION_TIMEOUT_REQUEST, info)
+
+            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                  {event: 'UPNP',
+                                   direction: 'N/A',
+                                   to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
+                                   from: @bot_xmpp_account,
+                                   id: index,
+                                   full_domain: 'N/A',
+                                   message:"Update status of upnp session to 'TIMEOUT' as get service list expired frome device",
+                                   data: 'N/A'})
+          end
+        end
         
       when KUPNP_SETTING_REQUEST
-        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:field_item], info[:session_id]]
+        session_id = info[:session_id]
+        msg = UPNP_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:field_item], 300, session_id]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
@@ -447,6 +481,37 @@ module XMPPController
                                                   message:"Send UPNP SETTING RESPONSE message to device" ,
                                                   data: {language: info[:language], field_item: info[:field_item]}})
         
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(KUPNP_EXPIRE_TIME * 1) {
+          df.set_deferred_status :succeeded, session_id
+        }
+        df.callback do |x|
+          index = x
+          upnp = @rd_conn.rd_upnp_session_access(index)
+          status = !upnp.nil? ? upnp["status"] : nil
+
+          if KSTATUS_SUBMIT == status || KSTATUS_TIMEOUT == status then
+            data = {index: index, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_upnp_session_update(data)
+
+            device_id = upnp["device_id"]
+            device = @rd_conn.rd_device_session_access(device_id)
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'set_upnp_service', tag: index}
+            send_request(KSESSION_TIMEOUT_REQUEST, info)
+
+            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                  {event: 'UPNP',
+                                   direction: 'N/A',
+                                   to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
+                                   from: @bot_xmpp_account,
+                                   id: index,
+                                   full_domain: 'N/A',
+                                   message:"Update status of upnp session to 'TIMEOUT' as set service list expired frome device",
+                                   data: 'N/A'})
+          end
+        end
+
       when KDDNS_SETTING_REQUEST
         EM.defer {
           host_name = find_hostname(info[:full_domain])
@@ -688,7 +753,7 @@ module XMPPController
             device_id = x
             pairing = @rd_conn.rd_pairing_session_access(device_id)
             status = !pairing.nil? ? pairing["status"] : nil
-            if KSTATUS_WAITING == status then
+            if KSTATUS_WAITING == status || KSTATUS_TIMEOUT == status then
               data = {device_id: device_id, status: KSTATUS_TIMEOUT}
               @rd_conn.rd_pairing_session_update(data)
 
@@ -782,7 +847,51 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.result? && 'get_upnp_service' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      result_syslog(msg)
+
+      session_id = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(session_id)
+      if !upnp.nil?
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: session_id,
+                               full_domain: 'N/A',
+                               message:"Receive GET UPNP SERVICE LIST TIMEOUT RESPONSE message from device success",
+                               data: 'N/A'})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      result_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      if !upnp.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive UPNP SETTING TIMEOUT SUCCESS RESPONSE message from device success",
+                               data: 'N/A'})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
       
@@ -796,7 +905,7 @@ module XMPPController
                              from: msg.from.to_s,
                              id: session_id,
                              full_domain: 'N/A',
-                             message:"Update the status of unpnp session table to SUCCESS %s as receive UPNP SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             message:"Update the status of unpnp session table to UPDATED %s as receive UPNP SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
@@ -1399,7 +1508,7 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
       
@@ -1421,7 +1530,29 @@ module XMPPController
     end
   end
   
-  message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      index = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      if !upnp.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive UPNP GET SETTING TIMEOUT FAILURE RESPONSE message from device success",
+                               data: {error_code: error_code}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
       
@@ -1494,6 +1625,28 @@ module XMPPController
                              full_domain: 'N/A',
                              message:"Update the status of upnp session failure, session id not find",
                              data: {error_code: 798}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      index = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      if !upnp.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive UPNP SET SETTING TIMEOUT FAILURE RESPONSE message from device success",
+                               data: {error_code: error_code}})
       end
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
