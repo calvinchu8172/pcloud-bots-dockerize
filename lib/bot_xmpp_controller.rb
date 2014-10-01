@@ -83,7 +83,7 @@ module XMPPController
                                                message:"Start re-update DDNS record ...",
                                                data: 'N/A'})
       EM.add_periodic_timer(0.3) {
-        retry_ddns_register
+        batch_register_ddns
       }
         
       client.run
@@ -98,7 +98,7 @@ module XMPPController
     return TRUE
   end
 
-  def self.retry_ddns_register
+  def self.batch_register_ddns
     count = @rd_conn.rd_ddns_batch_session_count
     return nil if 0 == count
     
