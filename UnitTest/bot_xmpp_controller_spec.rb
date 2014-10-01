@@ -27,9 +27,9 @@ KUPNP_EXPIRE_TIME = 20.0
 Jabber::debug = FALSE
 
 describe XMPPController do
-  bot_xmpp_account = 'bot7@xmpp.pcloud.ecoworkinc.com/robot'
+  bot_xmpp_account = 'bot7@localhost/robot'
   bot_xmpp_password = '12345'
-  device_xmpp_account = 'bot8@xmpp.pcloud.ecoworkinc.com/device'
+  device_xmpp_account = 'bot8@localhost/device'
   device_xmpp_account_node = 'bot8'
   device_xmpp_password = '12345'
   jid = JID.new(device_xmpp_account)
@@ -897,36 +897,47 @@ describe XMPPController do
     end
 
     it 'Receive PAIR START SUCCESS response, start timeout test' do
-      device_id = 1
+      device_id = Time.now.to_i
+
+      data = {device_id: device_id, ip: '10.1.1.110', xmpp_account: device_xmpp_account_node}
+      device = rd.rd_device_session_insert(data)
+
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i - 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
-      pair_session = rd.rd_pairing_session_insert(data)
-      expect(pair_session).not_to be_nil
+      pair_insert = rd.rd_pairing_session_insert(data)
 
       msg = PAIR_START_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, device_id]
       client.send msg
       sleep(DELAY_TIME)
 
-      pair_session = rd.rd_pairing_session_access(device_id)
-      hasDeleted = rd.rd_pairing_session_delete(device_id)
+      pair_access = rd.rd_pairing_session_access(device_id)
+      hasDeletedPair = rd.rd_pairing_session_delete(device_id)
+      hasDeletedDevice = rd.rd_device_session_delete(device_id)
 
-      expect(pair_session).not_to be_nil
-      expect(pair_session["status"]).to eq('timeout')
+      expect(pair_insert).not_to be_nil
+      expect(device).not_to be_nil
+      expect(pair_access).not_to be_nil
+      expect(pair_access["status"]).to eq('timeout')
 
-      expect(hasDeleted).to be true
+      expect(hasDeletedPair).to be true
+      expect(hasDeletedDevice).to be true
     end
     
     it 'Receive PAIR START SUCCESS response, waiting timeout test' do
-      device_id = 1
+      device_id = Time.now.to_i
+
+      data = {device_id: device_id, ip: '10.1.1.110', xmpp_account: device_xmpp_account_node}
+      device = rd.rd_device_session_insert(data)
+
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
 
-      x = nil
       msg = PAIR_START_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, device_id]
       client.send msg
       sleep(DELAY_TIME)
 
-      j = 20
+      x = nil
+      j = 25
       while j > 0
         puts '        waiting %d second' % j
         sleep(5)
@@ -947,14 +958,17 @@ describe XMPPController do
       value = xml['x']['field']['value']
 
       pair_session = rd.rd_pairing_session_access(device_id)
-      hasDeleted = rd.rd_pairing_session_delete(device_id)
+      hasDeletedPair = rd.rd_pairing_session_delete(device_id)
+      hasDeletedDevice = rd.rd_device_session_delete(device_id)
 
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('pair')
       expect(value).to eq('timeout')
+      expect(device).not_to be_nil
       expect(pair_session).not_to be_nil
       expect(pair_session["status"]).to eq('timeout')
-      expect(hasDeleted).to be true
+      expect(hasDeletedPair).to be true
+      expect(hasDeletedDevice).to be true
     end
 
     it 'Receive PAIR TIMEOUT SUCCESS response' do
@@ -1118,26 +1132,18 @@ describe XMPPController do
 
     it 'Receive DDNS SETTINGS SUCCESS message' do
       index = Time.now.to_i
-      device_id = index
-      host_name = "ut%d" % index
-      domain_name = 'demo.ecoworkinc.com.'
-
-      data = {index: index, device_id: device_id, host_name: host_name, domain_name: domain_name, status: KSTATUS_START}
-      init_ddns_session = rd.rd_ddns_session_insert(data)
-
       session_id = index
-      
+
+      resend_insert = rd.rd_ddns_resend_session_insert(index)
+
       msg = DDNS_SETTING_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, session_id]
       client.send msg
       sleep(DELAY_TIME)
-      
-      updated_ddns_session = rd.rd_ddns_session_access(index)
-      isDeleted = rd.rd_ddns_session_delete(index)
-      expect(init_ddns_session).not_to be_nil
-      expect(init_ddns_session["status"]).to eq(KSTATUS_START)
-      expect(updated_ddns_session).not_to be_nil
-      expect(updated_ddns_session["status"]).to eq(KSTATUS_SUCCESS)
-      expect(isDeleted).to be true
+
+      resend_delete = rd.rd_ddns_resend_session_access(index)
+
+      expect(resend_insert).to be true
+      expect(resend_delete).to be_nil
     end
   end
   
@@ -2049,9 +2055,16 @@ describe XMPPController do
       index = Time.now.to_i
       session_id = index
 
+      resend_insert = rd.rd_ddns_resend_session_insert(index)
+
       msg = DDNS_SETTING_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 999, session_id]
       client.send msg
       sleep(DELAY_TIME)
+
+      resend_delete = rd.rd_ddns_resend_session_access(index)
+
+      expect(resend_insert).to be true
+      expect(resend_delete).to be_nil
     end
   end
   
