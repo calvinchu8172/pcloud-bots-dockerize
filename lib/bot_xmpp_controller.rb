@@ -99,13 +99,13 @@ module XMPPController
   end
 
   def self.batch_register_ddns
-    count = @rd_conn.rd_ddns_batch_session_count
-    return nil if 0 == count
-    
     isLock = @rd_conn.rd_ddns_batch_lock_isSet
     return nil if isLock
     
-    #begin
+    count = @rd_conn.rd_ddns_batch_session_count
+    return nil if 0 == count
+
+    begin
       @rd_conn.rd_ddns_batch_lock_set
       result = @rd_conn.rd_ddns_batch_session_access
       temp = Array.new
@@ -191,41 +191,41 @@ module XMPPController
           
               if isSuccess then
                 if hasMailed && 'update' == action then
-                  isSuccess = @mail_conn.send_online_mail(user_email)
-                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                  isMailSended = @mail_conn.send_online_mail(user_email)
+                  Fluent::Logger.post(isMailSended ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
                                        form: 'N/A',
                                        id: session_id,
                                        full_domain: 'N/A',
-                                       message:"Send online mail to user %s" % [isSuccess ? 'success' : 'failure'] ,
+                                       message:"Send online mail to user %s" % [isMailSended ? 'success' : 'failure'] ,
                                        data: {user_email: user_email}})
                 end
                 ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                 @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_SUCCESS}) if !ddns_session.nil?
                 
-                isSuccess = @rd_conn.rd_ddns_batch_session_delete(data)
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                isDeleted = @rd_conn.rd_ddns_batch_session_delete(data)
+                Fluent::Logger.post(isDeleted ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
                                      form: 'N/A',
                                      id: session_id,
                                      full_domain: 'N/A',
-                                     message:"Delete DDNS batch session %s" % [isSuccess ? 'success' : 'failure'] ,
+                                     message:"Delete DDNS batch session %s" % [isDeleted ? 'success' : 'failure'] ,
                                      data: 'N/A'})
               else
                 if !hasMailed && 'update' == action then
-                  isSuccess = @mail_conn.send_offline_mail(user_email)
-                  Fluent::Logger.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                  isMailSended = @mail_conn.send_offline_mail(user_email)
+                  Fluent::Logger.post(isMailSended ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
                                        form: 'N/A',
                                        id: session_id,
                                        full_domain: 'N/A',
-                                       message:"Send offline mail to user %s" % [isSuccess ? 'success' : 'failure'] ,
+                                       message:"Send offline mail to user %s" % [isMailSended ? 'success' : 'failure'] ,
                                        data: {user_email: user_email}})
                   
                   ddns_session = @rd_conn.rd_ddns_session_access(session_id)
@@ -245,9 +245,10 @@ module XMPPController
         sleep(0.2)
       end
       @rd_conn.rd_ddns_batch_lock_delete
-    #rescue
+    rescue Exception => error
       @rd_conn.rd_ddns_batch_lock_delete
-    #end
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
   end
   
   def self.send_request(job, info)
