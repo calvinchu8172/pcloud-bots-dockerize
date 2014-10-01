@@ -604,12 +604,12 @@ module XMPPController
                                                       message:"Send DDNS SETTING REQUEST to device" ,
                                                       data: 'N/A'})
 
+            @rd_conn.rd_ddns_resend_session_insert(info[:session_id])
             df = EM::DefaultDeferrable.new
             periodic_timer = EM.add_periodic_timer(15) {
-              ddns_session = @rd_conn.rd_ddns_session_access(info[:session_id])
-              status = ddns_session["status"]
-              if KSTATUS_SUCCESS != status then
-                msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id]]
+              resend = @rd_conn.rd_ddns_resend_session_access(info[:session_id])
+              if !resend.nil? then
+                msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id], XMPP_API_VERSION]
                 write_to_stream msg
                 Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                           direction: 'Bot->Device',
@@ -620,25 +620,23 @@ module XMPPController
                                                           message:"Resend DDNS SETTING REQUEST to device" ,
                                                           data: 'N/A'})
               else
-                df.set_deferred_status :succeeded, "[%s] Setup DDNS timeup" % DateTime.now
+                df.set_deferred_status :succeeded, info[:session_id]
               end
             }
             EM.add_timer(60 * 1){
-              df.set_deferred_status :succeeded, "[%s] Setup DDNS timeup" % DateTime.now
+              df.set_deferred_status :succeeded, info[:session_id]
             }
             df.callback do |x|
-              ddns_session = @rd_conn.rd_ddns_session_access(info[:session_id])
-              status = ddns_session["status"]
-              if KSTATUS_WAITING == status then
-                @rd_conn.rd_ddns_session_update({index: info[:session_id], status: KSTATUS_SUCCESS})
-              end
+              index = x
+              resend = @rd_conn.rd_ddns_resend_session_access(index)
+              @rd_conn.rd_ddns_resend_session_delete(index) if !resend.nil?
             
               EM.cancel_timer(periodic_timer)
               Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'DDNS',
                                                         direction: 'N/A',
                                                         to: 'N/A',
                                                         from: 'N/A',
-                                                        id: info[:session_id],
+                                                        id: index,
                                                         full_domain: 'N/A',
                                                         message:"Timeout, stop resend DDNS SETTING REQUEST message to device" ,
                                                         data: 'N/A'})
@@ -977,17 +975,16 @@ module XMPPController
     begin
       result_syslog(msg)
       
-      session_id = msg.thread
-      data = {index: session_id, status: KSTATUS_SUCCESS}
-      isSuccess = @rd_conn.rd_ddns_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      index = msg.thread
+      @rd_conn.rd_ddns_resend_session_delete(index)
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                             {event: 'DDNS',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: session_id,
+                             id: index,
                              full_domain: 'N/A',
-                             message:"Update the status of ddns session table to SUCCESS %s as receive DDNS SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             message:"Receive DDNS SETTING SUCCESS RESPONSE message from device success",
                              data: 'N/A'})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
@@ -1910,17 +1907,17 @@ module XMPPController
     begin
       cancel_syslog(msg)
       
-      session_id = msg.thread
+      index = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
-      isSuccess = TRUE
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+      @rd_conn.rd_ddns_resend_session_delete(index)
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                             {event: 'DDNS',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: session_id,
+                             id: index,
                              full_domain: 'N/A',
-                             message:"Update the status of ddns session to FAILURE %s as receive DDNS SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                             message:"Receive DDNS SETTING FAILURE RESPONSE message from device success",
                              data: {error_code: error_code}})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
