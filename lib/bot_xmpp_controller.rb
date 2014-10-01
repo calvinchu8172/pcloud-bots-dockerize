@@ -714,10 +714,7 @@ module XMPPController
                            message:"Receive FORM message - %s from device" % msg.form.title,
                            data: {xml: msg.to_s.gsub(/\n\s+/, "")}})
   end
-  
-  #subscription :request? do |s|
-  #  write_to_stream s.approve!
-  #end
+
   disconnected {
     sleep(10)
     Fluent::Logger.post(FLUENT_BOT_SYSALERT, {event: 'SYSTEM',
@@ -735,7 +732,6 @@ module XMPPController
     end
     }
 
-# Result message handler
 # HANDLER: Result:Pair:Start
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
@@ -981,8 +977,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
-  #for DDNS settings
+
 # HANDLER: Result:Config_ddns
   message :normal?, proc {|m| m.form.result? && 'config_ddns' == m.form.title} do |msg|
     begin
@@ -1004,7 +999,6 @@ module XMPPController
     end
   end
 
-# Submit message handler
 # HANDLER: Submit:Pair:Completed
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'completed' == m.form.field('action').value} do |msg|
     begin
@@ -1087,7 +1081,6 @@ module XMPPController
     end
   end
 
-  # Pair timeout
 # HANDLER: Submit:Pair:Cancel
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
@@ -1284,7 +1277,6 @@ module XMPPController
     end
   end
 
-  # DDNS Setting from device
 # HANDLER: Submit:Config_ddns
   message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
@@ -1586,8 +1578,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
-  # Cancel message handler
+
 # HANDLER: Cancel:Pair:Start
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
@@ -1936,8 +1927,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
-  # Form message handler
+
 # HANDLER: Form:Get_upnp_service
   message :normal?, proc {|m| m.form.form? && 'get_upnp_service' == m.form.title} do |msg|
     begin
