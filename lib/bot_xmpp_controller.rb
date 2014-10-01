@@ -254,6 +254,7 @@ module XMPPController
   def self.send_request(job, info)
     
     case job
+# SENDER: SESSION CANCEL REQUEST
       when KSESSION_CANCEL_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         title = info[:title]
@@ -269,6 +270,7 @@ module XMPPController
                                                   message:"Send %s SESSION CANCEL REQUEST message to device" % title.upcase ,
                                                   data: 'N/A'})
 
+# SENDER: SESSION CANCEL SUCCESS RESPONSE
       when KSESSION_CANCEL_SUCCESS_RESPONSE
         to = info[:xmpp_account]
         title = info[:title]
@@ -284,6 +286,7 @@ module XMPPController
                                                   message:"Send %s SESSION CANCEL SUCCESS message to device" % title.upcase ,
                                                   data: 'N/A'})
 
+# SENDER: SESSION CANCEL FAILURE RESPONSE
       when KSESSION_CANCEL_FAILURE_RESPONSE
         to = info[:xmpp_account]
         title = info[:title]
@@ -300,6 +303,7 @@ module XMPPController
                                                   message:"Send %s SESSION CANCEL FAILUSE message to device" % title.upcase ,
                                                   data: 'N/A'})
 
+# SENDER: SESSION TIMEOUT REQUEST
       when KSESSION_TIMEOUT_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         title = info[:title]
@@ -315,6 +319,7 @@ module XMPPController
                                                   message:"Send %s SESSION TIMEOUT REQUEST message to device" % title.upcase ,
                                                   data: 'N/A'})
 
+# SENDER: PAIR START REQUEST
       when KPAIR_START_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id = info[:device_id]
@@ -329,14 +334,17 @@ module XMPPController
                                                   message:"Send PAIR START REQUEST message to device" ,
                                                   data: 'N/A'})
       
+# SENDER: PAIR COMPLETED SUCCESS RESPONSE
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
         msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
         write_to_stream msg
       
+# SENDER: PAIR COMPLETED FAILURE RESPONSE
       when KPAIR_COMPLETED_FAILURE_RESPONSE
         msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
       
+# SENDER: UNPAIR REQUEST
       when KUNPAIR_ASK_REQUEST
         
         EM.defer {
@@ -426,6 +434,7 @@ module XMPPController
         }
         #unpairThread.abort_on_exception = FALSE
         
+# SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
         session_id = info[:session_id]
         msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], 300, session_id, XMPP_API_VERSION]
@@ -470,6 +479,7 @@ module XMPPController
           end
         end
         
+# SENDER: UPNP SETTING REQUEST
       when KUPNP_SETTING_REQUEST
         session_id = info[:session_id]
         msg = UPNP_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:field_item], 300, session_id]
@@ -514,6 +524,7 @@ module XMPPController
           end
         end
 
+# SENDER: DDNS SETTING REQUEST
       when KDDNS_SETTING_REQUEST
         EM.defer {
           host_name = find_hostname(info[:full_domain])
@@ -644,10 +655,12 @@ module XMPPController
           end
         }
         
+# SENDER: DDNS SETTING SUCCESS RESPONSE
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
       
+# SENDER: DDNS SETTING FAILURE RESPONSE
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
