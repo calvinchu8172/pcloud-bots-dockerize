@@ -1407,7 +1407,7 @@ module XMPPController
               
               if isSuccess then
                 record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
-                @db_conn.db_ddns_insert(record)
+                @db_conn.db_ddns_insert(record) if ddns_record.nil?
 
                 info = {xmpp_account: x[:msg_from], session_id: session_id}
                 send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
