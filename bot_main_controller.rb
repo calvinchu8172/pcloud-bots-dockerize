@@ -144,12 +144,12 @@ def worker(sqs, db_conn, rd_conn)
         if valid_json? service_list then
           service_list_json = JSON.parse(service_list)
           service_list_json.each do |item|
-            service_name = item["service_name"]
+            service_name = item["service_name"].to_s
             status = item["status"].to_s
             enabled = item["enabled"].to_s
-            description = item["description"]
-            path = item["path"]
-            port = item["port"]
+            description = item["description"].to_s
+            path = item["path"].to_s
+            port = item["port"].to_i
             
             field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description, path, port]
           end
