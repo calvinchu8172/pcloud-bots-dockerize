@@ -553,6 +553,39 @@ describe BotRedisAccess do
     end
   end
   
+  context "Verify DDNS RESEND SESSION table" do
+    it 'Access non-exist record from DDNS RESEND SESSION table' do
+      index = Time.now.to_i
+      
+      result = rd.rd_ddns_resend_session_access(index)
+      expect(result).to be_nil
+    end
+    
+    it 'Access exist record from DDNS RESEND SESSION table' do
+      index = Time.now.to_i
+      
+      resend_insert = rd.rd_ddns_resend_session_insert(index)
+      resend_access = rd.rd_ddns_resend_session_access(index)
+      isDeleted = rd.rd_ddns_resend_session_delete(index)
+      
+      expect(resend_insert).to be true
+      expect(resend_access.to_i).to eq(1)
+      expect(isDeleted).to be true
+    end
+    
+    it 'Delete DDNS RESEND SESSION record' do
+      index = Time.now.to_i
+      
+      resend_insert = rd.rd_ddns_resend_session_insert(index)
+      resend_access = rd.rd_ddns_resend_session_access(index)
+      isDeleted = rd.rd_ddns_resend_session_delete(index)
+      
+      expect(resend_insert).to be true
+      expect(resend_access.to_i).to eq(1)
+      expect(isDeleted).to be true
+    end
+  end
+  
   it 'Close Redis connection' do
     rd.close
   end
