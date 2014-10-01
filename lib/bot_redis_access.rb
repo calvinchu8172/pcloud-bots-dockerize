@@ -21,6 +21,8 @@ DDNS_RETRY_LOCL_EXPIRE_TIME = 20
 DDNS_BATCH_SESSION_KEY = "ddns:batch_session"
 DDNS_BATCH_LOCK_KEY = "ddns:batch_lock"
 DDNS_BATCH_LOCK_EXPIRE_TIME = 20
+DDNS_RESEND_SESSION_KEY = "ddns:%d:resend_session"
+DDNS_RESEND_EXPIRE_TIME = 60
 
 XMPP_SESSION_KEY = "xmpp:%s:session"
 
@@ -465,7 +467,48 @@ class BotRedisAccess
       return FALSE
     end
   end
+
+#========= DDNS RESEND SESSION Methods =========
+#===============================================
+  def rd_ddns_resend_session_access(index=nil)
+    return nil if index.nil?
+    
+    key = DDNS_RESEND_SESSION_KEY % index
+    result = @redis.get(key)
+
+    if !result.nil? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_ddns_resend_session_insert(index=nil)
+    return nil if index.nil?
+    
+    key = DDNS_RESEND_SESSION_KEY % index
+    result = @redis.setex(key, DDNS_RESEND_EXPIRE_TIME, "1")
+
+    if "OK" == result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
   
+  def rd_ddns_resend_session_delete(index=nil)
+    return nil if index.nil?
+    
+    key = DDNS_RESEND_SESSION_KEY % index
+    result = @redis.del(key)
+
+    if 1 == result then
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+
   def close
     @redis.quit
   end
