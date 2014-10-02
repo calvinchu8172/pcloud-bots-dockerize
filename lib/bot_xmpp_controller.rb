@@ -1034,16 +1034,15 @@ module XMPPController
                                  message:"Update the status of pairing session to COMPLETED %s as receive PAIR CONPLETED RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                                  data: 'N/A'})
                 
-          pairing = @db_conn.db_pairing_insert(pairing["user_id"].to_i, device_id.to_i)
-          isSuccess = @db_conn.db_pairing_update({id: pairing.id, user_id: pairing["user_id"].to_i, device_id: device_id.to_i, enabled: 1})
-          Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+          pairing_insert = @db_conn.db_pairing_insert(pairing["user_id"].to_i, device_id.to_i)
+          Fluent::Logger.post(nil != pairing_insert ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
                                  direction: 'N/A',
                                  to: 'N/A',
                                  from: 'N/A',
-                                 id: pairing.id,
+                                 id: pairing_insert.id,
                                  full_domain: 'N/A',
-                                 message:"Insert paired data into pairing table %s as receive PAIR CONPLETED RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                                 message:"Insert paired data into pairing table %s as receive PAIR CONPLETED RESPONSE message from device" % [nil != pairing_insert ? 'success' : 'failure'] ,
                                  data: {user_id: pairing["user_id"], device_id: device_id}})
             
           user = @db_conn.db_user_access(pairing["user_id"].to_i)
