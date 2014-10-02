@@ -3,8 +3,68 @@
 require_relative 'bot_mail_content_template'
 require 'aws-sdk'
 require 'yaml'
+require 'net/smtp'
 
 MAIL_CONFIG_FILE = '../config/bot_mail_config.yml'
+
+class BotMailAccessSMTP
+  def initialize
+    @smtp = nil
+    @config = nil
+
+    config_file = File.join(File.dirname(__FILE__), MAIL_CONFIG_FILE)
+    config = YAML.load(File.read(config_file))
+
+    @config = config
+    @smtp = self.mail_connection(config)
+  end
+
+  def mail_connection(config)
+    smtp = Net::SMTP.new(config['smtp_host'], config['smtp_port'])
+    smtp.enable_tls
+    return smtp
+  end
+
+  def send_offline_mail(to=nil)
+    return FALSE if to.nil? || to.empty?
+
+    bcc = nil
+    bcc = to.join(',')
+    mail_content = MAIL_CONTENT % [FROM_ADDRESS, bcc, OFFLINE_SUBJECT, OFFLINE_MESSAGE]
+
+    begin
+      @smtp.start(@config['mail_domain'],
+                  @config['smtp_user'],
+                  @config['smtp_password'], :plain)
+      response = @smtp.send_message mail_content, FROM_ADDRESS, to
+      @smtp.finish
+      return response.success? ? TRUE : FALSE
+    rescue Exception => error
+      puts error
+      return FALSE
+    end
+  end
+
+  def send_online_mail(to=nil)
+    return FALSE if to.nil? || to.empty?
+
+    bcc = nil
+    bcc = to.join(',')
+    mail_content = MAIL_CONTENT % [FROM_ADDRESS, bcc, ONLINE_SUBJECT, ONLINE_MESSAGE]
+
+    begin
+      @smtp.start(@config['mail_domain'],
+                  @config['smtp_user'],
+                  @config['smtp_password'], :plain)
+      response = @smtp.send_message mail_content, FROM_ADDRESS, to
+      @smtp.finish
+      return response.success? ? TRUE : FALSE
+    rescue Exception => error
+      puts error
+      return FALSE
+    end
+  end
+end
 
 class BotMailAccess
   
