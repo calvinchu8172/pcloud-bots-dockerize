@@ -64,7 +64,7 @@ module XMPPController
     @db_conn = BotDBAccess.new
     @rd_conn = BotRedisAccess.new
     @route_conn = BotRouteAccess.new
-    @mail_conn = BotMailAccess.new
+    @mail_conn = BotMailAccessSMTP.new
     
     @xmpp_server_domain = '@%s' % client.jid.domain
     @xmpp_resource_id = '/device'
@@ -166,6 +166,7 @@ module XMPPController
             isSuccess = @route_conn.batch_create_records({domain_name: zone_name, records: records})
           end
         
+          mails = Array.new
           ddnss.each do |data|
             if valid_json? data then
               ddns = JSON.parse(data)
@@ -191,16 +192,7 @@ module XMPPController
           
               if isSuccess then
                 if hasMailed && 'update' == action then
-                  isMailSended = @mail_conn.send_online_mail(user_email)
-                  Fluent::Logger.post(isMailSended ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
-                                      {event: 'DDNS',
-                                       direction: 'N/A',
-                                       to: 'N/A',
-                                       form: 'N/A',
-                                       id: session_id,
-                                       full_domain: 'N/A',
-                                       message:"Send online mail to user %s" % [isMailSended ? 'success' : 'failure'] ,
-                                       data: {user_email: user_email}})
+                  mails << user_email
                 end
                 ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                 @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_SUCCESS}) if !ddns_session.nil?
@@ -217,17 +209,7 @@ module XMPPController
                                      data: 'N/A'})
               else
                 if !hasMailed && 'update' == action then
-                  isMailSended = @mail_conn.send_offline_mail(user_email)
-                  Fluent::Logger.post(isMailSended ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
-                                      {event: 'DDNS',
-                                       direction: 'N/A',
-                                       to: 'N/A',
-                                       form: 'N/A',
-                                       id: session_id,
-                                       full_domain: 'N/A',
-                                       message:"Send offline mail to user %s" % [isMailSended ? 'success' : 'failure'] ,
-                                       data: {user_email: user_email}})
-                  
+                  mails << user_email
                   ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                   @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_FAILURE}) if !ddns_session.nil?
                   
@@ -239,9 +221,38 @@ module XMPPController
                 end
               end
             end
-          end    
+          end
+
+          if mails.count > 0
+            if isSuccess then
+              isSendMail = @mail_conn.send_online_mail(mails)
+              mails.each do |mail|
+                Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                                    {event: 'DDNS',
+                                     direction: 'N/A',
+                                     to: 'N/A',
+                                     form: 'N/A',
+                                     id: 'N/A',
+                                     full_domain: 'N/A',
+                                     message:"Send online mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
+                                     data: {user_email: mail}})
+              end
+            else
+              isSendMail = @mail_conn.send_offline_mail(mails)
+              mails.each do |mail|
+                Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                                    {event: 'DDNS',
+                                     direction: 'N/A',
+                                     to: 'N/A',
+                                     form: 'N/A',
+                                     id: 'N/A',
+                                     full_domain: 'N/A',
+                                     message:"Send offline mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
+                                     data: {user_email: mail}})
+              end
+            end
+          end
         end
-      
         sleep(0.2)
       end
       @rd_conn.rd_ddns_batch_lock_delete
