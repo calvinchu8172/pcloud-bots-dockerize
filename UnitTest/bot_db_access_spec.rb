@@ -161,38 +161,72 @@ describe BotDBAccess do
     end
     
     it 'Access non-exist record from DDNS table' do
-      data = {device_id: 123456789, ip_address: '10.1.1.111', full_domain: 'mytest3.demo.ecoworkinc.com.'}
+      index = Time.now.to_i
+      host_name = "ut%s" % index
+      device_id = index
+      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
       ddns = db.db_ddns_access(data)
       expect(ddns).to be_nil
     end
     
     it 'Add new record into DDNS table and re-test access method' do
-      data = {device_id: 123456789, ip_address: '10.1.1.111', full_domain: 'mytest3.demo.ecoworkinc.com.'}
+      index = Time.now.to_i
+      host_name = "ut%s" % index
+      device_id = index
+      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
       ddns = db.db_ddns_insert(data)
       expect(ddns).to respond_to(:id)
       ddns_id = ddns.id
       
       access = db.db_ddns_access({id: ddns_id})
+      isDeleted = db.db_ddns_delete(ddns_id)
+
       expect(access).to respond_to(:id)
+      expect(access.device_id).to eq(data[:device_id])
+      expect(access.ip_address).to eq(data[:ip_address])
+      expect(access.full_domain).to eq(data[:full_domain])
+
+      expect(isDeleted).to be true
     end
     
     it 'Update DDNS record' do
+      index = Time.now.to_i
+      host_name = "ut%s" % index
+      device_id = index
+      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
+      ddns_insert = db.db_ddns_insert(data)
+      ddns_id = ddns_insert.id
+
+      sleep(1.2)
+      host_name = "ut%s" % index
       ip_address = '10.1.1.112'
-      data = {id: ddns_id, device_id: 123456789, ip_address: ip_address, full_domain: 'mytest3.demo.ecoworkinc.com.'}
-      isSuccess = db.db_ddns_update(data)
-      expect(isSuccess).to be true
-      
-      ddns = db.db_ddns_access({id: ddns_id})
-      expect(ddns.ip_address).to eq(ip_address)
+      data = {id: ddns_id, device_id: device_id, ip_address: ip_address, full_domain: "%s.demo.ecoworkinc.com." % host_name}
+      isSuccessUpdate = db.db_ddns_update(data)
+
+      ddns_access = db.db_ddns_access({id: ddns_id})
+      isDeleted = db.db_ddns_delete(ddns_id)
+
+      expect(ddns_insert).to respond_to(:id)
+      expect(isSuccessUpdate).to be true
+      expect(ddns_access.ip_address).to eq(ip_address)
+      expect(ddns_access.hostname).to eq(host_name)
+      expect(isDeleted).to be true
     end
     
     it 'Delete DDNS record' do
+      index = Time.now.to_i
+      host_name = "ut%s" % index
+      device_id = index
+      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
+      ddns_insert = db.db_ddns_insert(data)
+      ddns_id = ddns_insert.id
+
       isSuccess = db.db_ddns_delete(ddns_id)
       expect(isSuccess).to be true
-      ddns_id = nil
       
-      isSuccess = db.db_ddns_delete(0)
+      isSuccess = db.db_ddns_delete(ddns_id)
       expect(isSuccess).to be false
+      expect(ddns_id).not_to be_nil
     end
   end
   

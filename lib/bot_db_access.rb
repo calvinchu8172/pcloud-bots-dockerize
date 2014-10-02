@@ -1,8 +1,10 @@
 #!/usr/bin/env ruby
 
+require_relative 'bot_unit'
 require 'rubygems'
 require 'active_record'
 require 'yaml'
+require 'ipaddr'
 
 DB_CONFIG_FILE = '../config/bot_db_config.yml'
 
@@ -20,6 +22,30 @@ end
 
 class DDNS < ActiveRecord::Base
   self.table_name = "ddns"
+  attr_accessor :full_domain
+
+  def ip_address
+    IPAddr.new(read_attribute(:ip_address).to_i(16), Socket::AF_INET).to_s
+  end
+
+  def full_domain
+    domain = Domain.find(self.domain_id)
+    self.hostname + '.' + domain.domain_name
+  end
+
+  def full_domain=(str)
+    self.hostname = find_hostname(str)
+    domain = find_domainname(str)
+    self.domain_id = Domain.find_by_domain_name(domain).id
+  end
+
+  def ip_address=(ip)
+    write_attribute(:ip_address, IPAddr.new(ip).to_i.to_s(16).rjust(8, "0"))
+  end
+end
+
+class Domain < ActiveRecord::Base
+  self.table_name = "domains"
 end
 
 class BotDBAccess
@@ -185,7 +211,24 @@ class BotDBAccess
   def db_ddns_access(data={})
     return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:device_id) && !data.has_key?(:ip_address) && !data.has_key?(:full_domain))
     
-    rows = DDNS.where(data).first
+    where_data = data.clone
+
+    if data.has_key?(:full_domain) then
+      full_domain = where_data[:full_domain]
+      host_name = find_hostname(full_domain)
+      domain_name = find_domainname(full_domain)
+      domain = Domain.find_by_domain_name(domain_name)
+      domain_id = domain.id
+      where_data[:hostname] = host_name
+      where_data[:domain_id] = domain_id
+      where_data.delete(:full_domain)
+    end
+
+    if where_data.has_key?(:ip_address) then
+      where_data[:ip_address] = IPAddr.new(where_data[:ip_address]).to_i.to_s(16).rjust(8, "0")
+    end
+
+    rows = DDNS.where(where_data).first
     
     if !rows.nil? then
       return rows
