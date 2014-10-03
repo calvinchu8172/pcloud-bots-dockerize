@@ -216,7 +216,7 @@ def worker(sqs, db_conn, rd_conn)
 
         tag = data[:tag]
         title = data[:title]
-        if 'pair' == title then
+        if 'pairing' == title then
           device_id = tag
           device = nil
           device = rd_conn.rd_device_session_access(device_id)
