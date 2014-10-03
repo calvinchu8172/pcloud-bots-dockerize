@@ -19,7 +19,7 @@ BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
-KPAIR_WAITING_EXPIRE_TIME = 720
+KPAIR_WAITING_EXPIRE_TIME = 600
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
