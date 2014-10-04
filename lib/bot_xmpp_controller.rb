@@ -538,6 +538,7 @@ module XMPPController
 # SENDER: DDNS SETTING REQUEST
       when KDDNS_SETTING_REQUEST
         EM.defer {
+          begin
           host_name = find_hostname(info[:full_domain])
           domain_name = find_domainname(info[:full_domain])
         
@@ -663,6 +664,9 @@ module XMPPController
                                                         message:"Timeout, stop resend DDNS SETTING REQUEST message to device" ,
                                                         data: 'N/A'})
             end
+          end
+          rescue Exception => error
+            Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
           end
         }
         
