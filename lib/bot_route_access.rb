@@ -90,6 +90,40 @@ class BotRouteAccess
     return !zone_id.nil? && !isSuccess.nil? ? TRUE : FALSE
   end
   
+  def batch_create_records(data={})
+    return nil if data.empty? || !data.has_key?(:domain_name) || !data.has_key?(:records)
+    domain_name = data[:domain_name].downcase
+    records = data[:records]
+
+    zone_id = self.find_zone_id(domain_name)
+    isSuccess = nil
+    if !zone_id.nil? then
+      begin
+        changes = Array.new
+
+        records.each do |record|
+          action = "UPSERT"
+          action = "DELETE" if 'delete' == record[:action]
+          changes << {:action => action,
+                      :resource_record_set => {:name => record[:full_domain],
+                                               :type => 'A',
+                                               :ttl => 60,
+                                               :resource_records => [{:value => record[:ip]}]}}
+        end
+
+        info = {:hosted_zone_id => zone_id,
+                :change_batch => {:comment => '',
+                                  :changes => changes}}
+        isSuccess = @Route.client.change_resource_record_sets(info)
+      rescue Exception => error
+        isSuccess = nil
+        puts error
+      end
+    end
+
+    return !zone_id.nil? && !isSuccess.nil? ? TRUE : FALSE
+  end
+
   def update_record(data={})
     return nil if data.empty? || !data.has_key?(:host_name) || !data.has_key?(:domain_name) || !data.has_key?(:ip)
     

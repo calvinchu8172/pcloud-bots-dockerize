@@ -5,3 +5,12 @@ OFFLINE_MESSAGE = 'ZyXEL DDNS server is currently offline temporarily and we apo
 
 ONLINE_SUBJECT = 'ZyXEL DDNS Online Alert'
 ONLINE_MESSAGE = 'ZyXEL DDNS server has return online. Again, we apologize for the inconvenience.'
+
+MAIL_CONTENT = <<EOT
+From: %s
+To: undisclosed-recipients:;
+Bcc: %s
+Subject: %s
+
+%s
+EOT

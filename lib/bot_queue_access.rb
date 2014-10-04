@@ -3,15 +3,9 @@
 require 'aws-sdk'
 require 'json'
 require 'yaml'
+require_relative './bot_unit'
 
 SQS_CONFIG_FILE = '../config/bot_queue_config.yml'
-
-def valid_json? json_
-  JSON.parse(json_)
-  return true
-rescue JSON::ParserError
-  return false
-end
 
 class BotQueueAccess
   
@@ -41,7 +35,12 @@ class BotQueueAccess
         msg = JSON.parse(message.body)
         if msg["job"] == "pairing" && block_given? then
           job = msg["job"]
-          data = {session_id: msg["session_id"]}
+          data = {device_id: msg["device_id"]}
+          yield(job, data)
+
+        elsif msg["job"] == "cancel" && block_given? then
+          job = msg["job"]
+          data = {title: msg["title"], tag: msg["tag"]}
           yield(job, data)
 
         elsif msg["job"] == "unpair" && block_given? then

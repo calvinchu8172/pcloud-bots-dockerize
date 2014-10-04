@@ -1,0 +1,3 @@
+rd_host: xxx
+rd_port: 6379
+rd_db: 0
