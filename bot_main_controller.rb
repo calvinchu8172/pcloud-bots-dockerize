@@ -80,7 +80,9 @@ def worker(sqs, db_conn, rd_conn)
   sqs.sqs_listen{
     |job, data|
   
+    begin
     case job
+
       when 'pairing' then
         device_id = data[:device_id]
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
@@ -242,6 +244,9 @@ def worker(sqs, db_conn, rd_conn)
         end
     end
     
+    rescue
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
     job = nil
     data = nil
   }
