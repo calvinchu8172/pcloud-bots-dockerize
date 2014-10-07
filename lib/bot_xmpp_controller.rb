@@ -1728,7 +1728,7 @@ module XMPPController
       
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
-      data = {index: session_id, status: KSTATUS_FAILURE}
+      data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',

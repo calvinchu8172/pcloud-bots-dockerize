@@ -80,7 +80,9 @@ def worker(sqs, db_conn, rd_conn)
   sqs.sqs_listen{
     |job, data|
   
+    begin
     case job
+
       when 'pairing' then
         device_id = data[:device_id]
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
@@ -223,7 +225,7 @@ def worker(sqs, db_conn, rd_conn)
           xmpp_account = !device.nil? ? device["xmpp_account"] : nil
           info = {xmpp_account: xmpp_account.to_s,
                   tag: device_id,
-                  title: title}
+                  title: 'pair'}
           XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
         end
 
@@ -242,6 +244,9 @@ def worker(sqs, db_conn, rd_conn)
         end
     end
     
+    rescue
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
     job = nil
     data = nil
   }

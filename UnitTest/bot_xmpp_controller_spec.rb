@@ -1891,6 +1891,7 @@ describe XMPPController do
 
       expect(upnp_session).not_to be_nil
       expect(upnp_session["status"]).to eq('failure')
+      expect(upnp_session["error_code"].to_i).to eq(999)
 
       expect(hasDeleted).to be true
     end
