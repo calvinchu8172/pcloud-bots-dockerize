@@ -1421,7 +1421,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS format error' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1443,7 +1443,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS too length' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1465,7 +1465,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS too short' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1487,7 +1487,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, host name has been reserved' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1563,7 +1563,7 @@ describe XMPPController do
       expect(isDeletedDDNS).to be true
       expect(isDeletedDevice).to be true
     end
-    
+
     it 'Receive DDNS SETTING response as DDNS record has been registered' do
       index = Time.now.to_i
       device_id = index
@@ -1698,6 +1698,7 @@ describe XMPPController do
       expect(ddns).not_to be_nil
       expect(ddns.device_id.to_d).to eq(data[:device_id])
       expect(ddns.ip_address).to eq(data[:ip])
+      expect(ddns.full_domain).to eq(host_name + '.' + domain_name)
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('config_ddns')
       expect(ipv4_created).to be_an_instance_of(Resolv::IPv4)
@@ -1798,6 +1799,9 @@ describe XMPPController do
       isDeletedDevice = rd.rd_device_session_delete(device_id)
 
       expect(old_ddns).not_to be_nil
+      expect(old_ddns.device_id.to_d).to eq(device_id)
+      expect(old_ddns.ip_address).to eq(old_ip)
+      expect(old_ddns.full_domain).to eq(old_host_name + '.' + domain_name)
       expect(device).not_to be_nil
       expect(new_ddns).not_to be_nil
       expect(new_ddns.device_id.to_d).to eq(device_id)
