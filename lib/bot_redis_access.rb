@@ -50,12 +50,13 @@ class BotRedisAccess
   end
 
   def rd_pairing_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
+    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
 
     key = PAIRING_SESSION_KEY % data[:device_id]
 
     @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
     @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
     @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
 
@@ -63,7 +64,7 @@ class BotRedisAccess
   end
 
   def rd_pairing_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
+    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
 
     isExist = self.rd_pairing_session_access(data[:device_id])
     if isExist then
@@ -71,6 +72,7 @@ class BotRedisAccess
 
       @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
       @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
       @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
 
@@ -83,7 +85,7 @@ class BotRedisAccess
   def rd_pairing_session_delete(device_id = nil)
     return nil if nil == device_id
     key = PAIRING_SESSION_KEY % device_id
-    hash_key = ["user_id", "status", "start_expire_at", "waiting_expire_at"]
+    hash_key = ["user_id", "status", "error_code", "start_expire_at", "waiting_expire_at"]
 
     hash_key.each do |item|
       @redis.hdel(key, item)
@@ -219,13 +221,14 @@ class BotRedisAccess
   end
 
   def rd_upnp_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
     key = UPNP_SESSION_KEY % data[:index]
 
     @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
     @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
     @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
     @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
@@ -233,7 +236,7 @@ class BotRedisAccess
   end
 
   def rd_upnp_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
     isExist = self.rd_upnp_session_access(data[:index])
     
@@ -243,6 +246,7 @@ class BotRedisAccess
       @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
       @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
       @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
@@ -256,7 +260,7 @@ class BotRedisAccess
     return nil if nil == index
 
     key = UPNP_SESSION_KEY % index
-    hash_key = ["user_id", "device_id", "status", "service_list", "lan_ip"]
+    hash_key = ["user_id", "device_id", "status", "error_code", "service_list", "lan_ip"]
 
     hash_key.each do |item|
       @redis.hdel(key, item)
@@ -286,7 +290,7 @@ class BotRedisAccess
   end
 
   def rd_ddns_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status) && !data.has_key?(:error_code))
 
     key = DDNS_SESSION_KEY % data[:index]
 
@@ -294,12 +298,13 @@ class BotRedisAccess
     @redis.hset(key, "host_name", data[:host_name]) if data.has_key?(:host_name)
     @redis.hset(key, "domain_name", data[:domain_name]) if data.has_key?(:domain_name)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
 
     return @redis.hgetall(key)
   end
 
   def rd_ddns_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status))
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status) && !data.has_key?(:error_code))
 
     isExist = self.rd_ddns_session_access(data[:index])
     
@@ -310,6 +315,7 @@ class BotRedisAccess
       @redis.hset(key, "host_name", data[:host_name]) if data.has_key?(:host_name)
       @redis.hset(key, "domain_name", data[:domain_name]) if data.has_key?(:domain_name)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
 
       return TRUE
     else
@@ -321,7 +327,7 @@ class BotRedisAccess
     return nil if nil == index
 
     key = DDNS_SESSION_KEY % index
-    hash_key = ["device_id", "host_name", "domain_name", "status"]
+    hash_key = ["device_id", "host_name", "domain_name", "status", "error_code"]
 
     hash_key.each do |item|
       @redis.hdel(key, item)

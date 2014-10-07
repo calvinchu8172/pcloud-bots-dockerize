@@ -44,7 +44,7 @@ describe BotRedisAccess do
     
     it 'Access exist record from Pairing session table' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
       rd.rd_pairing_session_insert(data)
       result = rd.rd_pairing_session_access(device_id)
       rd.rd_pairing_session_delete(device_id)
@@ -53,22 +53,24 @@ describe BotRedisAccess do
       
       expect(result).to have_key("user_id")
       expect(result).to have_key("status")
+      expect(result).to have_key("error_code")
       expect(result).to have_key("start_expire_at")
       expect(result).to have_key("waiting_expire_at")
       
       expect(result['user_id']).to eq("2")
       expect(result['status']).to eq("start")
+      expect(result['error_code'].to_i).to eq(789)
       expect(result['start_expire_at']).to eq("2014-01-14 13:23:34")
       expect(result['waiting_expire_at']).to eq("2014-01-14 13:53:34")
     end
     
     it 'Update pairing session record' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
       rd.rd_pairing_session_insert(data)
       result_insert = rd.rd_pairing_session_access(device_id)
       
-      data = {device_id: device_id, user_id: 2, status: "wait", start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
       rd.rd_pairing_session_update(data)
       result_updated = rd.rd_pairing_session_access(device_id)
       
@@ -77,22 +79,26 @@ describe BotRedisAccess do
       expect(result_insert).to be_an_instance_of(Hash)
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       expect(result_insert).to have_key("start_expire_at")
       expect(result_insert).to have_key("waiting_expire_at")
       
       expect(result_insert['user_id']).to eq("2")
       expect(result_insert['status']).to eq("start")
+      expect(result_insert['error_code'].to_i).to eq(789)
       expect(result_insert['start_expire_at']).to eq("2014-01-14 13:23:34")
       expect(result_insert['waiting_expire_at']).to eq("2014-01-14 13:53:34")
       
       expect(result_updated).to be_an_instance_of(Hash)
       expect(result_updated).to have_key("user_id")
       expect(result_updated).to have_key("status")
+      expect(result_updated).to have_key("error_code")
       expect(result_updated).to have_key("start_expire_at")
       expect(result_updated).to have_key("waiting_expire_at")
       
       expect(result_updated['user_id']).to eq("2")
       expect(result_updated['status']).to eq("wait")
+      expect(result_updated['error_code'].to_i).to eq(999)
       expect(result_updated['start_expire_at']).to eq("2014-01-15 13:23:34")
       expect(result_updated['waiting_expire_at']).to eq("2014-01-15 13:53:34")
     end
@@ -100,7 +106,7 @@ describe BotRedisAccess do
     it 'Update nonexistent pairing session record' do
       device_id = Time.now.to_i
       
-      data = {device_id: device_id, user_id: 2, status: "wait", start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
       result = rd.rd_pairing_session_update(data)
       
       expect(result).to be false
@@ -108,7 +114,7 @@ describe BotRedisAccess do
     
     it 'Delete pairing session record' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 999, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
       rd.rd_pairing_session_insert(data)
       result_insert = rd.rd_pairing_session_access(device_id)
       rd.rd_pairing_session_delete(device_id)
@@ -117,6 +123,7 @@ describe BotRedisAccess do
       expect(result_insert).to be_an_instance_of(Hash)
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       expect(result_insert).to have_key("start_expire_at")
       expect(result_insert).to have_key("waiting_expire_at")
       
@@ -210,7 +217,7 @@ describe BotRedisAccess do
     
     it 'Access exist record from UPNP session table' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.110"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", error_code: 789, service_list: "[]", lan_ip: "10.1.1.110"}
       rd.rd_upnp_session_insert(data)
       result = rd.rd_upnp_session_access(index)
       rd.rd_upnp_session_delete(index)
@@ -220,23 +227,25 @@ describe BotRedisAccess do
       expect(result).to have_key("user_id")
       expect(result).to have_key("device_id")
       expect(result).to have_key("status")
+      expect(result).to have_key("error_code")
       expect(result).to have_key("service_list")
       expect(result).to have_key("lan_ip")
       
       expect(result['user_id']).to eq("2")
       expect(result['device_id']).to eq("1")
       expect(result['status']).to eq("start")
+      expect(result['error_code'].to_i).to eq(789)
       expect(result['service_list']).to eq("[]")
       expect(result['lan_ip']).to eq("10.1.1.110")
     end
     
     it 'Update UPNP session record' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.110"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", error_code: 789, service_list: "[]", lan_ip: "10.1.1.110"}
       rd.rd_upnp_session_insert(data)
       result_insert = rd.rd_upnp_session_access(index)
       
-      data = {index: index, user_id: 3, device_id: 4, status: "wait", service_list: "[{}]", lan_ip: "10.1.1.113"}
+      data = {index: index, user_id: 3, device_id: 4, status: "wait", error_code: 999, service_list: "[{}]", lan_ip: "10.1.1.113"}
       rd.rd_upnp_session_update(data)
       result_updated = rd.rd_upnp_session_access(index)
       
@@ -246,12 +255,14 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("device_id")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       expect(result_insert).to have_key("service_list")
       expect(result_insert).to have_key("lan_ip")
       
       expect(result_insert['user_id']).to eq("2")
       expect(result_insert['device_id']).to eq("1")
       expect(result_insert['status']).to eq("start")
+      expect(result_insert['error_code'].to_i).to eq(789)
       expect(result_insert['service_list']).to eq("[]")
       expect(result_insert['lan_ip']).to eq("10.1.1.110")
       
@@ -259,12 +270,14 @@ describe BotRedisAccess do
       expect(result_updated).to have_key("user_id")
       expect(result_updated).to have_key("device_id")
       expect(result_updated).to have_key("status")
+      expect(result_updated).to have_key("error_code")
       expect(result_updated).to have_key("service_list")
       expect(result_updated).to have_key("lan_ip")
       
       expect(result_updated['user_id']).to eq("3")
       expect(result_updated['device_id']).to eq("4")
       expect(result_updated['status']).to eq("wait")
+      expect(result_updated['error_code'].to_i).to eq(999)
       expect(result_updated['service_list']).to eq("[{}]")
       expect(result_updated['lan_ip']).to eq("10.1.1.113")
     end
@@ -272,7 +285,7 @@ describe BotRedisAccess do
     it 'Update nonexistent UPNP session record' do
       index = Time.now.to_i
       
-      data = {index: index, user_id: 3, device_id: 4, status: "wait", service_list: "[{}]", lan_ip: "10.1.1.113"}
+      data = {index: index, user_id: 3, device_id: 4, status: "wait", error_code: 789, service_list: "[{}]", lan_ip: "10.1.1.113"}
       result = rd.rd_upnp_session_update(data)
       
       expect(result).to be false
@@ -280,7 +293,7 @@ describe BotRedisAccess do
     
     it 'Delete UPNP session record' do
       index = Time.now.to_i
-      data = {index: index, user_id: 2, device_id: 1, status: "start", service_list: "[]", lan_ip: "10.1.1.113"}
+      data = {index: index, user_id: 2, device_id: 1, status: "start", error_code: 789, service_list: "[]", lan_ip: "10.1.1.113"}
       rd.rd_upnp_session_insert(data)
       result_insert = rd.rd_upnp_session_access(index)
       rd.rd_upnp_session_delete(index)
@@ -290,6 +303,7 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("device_id")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       expect(result_insert).to have_key("service_list")
       expect(result_insert).to have_key("lan_ip")
       
@@ -314,7 +328,7 @@ describe BotRedisAccess do
     
     it 'Access exist record from DDNS session table' do
       index = Time.now.to_i
-      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start"}
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start", error_code: 987}
       rd.rd_ddns_session_insert(data)
       result = rd.rd_ddns_session_access(index)
       rd.rd_ddns_session_delete(index)
@@ -325,20 +339,22 @@ describe BotRedisAccess do
       expect(result).to have_key("host_name")
       expect(result).to have_key("domain_name")
       expect(result).to have_key("status")
+      expect(result).to have_key("error_code")
       
       expect(result['device_id']).to eq("1")
       expect(result['host_name']).to eq("myhostname")
       expect(result['domain_name']).to eq("ecoworkinc.com")
       expect(result['status']).to eq("start")
+      expect(result['error_code'].to_i).to eq(987)
     end
     
     it 'Update DDNS session record' do
       index = Time.now.to_i
-      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start"}
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start", error_code: 987}
       rd.rd_ddns_session_insert(data)
       result_insert = rd.rd_ddns_session_access(index)
       
-      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "wait"}
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "wait", error_code: 743}
       rd.rd_ddns_session_update(data)
       result_updated = rd.rd_ddns_session_access(index)
       
@@ -349,28 +365,32 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("host_name")
       expect(result_insert).to have_key("domain_name")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       
       expect(result_insert['device_id']).to eq("1")
       expect(result_insert['host_name']).to eq("myhostname")
       expect(result_insert['domain_name']).to eq("ecoworkinc.com")
       expect(result_insert['status']).to eq("start")
-      
+      expect(result_insert['error_code'].to_i).to eq(987)
+
       expect(result_updated).to be_an_instance_of(Hash)
       expect(result_updated).to have_key("device_id")
       expect(result_updated).to have_key("host_name")
       expect(result_updated).to have_key("domain_name")
       expect(result_updated).to have_key("status")
+      expect(result_updated).to have_key("error_code")
       
       expect(result_updated['device_id']).to eq("1")
       expect(result_updated['host_name']).to eq("myhostname")
       expect(result_updated['domain_name']).to eq("ecoworkinc.com")
       expect(result_updated['status']).to eq("wait")
+      expect(result_updated['error_code'].to_i).to eq(743)
     end
     
     it 'Update nonexistent DDNS session record' do
       index = Time.now.to_i
       
-      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "wait"}
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "wait", error_code: 743}
       result = rd.rd_ddns_session_update(data)
       
       expect(result).to be false
@@ -378,7 +398,7 @@ describe BotRedisAccess do
     
     it 'Delete DDNS session record' do
       index = Time.now.to_i
-      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start"}
+      data = {index: index, device_id: 1, host_name: "myhostname", domain_name: "ecoworkinc.com", status: "start", error_code: 199}
       rd.rd_ddns_session_insert(data)
       result_insert = rd.rd_ddns_session_access(index)
       rd.rd_ddns_session_delete(index)
@@ -389,6 +409,7 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("host_name")
       expect(result_insert).to have_key("domain_name")
       expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
       
       expect(result_deleted).to be_nil
     end
