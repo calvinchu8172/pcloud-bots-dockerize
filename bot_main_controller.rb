@@ -225,7 +225,7 @@ def worker(sqs, db_conn, rd_conn)
           xmpp_account = !device.nil? ? device["xmpp_account"] : nil
           info = {xmpp_account: xmpp_account.to_s,
                   tag: device_id,
-                  title: title}
+                  title: 'pair'}
           XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
         end
 
