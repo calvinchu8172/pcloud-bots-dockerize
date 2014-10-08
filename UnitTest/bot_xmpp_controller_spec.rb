@@ -24,14 +24,19 @@ FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 KPAIR_WAITING_EXPIRE_TIME = 20.0
 KUPNP_EXPIRE_TIME = 20.0
 
+RSPEC_CONFIG_FILE = '../config/rspec_xmpp_controller_config.yml'
+
 Jabber::debug = FALSE
 
 describe XMPPController do
-  bot_xmpp_account = 'bot7@localhost/robot'
-  bot_xmpp_password = '12345'
-  device_xmpp_account = 'bot8@localhost/device'
-  device_xmpp_account_node = 'bot8'
-  device_xmpp_password = '12345'
+  config_file = File.join(File.dirname(__FILE__), RSPEC_CONFIG_FILE)
+  config = YAML.load(File.read(config_file))
+
+  bot_xmpp_account = config["bot_xmpp_account"]
+  bot_xmpp_password = config["bot_xmpp_password"]
+  device_xmpp_account = config["device_xmpp_account"]
+  device_xmpp_account_node = device_xmpp_account.split('@')[0]
+  device_xmpp_password = config["device_xmpp_password"]
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
