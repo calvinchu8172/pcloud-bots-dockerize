@@ -24,23 +24,28 @@ FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 KPAIR_WAITING_EXPIRE_TIME = 20.0
 KUPNP_EXPIRE_TIME = 20.0
 
+RSPEC_CONFIG_FILE = '../config/rspec_xmpp_controller_config.yml'
+
 Jabber::debug = FALSE
 
 describe XMPPController do
-  bot_xmpp_account = 'bot7@localhost/robot'
-  bot_xmpp_password = '12345'
-  device_xmpp_account = 'bot8@localhost/device'
-  device_xmpp_account_node = 'bot8'
-  device_xmpp_password = '12345'
+  config_file = File.join(File.dirname(__FILE__), RSPEC_CONFIG_FILE)
+  config = YAML.load(File.read(config_file))
+
+  bot_xmpp_account = config["bot_xmpp_account"]
+  bot_xmpp_password = config["bot_xmpp_password"]
+  device_xmpp_account = config["device_xmpp_account"]
+  device_xmpp_account_node = device_xmpp_account.split('@')[0]
+  device_xmpp_password = config["device_xmpp_password"]
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
   
   host_name = 'ut%d' % Time.now.to_i
-  domain_name = 'demo.ecoworkinc.com.'
   
   let(:route) {BotRouteAccess.new}
   let(:db) {BotDBAccess.new}
   let(:rd) {BotRedisAccess.new}
+  let(:domain_name) {config["domain_name"]}
   
   xmpp_connect_ready = FALSE
   
@@ -99,11 +104,12 @@ describe XMPPController do
     end
 
     it 'Send PAIR COMPLETED SUCCESS RESPONSE message to device' do
-      session_id = 1
+      session_id = Time.now.to_i
+      email = 'example@ecoworkinc.com'
       
       x = nil
       i = 0
-      info = {xmpp_account: device_xmpp_account, email: 'example@ecoworkinc.com', session_id: session_id}
+      info = {xmpp_account: device_xmpp_account, email: email, session_id: session_id}
       XMPPController.send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
       while x.nil? && i < 200
         sleep(0.1)
@@ -115,11 +121,13 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       action = xml['x']['field'][0]['value']
+      email = xml['x']['field'][1]['value']
       expect(action).to eq('completed')
+      expect(email).to eq(email)
     end
     
     it 'Send PAIR COMPLETED FAILURE RESPONSE message to device' do
-      session_id = 1
+      session_id = Time.now.to_i
       error_code = 999
       
       x = nil
@@ -156,8 +164,10 @@ describe XMPPController do
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
       
+      title = xml['x']['title']
       action = xml['x']['field']['value']
       expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('pair')
       expect(action).to eq('timeout')
     end
 
@@ -176,8 +186,10 @@ describe XMPPController do
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
 
+      title = xml['x']['title']
       action = xml['x']['field']['value']
       expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('pair')
       expect(action).to eq('cancel')
     end
     
@@ -196,8 +208,10 @@ describe XMPPController do
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
       
+      title = xml['x']['title']
       action = xml['x']['field']['value']
       expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('pair')
       expect(action).to eq('cancel')
     end
 
@@ -216,9 +230,11 @@ describe XMPPController do
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
 
+      title = xml['x']['title']
       action = xml['x']['field'][0]['value']
       error_code = xml['x']['field'][1]['value']
       expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('pair')
       expect(action).to eq('cancel')
       expect(error_code.to_i).to eq(799)
     end
@@ -440,7 +456,7 @@ describe XMPPController do
     end
 
     it 'Send UPNP GETTING REQUEST message to device' do
-      session_id = 1
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -456,7 +472,9 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
+      timeout = xml['x']['field']['value']
       expect(title).to eq('get_upnp_service')
+      expect(timeout.to_i).to eq(300)
     end
 
     it 'Send UPNP GETTING REQUEST message to device, waiting timeout test' do
@@ -530,7 +548,7 @@ describe XMPPController do
     end
     
     it 'Send UPNP SETTING REQUEST message to device' do
-      session_id = 1
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -546,7 +564,9 @@ describe XMPPController do
       
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
+      timeout = xml['x']['field']['value']
       expect(title).to eq('set_upnp_service')
+      expect(timeout.to_i).to eq(300)
     end
     
     it 'Send UPNP SETTING REQUEST message to device, waiting timeout test' do
@@ -812,6 +832,7 @@ describe XMPPController do
       
       isDeletedDDNS = db.db_ddns_delete(ddns.id)
       isDeletedDDNSSession = rd.rd_ddns_session_delete(session_id)
+      isDeletedDevice = rd.rd_device_session_delete(device_id)
 
       expect(device).not_to be_nil
       expect(ddns_session).not_to be_nil
@@ -828,6 +849,7 @@ describe XMPPController do
       expect(ipv4_deleted).to be_nil
       expect(isDeletedDDNS).to be true
       expect(isDeletedDDNSSession).to be true
+      expect(isDeletedDevice).to be true
     end
     
     it 'Send DDNS SETTING SUCCESS RESPONSE message to device' do
@@ -879,6 +901,10 @@ describe XMPPController do
   context 'Receive RESULT message' do
     it 'Receive PAIR START SUCCESS response' do
       device_id = Time.now.to_i
+
+      data = {device_id: device_id, ip: '10.1.1.110', xmpp_account: device_xmpp_account_node}
+      device = rd.rd_device_session_insert(data)
+
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
       pair_session = rd.rd_pairing_session_insert(data)
       expect(pair_session).not_to be_nil
@@ -889,11 +915,13 @@ describe XMPPController do
 
       pair_session = rd.rd_pairing_session_access(device_id)
       hasDeleted = rd.rd_pairing_session_delete(device_id)
+      hasDeletedDevice = rd.rd_device_session_delete(device_id)
 
       expect(pair_session).not_to be_nil
       expect(pair_session["status"]).to eq('waiting')
 
       expect(hasDeleted).to be true
+      expect(hasDeletedDevice).to be true
     end
 
     it 'Receive PAIR START SUCCESS response, start timeout test' do
@@ -1179,6 +1207,8 @@ describe XMPPController do
       hasDeleted = db.db_pairing_delete(pair_id)
 
       expect(pair).not_to be_nil
+      expect(pair.device_id).to eq(device_id)
+      expect(pair.user_id).to eq(user_id)
       expect(hasDeleted).to be true
 
       MultiXml.parser = :rexml
@@ -1396,7 +1426,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS format error' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1418,7 +1448,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS too length' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1440,7 +1470,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, DNS too short' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1462,7 +1492,7 @@ describe XMPPController do
     end
     
     it 'Receive DDNS SETTING error response, code - 999, host name has been reserved' do
-      session_id = 0
+      session_id = Time.now.to_i
       
       x = nil
       i = 0
@@ -1538,7 +1568,7 @@ describe XMPPController do
       expect(isDeletedDDNS).to be true
       expect(isDeletedDevice).to be true
     end
-    
+
     it 'Receive DDNS SETTING response as DDNS record has been registered' do
       index = Time.now.to_i
       device_id = index
@@ -1576,6 +1606,7 @@ describe XMPPController do
 
       isDeletedDDNS = db.db_ddns_delete(ddns.id)
       isDeletedDDNSSession = rd.rd_device_session_delete(device_id)
+      isDeletedDevice = rd.rd_device_session_delete(device_id)
 
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
@@ -1587,6 +1618,7 @@ describe XMPPController do
       expect(title).to eq('config_ddns')
       expect(isDeletedDDNS).to be true
       expect(isDeletedDDNSSession).to be true
+      expect(isDeletedDevice).to be true
     end
     
     it 'Receive DDNS SETTING SUCCESS response' do
@@ -1671,6 +1703,7 @@ describe XMPPController do
       expect(ddns).not_to be_nil
       expect(ddns.device_id.to_d).to eq(data[:device_id])
       expect(ddns.ip_address).to eq(data[:ip])
+      expect(ddns.full_domain).to eq(host_name + '.' + domain_name)
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('config_ddns')
       expect(ipv4_created).to be_an_instance_of(Resolv::IPv4)
@@ -1771,6 +1804,9 @@ describe XMPPController do
       isDeletedDevice = rd.rd_device_session_delete(device_id)
 
       expect(old_ddns).not_to be_nil
+      expect(old_ddns.device_id.to_d).to eq(device_id)
+      expect(old_ddns.ip_address).to eq(old_ip)
+      expect(old_ddns.full_domain).to eq(old_host_name + '.' + domain_name)
       expect(device).not_to be_nil
       expect(new_ddns).not_to be_nil
       expect(new_ddns.device_id.to_d).to eq(device_id)
@@ -2179,7 +2215,6 @@ describe XMPPController do
       records = Array.new
       ipv4 = nil
       
-      domain_name = 'demo.ecoworkinc.com.'
       device_id = Time.now.to_i
 
       rd.rd_ddns_batch_lock_set
