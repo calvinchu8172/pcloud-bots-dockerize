@@ -569,7 +569,7 @@ module XMPPController
             sleep(0.1)
           end
 
-          if !ddns_record.nil? && isSuccess then
+          if !ddns_record.nil? then
             old_full_domain = ddns_record.full_domain.to_s
 
             data = {id: ddns_record.id, full_domain: info[:full_domain], ip_address: info[:ip]}
@@ -1377,7 +1377,7 @@ module XMPPController
                                      message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
                                      data: {ip: x[:device_ip]}})
 
-              if !ddns_record.nil? && isSuccess then
+              if !ddns_record.nil? then
                 old_full_domain = ddns_record.full_domain
 
                 data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
@@ -1486,7 +1486,7 @@ module XMPPController
                                        message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
                                        data: {ip: x[:device_ip]}})
               
-                if !ddns_record.nil? && isSuccess then
+                if !ddns_record.nil? then
                   old_full_domain = ddns_record.full_domain.to_s
                   host_name = find_hostname(old_full_domain)
                   domain_name = find_domainname(old_full_domain)
