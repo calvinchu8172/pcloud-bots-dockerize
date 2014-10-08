@@ -77,7 +77,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                direction: 'N/A',
                                                to: 'N/A',
-                                               form: 'N/A',
+                                               from: 'N/A',
                                                id: 'N/A',
                                                full_domain: 'N/A',
                                                message:"Start re-update DDNS record ...",
@@ -145,7 +145,7 @@ module XMPPController
           Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                    direction: 'N/A',
                                                    to: 'N/A',
-                                                   form: 'N/A',
+                                                   from: 'N/A',
                                                    id: 'N/A',
                                                    full_domain: 'N/A',
                                                    message:"Batch register DDNS record ...",
@@ -184,7 +184,7 @@ module XMPPController
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
-                                     form: 'N/A',
+                                     from: 'N/A',
                                      id: session_id,
                                      full_domain: full_domain,
                                      message:"Batch register DDNS record %s" % [isSuccess ? 'success' : 'failure'] ,
@@ -202,7 +202,7 @@ module XMPPController
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
-                                     form: 'N/A',
+                                     from: 'N/A',
                                      id: session_id,
                                      full_domain: 'N/A',
                                      message:"Delete DDNS batch session %s" % [isDeleted ? 'success' : 'failure'] ,
@@ -231,7 +231,7 @@ module XMPPController
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
-                                     form: 'N/A',
+                                     from: 'N/A',
                                      id: 'N/A',
                                      full_domain: 'N/A',
                                      message:"Send online mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
@@ -244,7 +244,7 @@ module XMPPController
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
-                                     form: 'N/A',
+                                     from: 'N/A',
                                      id: 'N/A',
                                      full_domain: 'N/A',
                                      message:"Send offline mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
@@ -275,7 +275,7 @@ module XMPPController
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
-                                                  form: @bot_xmpp_account,
+                                                  from: @bot_xmpp_account,
                                                   id: tag,
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION CANCEL REQUEST message to device" % title.upcase ,
@@ -291,7 +291,7 @@ module XMPPController
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: to,
-                                                  form: @bot_xmpp_account,
+                                                  from: @bot_xmpp_account,
                                                   id: tag,
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION CANCEL SUCCESS message to device" % title.upcase ,
@@ -308,7 +308,7 @@ module XMPPController
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: to,
-                                                  form: @bot_xmpp_account,
+                                                  from: @bot_xmpp_account,
                                                   id: tag,
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION CANCEL FAILUSE message to device" % title.upcase ,
@@ -324,7 +324,7 @@ module XMPPController
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
-                                                  form: @bot_xmpp_account,
+                                                  from: @bot_xmpp_account,
                                                   id: tag,
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION TIMEOUT REQUEST message to device" % title.upcase ,
@@ -339,7 +339,7 @@ module XMPPController
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
-                                                  form: @bot_xmpp_account,
+                                                  from: @bot_xmpp_account,
                                                   id: device_id,
                                                   full_domain: 'N/A',
                                                   message:"Send PAIR START REQUEST message to device" ,
@@ -538,6 +538,7 @@ module XMPPController
 # SENDER: DDNS SETTING REQUEST
       when KDDNS_SETTING_REQUEST
         EM.defer {
+          begin
           host_name = find_hostname(info[:full_domain])
           domain_name = find_domainname(info[:full_domain])
         
@@ -663,6 +664,9 @@ module XMPPController
                                                         message:"Timeout, stop resend DDNS SETTING REQUEST message to device" ,
                                                         data: 'N/A'})
             end
+          end
+          rescue Exception => error
+            Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
           end
         }
         
@@ -1724,7 +1728,7 @@ module XMPPController
       
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
-      data = {index: session_id, status: KSTATUS_FAILURE}
+      data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
