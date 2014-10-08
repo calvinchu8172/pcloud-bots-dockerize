@@ -41,11 +41,11 @@ describe XMPPController do
   client = Client.new(jid)
   
   host_name = 'ut%d' % Time.now.to_i
-  domain_name = 'demo.ecoworkinc.com.'
   
   let(:route) {BotRouteAccess.new}
   let(:db) {BotDBAccess.new}
   let(:rd) {BotRedisAccess.new}
+  let(:domain_name) {config["domain_name"]}
   
   xmpp_connect_ready = FALSE
   
@@ -2215,7 +2215,6 @@ describe XMPPController do
       records = Array.new
       ipv4 = nil
       
-      domain_name = 'demo.ecoworkinc.com.'
       device_id = Time.now.to_i
 
       rd.rd_ddns_batch_lock_set
