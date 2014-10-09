@@ -95,11 +95,14 @@ def worker(sqs, db_conn, rd_conn)
                                                   data: data})
         
         device = rd_conn.rd_device_session_access(device_id)
+        pair = rd_conn.rd_pairing_session_access(device_id)
         xmpp_account = nil != device ? device["xmpp_account"] : nil
+        expire_time = nil != pair ? (pair["expire_at"].to_i - Time.now.to_i) : 0
         info = {xmpp_account: xmpp_account.to_s,
-                device_id: device_id}
+                device_id: device_id,
+                expire_time: expire_time}
         
-        XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil?
+        XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil? && !pair.nil?
 
       when 'unpair' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
