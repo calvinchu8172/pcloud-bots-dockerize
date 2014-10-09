@@ -81,6 +81,7 @@ describe XMPPController do
   callbackThread.abort_on_exception = TRUE
   
   context "Send request methods test" do
+# SENDER: Send PAIR START REQUEST message to device
     it 'Send PAIR START REQUEST message to device' do
       device_id = Time.now.to_i
       
@@ -103,6 +104,7 @@ describe XMPPController do
       expect(timeout.to_i).to eq(600)
     end
 
+# SENDER: Send PAIR COMPLETED SUCCESS RESPONSE message to device
     it 'Send PAIR COMPLETED SUCCESS RESPONSE message to device' do
       session_id = Time.now.to_i
       email = 'example@ecoworkinc.com'
@@ -126,6 +128,7 @@ describe XMPPController do
       expect(email).to eq(email)
     end
     
+# SENDER: Send PAIR COMPLETED FAILURE RESPONSE message to device
     it 'Send PAIR COMPLETED FAILURE RESPONSE message to device' do
       session_id = Time.now.to_i
       error_code = 999
@@ -149,6 +152,7 @@ describe XMPPController do
       expect(error.to_d).to eq(error_code)
     end
     
+# SENDER: Send PAIR TIMEOUT REQUEST message to device
     it 'Send PAIR TIMEOUT REQUEST message to device' do
       device_id = Time.now.to_i
       
@@ -171,6 +175,7 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send PAIR CANCEL REQUEST message to device
     it 'Send PAIR CANCEL REQUEST message to device' do
       device_id = Time.now.to_i
 
@@ -193,6 +198,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
     
+# SENDER: Send PAIR CANCEL SUCCESS RESPONSE message to device
     it 'Send PAIR CANCEL SUCCESS RESPONSE message to device' do
       device_id = Time.now.to_i
       
@@ -215,6 +221,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send PAIR CANCEL FAILURE RESPONSE message to device
     it 'Send PAIR CANCEL FAILURE RESPONSE message to device' do
       device_id = Time.now.to_i
 
@@ -239,6 +246,7 @@ describe XMPPController do
       expect(error_code.to_i).to eq(799)
     end
     
+# SENDER: Send UNPAIR ASK REQUEST message to device
     it 'Send UNPAIR ASK REQUEST message to device' do
       index = Time.now.to_i
       full_domain = "ut%d.demo.ecoworkinc.com." % index
@@ -315,6 +323,7 @@ describe XMPPController do
       sleep(10)
     end
     
+# SENDER: Send UPNP SET CANCEL REQUEST message to device
     it 'Send UPNP SET CANCEL REQUEST message to device' do
       index = Time.now.to_i
 
@@ -338,6 +347,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send UPNP SET CANCEL SUCCESS RESPONSE message to device
     it 'Send UPNP SET CANCEL SUCCESS RESPONSE message to device' do
       index = Time.now.to_i
 
@@ -361,6 +371,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send UPNP SET CANCEL FAILURE RESPONSE message to device
     it 'Send UPNP SET CANCEL FAILURE RESPONSE message to device' do
       index = Time.now.to_i
 
@@ -386,6 +397,7 @@ describe XMPPController do
       expect(error_code.to_i).to eq(799)
     end
 
+# SENDER: Send UPNP GET CANCEL REQUEST message to device
     it 'Send UPNP GET CANCEL REQUEST message to device' do
       index = Time.now.to_i
 
@@ -409,6 +421,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send UPNP GET CANCEL SUCCESS RESPONSE message to device
     it 'Send UPNP GET CANCEL SUCCESS RESPONSE message to device' do
       index = Time.now.to_i
 
@@ -431,6 +444,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send UPNP GET CANCEL FAILURE RESPONSE message to device
     it 'Send UPNP GET CANCEL FAILURE RESPONSE message to device' do
       index = Time.now.to_i
 
@@ -455,6 +469,7 @@ describe XMPPController do
       expect(error_code.to_i).to eq(799)
     end
 
+# SENDER: Send UPNP GETTING REQUEST message to device
     it 'Send UPNP GETTING REQUEST message to device' do
       session_id = Time.now.to_i
       
@@ -477,6 +492,7 @@ describe XMPPController do
       expect(timeout.to_i).to eq(300)
     end
 
+# SENDER: Send UPNP GETTING REQUEST message to device, waiting timeout test
     it 'Send UPNP GETTING REQUEST message to device, waiting timeout test' do
       index = Time.now.to_i
       device_id = index
@@ -524,6 +540,7 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send UPNP GETTING TIMEOUT REQUEST message to device
     it 'Send UPNP GETTING TIMEOUT REQUEST message to device' do
       index = Time.now.to_i
 
@@ -547,6 +564,7 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
     
+# SENDER: Send UPNP SETTING REQUEST message to device
     it 'Send UPNP SETTING REQUEST message to device' do
       session_id = Time.now.to_i
       
@@ -569,6 +587,7 @@ describe XMPPController do
       expect(timeout.to_i).to eq(300)
     end
     
+# SENDER: Send UPNP SETTING REQUEST message to device, waiting timeout test
     it 'Send UPNP SETTING REQUEST message to device, waiting timeout test' do
       index = Time.now.to_i
       device_id = index
@@ -616,6 +635,7 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send UPNP SETTING TIMEOUT REQUEST message to device
     it 'Send UPNP SETTING TIMEOUT REQUEST message to device' do
       index = Time.now.to_i
 
@@ -639,6 +659,7 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send DDNS SETTING REQUEST message to device for create new DDNS record
     it 'Send DDNS SETTING REQUEST message to device for create new DDNS record' do
       index = Time.now.to_i
       device_id = index
@@ -736,6 +757,7 @@ describe XMPPController do
       expect(isDeletedDDNSSession).to be true
     end
     
+# SENDER: Send DDNS SETTING REQUEST message to device for update DDNS record
     it 'Send DDNS SETTING REQUEST message to device for update DDNS record' do
       index = Time.now.to_i
       device_id = index
@@ -852,6 +874,7 @@ describe XMPPController do
       expect(isDeletedDevice).to be true
     end
     
+# SENDER: Send DDNS SETTING SUCCESS RESPONSE message to device
     it 'Send DDNS SETTING SUCCESS RESPONSE message to device' do
       session_id = Time.now.to_i
       
@@ -874,6 +897,7 @@ describe XMPPController do
       expect(type).to eq('result')
     end
     
+# SENDER: Send DDNS SETTING FAILURE RESPONSE message to device
     it 'Send DDNS SETTING FAILURE RESPONSE message to device' do
       session_id = Time.now.to_i
       error_code = 997
@@ -899,6 +923,7 @@ describe XMPPController do
   end
   
   context 'Receive RESULT message' do
+# HANDLER: Receive PAIR START SUCCESS response
     it 'Receive PAIR START SUCCESS response' do
       device_id = Time.now.to_i
 
@@ -924,6 +949,7 @@ describe XMPPController do
       expect(hasDeletedDevice).to be true
     end
 
+# HANDLER: Receive PAIR START SUCCESS response, start timeout test
     it 'Receive PAIR START SUCCESS response, start timeout test' do
       device_id = Time.now.to_i
 
@@ -950,6 +976,7 @@ describe XMPPController do
       expect(hasDeletedDevice).to be true
     end
     
+# HANDLER: Receive PAIR START SUCCESS response, waiting timeout test
     it 'Receive PAIR START SUCCESS response, waiting timeout test' do
       device_id = Time.now.to_i
 
@@ -999,6 +1026,7 @@ describe XMPPController do
       expect(hasDeletedDevice).to be true
     end
 
+# HANDLER: Receive PAIR TIMEOUT SUCCESS response
     it 'Receive PAIR TIMEOUT SUCCESS response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1017,6 +1045,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive PAIR CANCEL SUCCESS response
     it 'Receive PAIR CANCEL SUCCESS response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1035,6 +1064,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UNPAIR SUCCESS response
     it 'Receive UNPAIR SUCCESS response' do
       device_id = Time.now.to_i
       unpair_session = rd.rd_unpair_session_insert(device_id)
@@ -1048,6 +1078,7 @@ describe XMPPController do
       expect(unpair_session).to be_nil
     end
     
+# HANDLER: Receive UPNP GET TIMEOUT SUCCESS response
     it 'Receive UPNP GET TIMEOUT SUCCESS response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1067,6 +1098,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET TIMEOUT SUCCESS response
     it 'Receive UPNP SET TIMEOUT SUCCESS response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1086,6 +1118,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP GET CANCEL SUCCESS response
     it 'Receive UPNP GET CANCEL SUCCESS response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1105,6 +1138,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET CANCEL SUCCESS response
     it 'Receive UPNP SET CANCEL SUCCESS response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1124,6 +1158,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET SUCCESS response
     it 'Receive UPNP SET SUCCESS response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1144,6 +1179,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET SUCCESS response, nonexistent session id
     it 'Receive UPNP SET SUCCESS response, nonexistent session id' do
       index = Time.now.to_i
 
@@ -1158,6 +1194,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive DDNS SETTINGS SUCCESS message
     it 'Receive DDNS SETTINGS SUCCESS message' do
       index = Time.now.to_i
       session_id = index
@@ -1176,7 +1213,7 @@ describe XMPPController do
   end
   
   context 'Receive SUBMIT message' do
-    
+# HANDLER: Receive PAIR COMPLETED SUCCESS response
     it 'Receive PAIR COMPLETED SUCCESS response' do
       device_id = Time.now.to_i
       user_id = 2
@@ -1221,6 +1258,7 @@ describe XMPPController do
       expect(value).to eq('completed')
     end
 
+# HANDLER: Receive PAIR COMPLETED SUCCESS response, but timeout, error code 899
     it 'Receive PAIR COMPLETED SUCCESS response, but timeout, error code 899' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'waiting', start_expire_at: Time.now.to_i - 1 * 60, waiting_expire_at: Time.now.to_i - 1 * 60}
@@ -1256,6 +1294,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(899)
     end
     
+# HANDLER: Receive PAIR COMPLETED SUCCESS response, but device id incorrect, error code 898
     it 'Receive PAIR COMPLETED SUCCESS response, but device id incorrect, error code 898' do
       device_id = Time.now.to_i
       
@@ -1280,6 +1319,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(898)
     end
 
+# HANDLER: Receive PAIR CANCEL REQUEST from device
     it 'Receive PAIR CANCEL REQUEST from device' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 1 * 60}
@@ -1312,6 +1352,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# HANDLER: Receive UPNP GET CANCEL REQUEST from device
     it 'Receive UPNP GET CANCEL REQUEST from device' do
       index = Time.now.to_i
       device_id = index
@@ -1354,6 +1395,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# HANDLER: Receive UPNP SET CANCEL REQUEST from device
     it 'Receive UPNP SET CANCEL REQUEST from device' do
       index = Time.now.to_i
       device_id = index
@@ -1396,6 +1438,7 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# HANDLER: Receive DDNS SETTING error response, code - 998, ip not found
     it 'Receive DDNS SETTING error response, code - 998, ip not found' do
       index = Time.now.to_i
       session_id = index
@@ -1425,6 +1468,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(998)
     end
     
+# HANDLER: Receive DDNS SETTING error response, code - 999, DNS format error
     it 'Receive DDNS SETTING error response, code - 999, DNS format error' do
       session_id = Time.now.to_i
       
@@ -1447,6 +1491,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
+# HANDLER: Receive DDNS SETTING error response, code - 999, DNS too length
     it 'Receive DDNS SETTING error response, code - 999, DNS too length' do
       session_id = Time.now.to_i
       
@@ -1469,6 +1514,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
+# HANDLER: Receive DDNS SETTING error response, code - 999, DNS too short
     it 'Receive DDNS SETTING error response, code - 999, DNS too short' do
       session_id = Time.now.to_i
       
@@ -1491,6 +1537,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
+# HANDLER: Receive DDNS SETTING error response, code - 999, host name has been reserved
     it 'Receive DDNS SETTING error response, code - 999, host name has been reserved' do
       session_id = Time.now.to_i
       
@@ -1513,6 +1560,7 @@ describe XMPPController do
       expect(error_code.to_d).to eq(999)
     end
     
+# HANDLER: Receive DDNS SETTING error response, code - 995, domain has been used
     it 'Receive DDNS SETTING error response, code - 995, domain has been used' do
       index = Time.now.to_i
       host_name = "ut%d" % index
@@ -1569,6 +1617,7 @@ describe XMPPController do
       expect(isDeletedDevice).to be true
     end
 
+# HANDLER: Receive DDNS SETTING response as DDNS record has been registered
     it 'Receive DDNS SETTING response as DDNS record has been registered' do
       index = Time.now.to_i
       device_id = index
@@ -1621,6 +1670,7 @@ describe XMPPController do
       expect(isDeletedDevice).to be true
     end
     
+# HANDLER: Receive DDNS SETTING SUCCESS response
     it 'Receive DDNS SETTING SUCCESS response' do
       index = Time.now.to_i
       host_name = "ut%d" % index
@@ -1713,6 +1763,7 @@ describe XMPPController do
       expect(isDeletedDevice).to be true
     end
     
+# HANDLER: Receive DDNS SETTING SUCCESS response for update DDNS record
     it 'Receive DDNS SETTING SUCCESS response for update DDNS record' do
       sleep(1.1)
       index = Time.now.to_i
@@ -1823,7 +1874,7 @@ describe XMPPController do
   end
   
   context 'Receive CANCEL message' do
-    
+# HANDLER: Receive PAIR START FAILURE response
     it 'Receive PAIR START FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1842,6 +1893,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive PAIR COMPLETED FAILURE response
     it 'Receive PAIR COMPLETED FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1861,6 +1913,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive PAIR TIMEOUT FAILURE response
     it 'Receive PAIR TIMEOUT FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1879,6 +1932,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive PAIR CANCEL FAILURE response
     it 'Receive PAIR CANCEL FAILURE response' do
       device_id = Time.now.to_i
       data = {device_id: device_id, user_id: 2, status: 'start', start_expire_at: Time.now.to_i + 1 * 60, waiting_expire_at: Time.now.to_i + 10 * 60}
@@ -1897,6 +1951,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive UNPAIR FAILURE response
     it 'Receive UNPAIR FAILURE response' do
       device_id = Time.now.to_i
       unpair_session = rd.rd_unpair_session_insert(device_id)
@@ -1910,6 +1965,7 @@ describe XMPPController do
       expect(unpair_session).to be_nil
     end
     
+# HANDLER: Receive UPNP GET FAILURE response
     it 'Receive UPNP GET FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1932,6 +1988,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP GET FAILURE response, nonexistent session id
     it 'Receive UPNP GET FAILURE response, nonexistent session id' do
       index = Time.now.to_i
 
@@ -1946,6 +2003,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP GET TIMEOUT FAILURE response
     it 'Receive UPNP GET TIMEOUT FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1965,6 +2023,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP GET CANCEL FAILURE response
     it 'Receive UPNP GET CANCEL FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -1984,6 +2043,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET FAILURE response
     it 'Receive UPNP SET FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2010,6 +2070,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive UPNP SET FAILURE response - single item
     it 'Receive UPNP SET FAILURE response - single item' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2036,6 +2097,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET FAILURE response, nonexistent session id
     it 'Receive UPNP SET FAILURE response, nonexistent session id' do
       index = Time.now.to_i
 
@@ -2050,6 +2112,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive UPNP SET TIMEOUT FAILURE response
     it 'Receive UPNP SET TIMEOUT FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2069,6 +2132,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP SET CANCEL FAILURE response
     it 'Receive UPNP SET CANCEL FAILURE response' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2088,6 +2152,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive DDNS FAILURE response
     it 'Receive DDNS FAILURE response' do
       index = Time.now.to_i
       session_id = index
@@ -2106,7 +2171,7 @@ describe XMPPController do
   end
   
   context 'Receive FORM message' do
-    
+# HANDLER: Receive UPNP service list
     it 'Receive UPNP service list' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2139,6 +2204,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive UPNP service list - single item
     it 'Receive UPNP service list - single item' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2171,6 +2237,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
     
+# HANDLER: Receive UPNP service list - empty form
     it 'Receive UPNP service list - empty form' do
       device_id = Time.now.to_i
       index = Time.now.to_i
@@ -2195,6 +2262,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive UPNP service list, nonexistent session id
     it 'Receive UPNP service list, nonexistent session id' do
       index = Time.now.to_i
 
@@ -2211,6 +2279,7 @@ describe XMPPController do
   end
   
   context 'Other Methods' do
+# HANDLER: Batch register DDNS
     it 'Batch register DDNS' do
       records = Array.new
       ipv4 = nil
