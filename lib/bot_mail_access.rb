@@ -33,9 +33,11 @@ class BotMailAccessSMTP
     mail_content = MAIL_CONTENT % [FROM_ADDRESS, bcc, OFFLINE_SUBJECT, OFFLINE_MESSAGE]
 
     begin
-      @smtp.start(@config['mail_domain'],
+      if !@smtp.started? then
+        @smtp.start(@config['mail_domain'],
                   @config['smtp_user'],
                   @config['smtp_password'], :plain)
+      end
       response = @smtp.send_message mail_content, FROM_ADDRESS, to
       @smtp.finish
       return response.success? ? TRUE : FALSE
@@ -53,9 +55,11 @@ class BotMailAccessSMTP
     mail_content = MAIL_CONTENT % [FROM_ADDRESS, bcc, ONLINE_SUBJECT, ONLINE_MESSAGE]
 
     begin
-      @smtp.start(@config['mail_domain'],
+      if !@smtp.started? then
+        @smtp.start(@config['mail_domain'],
                   @config['smtp_user'],
                   @config['smtp_password'], :plain)
+      end
       response = @smtp.send_message mail_content, FROM_ADDRESS, to
       @smtp.finish
       return response.success? ? TRUE : FALSE
