@@ -44,7 +44,7 @@ describe BotRedisAccess do
     
     it 'Access exist record from Pairing session table' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, expire_at: "2014-01-14 13:23:34"}
       rd.rd_pairing_session_insert(data)
       result = rd.rd_pairing_session_access(device_id)
       rd.rd_pairing_session_delete(device_id)
@@ -54,23 +54,21 @@ describe BotRedisAccess do
       expect(result).to have_key("user_id")
       expect(result).to have_key("status")
       expect(result).to have_key("error_code")
-      expect(result).to have_key("start_expire_at")
-      expect(result).to have_key("waiting_expire_at")
+      expect(result).to have_key("expire_at")
       
       expect(result['user_id']).to eq("2")
       expect(result['status']).to eq("start")
       expect(result['error_code'].to_i).to eq(789)
-      expect(result['start_expire_at']).to eq("2014-01-14 13:23:34")
-      expect(result['waiting_expire_at']).to eq("2014-01-14 13:53:34")
+      expect(result['expire_at']).to eq("2014-01-14 13:23:34")
     end
     
     it 'Update pairing session record' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 789, expire_at: "2014-01-14 13:23:34"}
       rd.rd_pairing_session_insert(data)
       result_insert = rd.rd_pairing_session_access(device_id)
       
-      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, expire_at: "2014-01-15 13:23:34"}
       rd.rd_pairing_session_update(data)
       result_updated = rd.rd_pairing_session_access(device_id)
       
@@ -80,33 +78,29 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("status")
       expect(result_insert).to have_key("error_code")
-      expect(result_insert).to have_key("start_expire_at")
-      expect(result_insert).to have_key("waiting_expire_at")
+      expect(result_insert).to have_key("expire_at")
       
       expect(result_insert['user_id']).to eq("2")
       expect(result_insert['status']).to eq("start")
       expect(result_insert['error_code'].to_i).to eq(789)
-      expect(result_insert['start_expire_at']).to eq("2014-01-14 13:23:34")
-      expect(result_insert['waiting_expire_at']).to eq("2014-01-14 13:53:34")
+      expect(result_insert['expire_at']).to eq("2014-01-14 13:23:34")
       
       expect(result_updated).to be_an_instance_of(Hash)
       expect(result_updated).to have_key("user_id")
       expect(result_updated).to have_key("status")
       expect(result_updated).to have_key("error_code")
-      expect(result_updated).to have_key("start_expire_at")
-      expect(result_updated).to have_key("waiting_expire_at")
+      expect(result_updated).to have_key("expire_at")
       
       expect(result_updated['user_id']).to eq("2")
       expect(result_updated['status']).to eq("wait")
       expect(result_updated['error_code'].to_i).to eq(999)
-      expect(result_updated['start_expire_at']).to eq("2014-01-15 13:23:34")
-      expect(result_updated['waiting_expire_at']).to eq("2014-01-15 13:53:34")
+      expect(result_updated['expire_at']).to eq("2014-01-15 13:23:34")
     end
     
     it 'Update nonexistent pairing session record' do
       device_id = Time.now.to_i
       
-      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, start_expire_at: "2014-01-15 13:23:34", waiting_expire_at: "2014-01-15 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "wait", error_code: 999, expire_at: "2014-01-15 13:23:34"}
       result = rd.rd_pairing_session_update(data)
       
       expect(result).to be false
@@ -114,7 +108,7 @@ describe BotRedisAccess do
     
     it 'Delete pairing session record' do
       device_id = Time.now.to_i
-      data = {device_id: device_id, user_id: 2, status: "start", error_code: 999, start_expire_at: "2014-01-14 13:23:34", waiting_expire_at: "2014-01-14 13:53:34"}
+      data = {device_id: device_id, user_id: 2, status: "start", error_code: 999, expire_at: "2014-01-14 13:23:34"}
       rd.rd_pairing_session_insert(data)
       result_insert = rd.rd_pairing_session_access(device_id)
       rd.rd_pairing_session_delete(device_id)
@@ -124,8 +118,7 @@ describe BotRedisAccess do
       expect(result_insert).to have_key("user_id")
       expect(result_insert).to have_key("status")
       expect(result_insert).to have_key("error_code")
-      expect(result_insert).to have_key("start_expire_at")
-      expect(result_insert).to have_key("waiting_expire_at")
+      expect(result_insert).to have_key("expire_at")
       
       expect(result_deleted).to be_nil
     end
