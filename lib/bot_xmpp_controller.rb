@@ -226,7 +226,13 @@ module XMPPController
 
           if mails.count > 0
             if isSuccess then
-              isSendMail = @mail_conn.send_online_mail(mails)
+              if mails.count > 50 then
+                isSendMail = @mail_conn.send_online_mail(mails[0..49])
+                isSendMail = @mail_conn.send_online_mail(mails[50..99])
+              else
+                isSendMail = @mail_conn.send_online_mail(mails)
+              end
+
               mails.each do |mail|
                 Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
@@ -239,7 +245,12 @@ module XMPPController
                                      data: {user_email: mail}})
               end
             else
-              isSendMail = @mail_conn.send_offline_mail(mails)
+              if mails.count > 50 then
+                isSendMail = @mail_conn.send_offline_mail(mails[0..49])
+                isSendMail = @mail_conn.send_offline_mail(mails[50..99])
+              else
+                isSendMail = @mail_conn.send_offline_mail(mails)
+              end
               mails.each do |mail|
                 Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
