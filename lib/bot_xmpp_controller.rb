@@ -19,7 +19,6 @@ BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
-KPAIR_WAITING_EXPIRE_TIME = 600
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
@@ -36,6 +35,8 @@ KSESSION_CANCEL_SUCCESS_RESPONSE = 'session_cancel_success_response'
 KSESSION_CANCEL_FAILURE_RESPONSE = 'session_cancel_failure_response'
 
 KSESSION_TIMEOUT_REQUEST = 'session_timeout_request'
+KSESSION_TIMEOUT_SUCCESS_RESPONSE = 'session_timeout_success_response'
+KSESSION_TIMEOUT_FAILURE_RESPONSE = 'session_timeout_failure_response'
 
 KSTATUS_START = 'start'
 KSTATUS_WAITING = 'waiting'
@@ -225,7 +226,13 @@ module XMPPController
 
           if mails.count > 0
             if isSuccess then
-              isSendMail = @mail_conn.send_online_mail(mails)
+              if mails.count > 50 then
+                isSendMail = @mail_conn.send_online_mail(mails[0..49])
+                isSendMail = @mail_conn.send_online_mail(mails[50..99])
+              else
+                isSendMail = @mail_conn.send_online_mail(mails)
+              end
+
               mails.each do |mail|
                 Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
@@ -238,7 +245,12 @@ module XMPPController
                                      data: {user_email: mail}})
               end
             else
-              isSendMail = @mail_conn.send_offline_mail(mails)
+              if mails.count > 50 then
+                isSendMail = @mail_conn.send_offline_mail(mails[0..49])
+                isSendMail = @mail_conn.send_offline_mail(mails[50..99])
+              else
+                isSendMail = @mail_conn.send_offline_mail(mails)
+              end
               mails.each do |mail|
                 Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
@@ -330,11 +342,45 @@ module XMPPController
                                                   message:"Send %s SESSION TIMEOUT REQUEST message to device" % title.upcase ,
                                                   data: 'N/A'})
 
+# SENDER: SESSION TIMEOUT SUCCESS RESPONSE
+      when KSESSION_TIMEOUT_SUCCESS_RESPONSE
+        device_xmpp_account = info[:xmpp_account]
+        title = info[:title]
+        tag = info[:tag]
+        msg = SESSION_TIMEOUT_SUCCESS_RESPONSE % [device_xmpp_account, @bot_xmpp_account, title, tag]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: tag,
+                                                  full_domain: 'N/A',
+                                                  message:"Send %s SESSION TIMEOUT SUCCESS RESPONSE message to device" % title.upcase,
+                                                  data: 'N/A'})
+
+# SENDER: SESSION TIMEOUT FAILURE RESPONSE
+      when KSESSION_TIMEOUT_FAILURE_RESPONSE
+        device_xmpp_account = info[:xmpp_account]
+        title = info[:title]
+        tag = info[:tag]
+        error_code = info[:error_code]
+        msg = SESSION_TIMEOUT_FAILURE_RESPONSE % [device_xmpp_account, @bot_xmpp_account, title, error_code, tag]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: tag,
+                                                  full_domain: 'N/A',
+                                                  message:"Send %s SESSION TIMEOUT FAILURE RESPONSE message to device" % title.upcase,
+                                                  data: 'N/A'})
+
 # SENDER: PAIR START REQUEST
       when KPAIR_START_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id = info[:device_id]
-        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, 600, device_id, XMPP_API_VERSION]
+        expire_time = info[:expire_time]
+        msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, device_id, XMPP_API_VERSION]
         write_to_stream msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
@@ -343,8 +389,26 @@ module XMPPController
                                                   id: device_id,
                                                   full_domain: 'N/A',
                                                   message:"Send PAIR START REQUEST message to device" ,
-                                                  data: 'N/A'})
-      
+                                                  data: {expire_time: expire_time}})
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(expire_time) {
+          df.set_deferred_status :succeeded, device_id
+        }
+        df.callback do |x|
+          device_id = x
+          pairing = @rd_conn.rd_pairing_session_access(device_id)
+          status = !pairing.nil? ? pairing["status"] : nil
+          if KSTATUS_START == status || KSTATUS_WAITING == status || KSTATUS_OFFLINE == status then
+            data = {device_id: device_id, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_pairing_session_update(data) if KSTATUS_START == status || KSTATUS_WAITING == status
+
+            device = @rd_conn.rd_device_session_access(device_id)
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'pair', tag: device_id}
+            send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
+          end
+        end
+
 # SENDER: PAIR COMPLETED SUCCESS RESPONSE
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
         msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
@@ -559,15 +623,6 @@ module XMPPController
           
           batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update', hasMailed: false}
           @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), info[:session_id])
-          
-          isSuccess = FALSE
-          i = 0
-          while !isSuccess && i < 100
-            result = @rd_conn.rd_ddns_session_access(info[:session_id])
-            isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
-            i+=1
-            sleep(0.1)
-          end
 
           if !ddns_record.nil? then
             old_full_domain = ddns_record.full_domain.to_s
@@ -585,11 +640,11 @@ module XMPPController
                                    data: {ip: info[:ip]}})
             
             if old_full_domain != info[:full_domain]
-              index = @rd_conn.rd_ddns_session_index_get
+              del_index = @rd_conn.rd_ddns_session_index_get
               ip = ddns_record.ip_address
 
-              batch_data = {index: index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
-              isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+              batch_data = {index: del_index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+              isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
               Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
@@ -613,6 +668,15 @@ module XMPPController
                                    full_domain: info[:full_domain],
                                    message:"Insert new DDNS setting into DB %s" % [isInserted ? 'success' : 'failure'] ,
                                    data: {device_id: info[:device_id], ip: info[:ip]}})
+          end
+
+          isSuccess = FALSE
+          i = 0
+          while !isSuccess && i < 100
+            result = @rd_conn.rd_ddns_session_access(info[:session_id])
+            isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
+            i+=1
+            sleep(0.1)
           end
 
           if isSuccess then
@@ -754,10 +818,10 @@ module XMPPController
       
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
-      expire_time = pairing["start_expire_at"] if !pairing.nil?
-      isStartExpired = !(expire_time.to_i > Time.now.to_i)
+      expire_time = pairing["expire_at"] if !pairing.nil?
+      isStartExpired = ((expire_time.to_i - Time.now.to_i) < 540)
       if !pairing.nil? && KSTATUS_START == pairing["status"] then
-        data = {device_id: device_id, status: !isStartExpired ? KSTATUS_WAITING : KSTATUS_TIMEOUT, waiting_expire_at: Time.now.to_i + KPAIR_WAITING_EXPIRE_TIME}
+        data = {device_id: device_id, status: !isStartExpired ? KSTATUS_WAITING : KSTATUS_TIMEOUT}
         isSuccess = @rd_conn.rd_pairing_session_update(data)
         status = data[:status]
         Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
@@ -769,26 +833,6 @@ module XMPPController
                                full_domain: 'N/A',
                                message:"Update the status of pairing session table to %s %s as receive PAIR START RESPONSE message from device" % [status, isSuccess ? 'success' : 'failure'] ,
                                data: 'N/A'})
-        if !isStartExpired then
-          df = EM::DefaultDeferrable.new
-          EM.add_timer(KPAIR_WAITING_EXPIRE_TIME * 1) {
-            df.set_deferred_status :succeeded, device_id
-          }
-          df.callback do |x|
-            device_id = x
-            pairing = @rd_conn.rd_pairing_session_access(device_id)
-            status = !pairing.nil? ? pairing["status"] : nil
-            if KSTATUS_WAITING == status || KSTATUS_TIMEOUT == status then
-              data = {device_id: device_id, status: KSTATUS_TIMEOUT}
-              @rd_conn.rd_pairing_session_update(data)
-
-              device = @rd_conn.rd_device_session_access(device_id)
-              xmpp_account = device["xmpp_account"] if !device.nil?
-              info = {xmpp_account: xmpp_account, title: 'pair', tag: device_id}
-              send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
-            end
-          end
-        end
       else
         Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
@@ -1021,7 +1065,7 @@ module XMPPController
       
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
-      expire_time = pairing["waiting_expire_at"] if !pairing.nil?
+      expire_time = pairing["expire_at"] if !pairing.nil?
       status = !pairing.nil? ? pairing["status"] : nil
       isExpired = !(expire_time.to_i > Time.now.to_i)
       if !pairing.nil? && KSTATUS_WAITING == status then
@@ -1161,6 +1205,71 @@ module XMPPController
     end
   end
 
+# HANDLER: Submit:Pair:Timeout
+  message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      submit_syslog(msg)
+
+      device_id = msg.thread
+      pairing = @rd_conn.rd_pairing_session_access(device_id)
+      status = !pairing.nil? ? pairing["status"] : nil
+
+      if !pairing.nil? && (KSTATUS_START == status || KSTATUS_WAITING == status || KSTATUS_TIMEOUT == status) then
+        data = {device_id: device_id, status: KSTATUS_TIMEOUT}
+        isUpdated = @rd_conn.rd_pairing_session_update(data)
+        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'PAIR',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: device_id,
+                               full_domain: 'N/A',
+                               message:"Update the status of pairing session to 'TIMEOUT' %s as receive PAIR TIMEOUT RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
+                               data: 'N/A'})
+
+        if isUpdated
+          info = {xmpp_account: msg.from, title: 'pair', tag: device_id}
+          send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                {event: 'PAIR',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: device_id,
+                                 full_domain: 'N/A',
+                                 message:"Send PAIR TIMEOUT SUCCESS RESPONSE message to device as update pairing session table success",
+                                 data: 'N/A'})
+        else
+          info = {xmpp_account: msg.from, title: 'pair', error_code: 897, tag: device_id}
+          send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                {event: 'PAIR',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: device_id,
+                                 full_domain: 'N/A',
+                                 message:"Send PAIR TIMEOUT FAILURE RESPONSE message to device as update pairing session table failure",
+                                 data: {error_code: 897}})
+        end
+      else
+        info = {xmpp_account: msg.from, title: 'pair', error_code: 898, tag: device_id}
+        send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'PAIR',
+                               direction: 'Bot->Device',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: device_id,
+                               full_domain: 'N/A',
+                               message:"Send PAIR TIMEOUT FAILURE RESPONSE message to device as pairing session id not find or status wrong",
+                               data: {error_code: 898}})
+      end
+    rescue
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
 # HANDLER: Submit:Get_upnp_service:Cancel
   message :normal?, proc {|m| m.form.submit? && 'get_upnp_service' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
@@ -1219,6 +1328,71 @@ module XMPPController
                                id: index,
                                full_domain: 'N/A',
                                message:"Send GET UPNP SERVICE LIST CANCEL FAILURE RESPONSE message to device as upnp session id not find or status wrong",
+                               data: {error_code: 798}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+# HANDLER: Submit:Get_upnp_service:Timeout
+  message :normal?, proc {|m| m.form.submit? && 'get_upnp_service' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      submit_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      status = !upnp.nil? ? upnp["status"] : nil
+
+      if !upnp.nil? && KSTATUS_START == status then
+        data = {index: index, status: KSTATUS_TIMEOUT}
+        isUpdated = @rd_conn.rd_upnp_session_update(data)
+        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Update the status of set upnp service list session to 'TIMEOUT' %s as receive GET UPNP SERVICE LIST TIMEOUT RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
+                               data: 'N/A'})
+
+        if isUpdated
+          info = {xmpp_account: msg.from, title: 'get_upnp_service', tag: index}
+          send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send GET UPNP SERVICE LIST TIMEOUT SUCCESS RESPONSE message to device as update upnp session table success",
+                                 data: 'N/A'})
+        else
+          info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 797, tag: index}
+          send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send GET UPNP SERVICE LIST TIMEOUT FAILURE RESPONSE message to device as update upnp session table failure",
+                                 data: {error_code: 797}})
+        end
+      else
+        info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 798, tag: index}
+        send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'UPNP',
+                               direction: 'Bot->Device',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Send GET UPNP SERVICE LIST TIMEOUT FAILURE RESPONSE message to device as upnp session id not find or status wrong",
                                data: {error_code: 798}})
       end
     rescue Exception => error
@@ -1290,7 +1464,72 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
+# HANDLER: Submit:Set_upnp_service:Timeout
+  message :normal?, proc {|m| m.form.submit? && 'set_upnp_service' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      submit_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_upnp_session_access(index)
+      status = !upnp.nil? ? upnp["status"] : nil
+
+      if !upnp.nil? && KSTATUS_SUBMIT == status then
+        data = {index: index, status: KSTATUS_TIMEOUT}
+        isUpdated = @rd_conn.rd_upnp_session_update(data)
+        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                              {event: 'UPNP',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Update the status of get upnp service list session to 'TIMEOUT' %s as receive SET UPNP SERVICE LIST TIMEOUT RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
+                               data: 'N/A'})
+
+        if isUpdated
+          info = {xmpp_account: msg.from, title: 'set_upnp_service', tag: index}
+          send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send SET UPNP SERVICE LIST TIMEOUT SUCCESS RESPONSE message to device as update upnp session table success",
+                                 data: 'N/A'})
+        else
+          info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 797, tag: index}
+          send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                                {event: 'UPNP',
+                                 direction: 'Bot->Device',
+                                 to: msg.from.to_s,
+                                 from: @bot_xmpp_account,
+                                 id: index,
+                                 full_domain: 'N/A',
+                                 message:"Send SET UPNP SERVICE LIST TIMEOUT FAILURE RESPONSE message to device as update upnp session table failure",
+                                 data: {error_code: 797}})
+        end
+      else
+        info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 798, tag: index}
+        send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                              {event: 'UPNP',
+                               direction: 'Bot->Device',
+                               to: msg.from.to_s,
+                               from: @bot_xmpp_account,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Send SET UPNP SERVICE LIST TIMEOUT FAILURE RESPONSE message to device as upnp session id not find or status wrong",
+                               data: {error_code: 798}})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
 # HANDLER: Submit:Config_ddns
   message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
@@ -1358,25 +1597,6 @@ module XMPPController
               batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
               @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
 
-              isSuccess = FALSE
-              i = 0
-              while !isSuccess && i < 100
-                result = @rd_conn.rd_ddns_session_access(index)
-                isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
-                i+=1
-                sleep(0.1)
-              end
-              
-              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
-                                    {event: 'DDNS',
-                                     direction: 'N/A',
-                                     to: 'N/A',
-                                     from: 'N/A',
-                                     id: 'N/A',
-                                     full_domain: x[:host_name] + '.' + x[:domain_name],
-                                     message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
-                                     data: {ip: x[:device_ip]}})
-
               if !ddns_record.nil? then
                 old_full_domain = ddns_record.full_domain
 
@@ -1393,11 +1613,11 @@ module XMPPController
                                        data: {ip: x[:device_ip]}})
 
                 if old_full_domain != x[:host_name] + '.' + x[:domain_name] then
-                  index = @rd_conn.rd_ddns_session_index_get
+                  del_index = @rd_conn.rd_ddns_session_index_get
                   ip = ddns_record.ip_address
 
-                  batch_data = {index: index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
-                  isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+                  batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                  isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
 
                   Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                         {event: 'DDNS',
@@ -1410,7 +1630,26 @@ module XMPPController
                                          data: 'N/A'})
                 end
               end
-              
+
+              isSuccess = FALSE
+              i = 0
+              while !isSuccess && i < 100
+                result = @rd_conn.rd_ddns_session_access(index)
+                isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
+                i+=1
+                sleep(0.1)
+              end
+
+              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                                    {event: 'DDNS',
+                                     direction: 'N/A',
+                                     to: 'N/A',
+                                     from: 'N/A',
+                                     id: 'N/A',
+                                     full_domain: x[:host_name] + '.' + x[:domain_name],
+                                     message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                     data: {ip: x[:device_ip]}})
+
               if isSuccess then
                 record = {device_id: x[:device_id], ip_address: x[:device_ip], full_domain: x[:host_name] + '.' + x[:domain_name]}
                 @db_conn.db_ddns_insert(record) if ddns_record.nil?
@@ -1440,7 +1679,6 @@ module XMPPController
                                        data: {error_code: 997}})
               end
             }
-            #routeThread.abort_on_exception = TRUE
           }
               
         elsif !device_id.nil? && !old_device_id.nil? && !device_ip.nil? then
@@ -1466,26 +1704,7 @@ module XMPPController
                 @rd_conn.rd_ddns_session_insert(session_data)
                 batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
                 @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
-              
-                isSuccess = FALSE
-                i = 0
-                while !isSuccess && i < 100
-                  result = @rd_conn.rd_ddns_session_access(index)
-                  isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
-                  i+=1
-                  sleep(0.1)
-                end
-                
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
-                                      {event: 'DDNS',
-                                       direction: 'N/A',
-                                       to: 'N/A',
-                                       from: 'N/A',
-                                       id: 'N/A',
-                                       full_domain: x[:host_name] + '.' + x[:domain_name],
-                                       message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
-                                       data: {ip: x[:device_ip]}})
-              
+
                 if !ddns_record.nil? then
                   old_full_domain = ddns_record.full_domain.to_s
                   host_name = find_hostname(old_full_domain)
@@ -1504,11 +1723,11 @@ module XMPPController
                                          data: {ip: x[:device_ip]}})
 
                   if old_full_domain != x[:host_name] + '.' + x[:domain_name]then
-                    index = @rd_conn.rd_ddns_session_index_get
+                    del_index = @rd_conn.rd_ddns_session_index_get
                     ip = ddns_record.ip_address
 
-                    batch_data = {index: index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
-                    isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
+                    batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                    isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
                     Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                           {event: 'DDNS',
                                            direction: 'N/A',
@@ -1520,6 +1739,25 @@ module XMPPController
                                            data: 'N/A'})
                   end
                 end
+
+                isSuccess = FALSE
+                i = 0
+                while !isSuccess && i < 100
+                  result = @rd_conn.rd_ddns_session_access(index)
+                  isSuccess = KSTATUS_SUCCESS == result["status"] ? TRUE : FALSE
+                  i+=1
+                  sleep(0.1)
+                end
+
+                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                                      {event: 'DDNS',
+                                       direction: 'N/A',
+                                       to: 'N/A',
+                                       from: 'N/A',
+                                       id: 'N/A',
+                                       full_domain: x[:host_name] + '.' + x[:domain_name],
+                                       message:"Create Route53 DDNS record %s as received DDNS SETTING REQUEST message from device" % [isSuccess ? 'success' : 'failure'],
+                                       data: {ip: x[:device_ip]}})
 
                 if isSuccess then
                   info = info = {xmpp_account: x[:msg_from], session_id: session_id}
@@ -1547,7 +1785,6 @@ module XMPPController
                                          data: {error_code: 997}})
                 end
               }
-              #routeThread.abort_on_exception = TRUE
             }
           else
             info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
@@ -2002,7 +2239,6 @@ module XMPPController
                   }
         service_list << service
       end
-          
         service_list_json = JSON.generate(service_list)
       else
         service_list_json = ''

@@ -1,32 +1,3 @@
-#SESSION_TIMEOUT_SUCCESS_RESPONSE % ['RESPONSE_ID', 'REQUEST_ID', 'MESSAGE_TITLE', 'SESSION_ID']
-SESSION_TIMEOUT_SUCCESS_RESPONSE = <<EOT
-<message to="%s" type="normal" from="%s" lang="en">
-   <x xmlns="jabber:x:data" type="result">
-      <title>%s</title>
-      <field type='hidden' var='action'>
-         <value>timeout</value>
-      </field>
-   </x>
-   <thread>%d</thread>
-</message>
-EOT
-
-#SESSION_TIMEOUT_FAILURE_RESPONSE % ['RESPONSE_ID', 'REQUEST_ID', 'MESSAGE_TITLE', 'ERROR_CODE', 'SESSION_ID']
-SESSION_TIMEOUT_FAILURE_RESPONSE = <<EOT
-<message to="%s" type="normal" from="%s" lang="en">
-   <x xmlns="jabber:x:data" type="cancel">
-      <title>%s</title>
-      <field type='hidden' var='action'>
-         <value>timeout</value>
-      </field>
-      <field type='text-single' var='ERROR_CODE'>
-         <value>%d</value>
-      </field>
-   </x>
-   <thread>%d</thread>
-</message>
-EOT
-
 #PAIR_START_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'SESSION_ID']
 PAIR_START_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">

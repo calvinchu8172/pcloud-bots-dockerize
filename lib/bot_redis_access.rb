@@ -50,21 +50,20 @@ class BotRedisAccess
   end
 
   def rd_pairing_session_insert(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
+    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:expire_at))
 
     key = PAIRING_SESSION_KEY % data[:device_id]
 
     @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
     @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
-    @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
-    @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
+    @redis.hset(key, "expire_at", data[:expire_at]) if data.has_key?(:expire_at)
 
     return @redis.hgetall(key)
   end
 
   def rd_pairing_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:start_expire_at) && !data.has_key?(:waiting_expire_at))
+    return nil if data.empty? || !data.has_key?(:device_id) || (!data.has_key?(:user_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:expire_at))
 
     isExist = self.rd_pairing_session_access(data[:device_id])
     if isExist then
@@ -73,8 +72,7 @@ class BotRedisAccess
       @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
       @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
-      @redis.hset(key, "start_expire_at", data[:start_expire_at]) if data.has_key?(:start_expire_at)
-      @redis.hset(key, "waiting_expire_at", data[:waiting_expire_at]) if data.has_key?(:waiting_expire_at)
+      @redis.hset(key, "expire_at", data[:expire_at]) if data.has_key?(:expire_at)
 
       return TRUE
     else
@@ -85,7 +83,7 @@ class BotRedisAccess
   def rd_pairing_session_delete(device_id = nil)
     return nil if nil == device_id
     key = PAIRING_SESSION_KEY % device_id
-    hash_key = ["user_id", "status", "error_code", "start_expire_at", "waiting_expire_at"]
+    hash_key = ["user_id", "status", "error_code", "expire_at"]
 
     hash_key.each do |item|
       @redis.hdel(key, item)
