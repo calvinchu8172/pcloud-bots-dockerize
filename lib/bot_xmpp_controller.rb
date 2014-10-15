@@ -532,7 +532,7 @@ module XMPPController
           upnp = @rd_conn.rd_upnp_session_access(index)
           status = !upnp.nil? ? upnp["status"] : nil
 
-          if KSTATUS_START == status || KSTATUS_TIMEOUT == status then
+          if KSTATUS_START == status then
             data = {index: index, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_upnp_session_update(data)
 
@@ -577,7 +577,7 @@ module XMPPController
           upnp = @rd_conn.rd_upnp_session_access(index)
           status = !upnp.nil? ? upnp["status"] : nil
 
-          if KSTATUS_SUBMIT == status || KSTATUS_TIMEOUT == status then
+          if KSTATUS_SUBMIT == status then
             data = {index: index, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_upnp_session_update(data)
 
