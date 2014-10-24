@@ -2693,7 +2693,8 @@ describe XMPPController do
       expect(service_list[0].has_key?("enabled")).to be true
       expect(service_list[0].has_key?("description")).to be true
       expect(service_list[0].has_key?("path")).to be true
-      expect(service_list[0].has_key?("port")).to be true
+      expect(service_list[0].has_key?("lan_port")).to be true
+      expect(service_list[0].has_key?("wan_port")).to be true
       expect(service_list[0].has_key?("error_code")).to be true
       
       expect(hasDeleted).to be true
@@ -2726,7 +2727,8 @@ describe XMPPController do
       expect(service_list[0].has_key?("enabled")).to be true
       expect(service_list[0].has_key?("description")).to be true
       expect(service_list[0].has_key?("path")).to be true
-      expect(service_list[0].has_key?("port")).to be true
+      expect(service_list[0].has_key?("lan_port")).to be true
+      expect(service_list[0].has_key?("wan_port")).to be true
       expect(service_list[0].has_key?("error_code")).to be true
 
       expect(hasDeleted).to be true

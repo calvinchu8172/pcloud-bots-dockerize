@@ -2215,7 +2215,8 @@ module XMPPController
         enabled = false
         description = ''
         path = ''
-        port = ''
+        lan_port = ''
+        wan_port = ''
 
         item["field"].each do |field|
           var = field["var"]
@@ -2230,8 +2231,10 @@ module XMPPController
               description = field["value"]
             when 'path'
               path = field["value"].nil? ? '' : field["value"]
-            when 'port'
-              port = field["value"].nil? ? '' : field["value"]
+            when 'lan-port'
+              lan_port = field["value"].nil? ? '' : field["value"]
+            when 'wan-port'
+              wan_port = field["value"].nil? ? '' : field["value"]
           end
         end
             
@@ -2240,7 +2243,8 @@ module XMPPController
                    :enabled => enabled,
                    :description => description,
                    :path => path,
-                   :port => port,
+                   :lan_port => lan_port,
+                   :wan_port => wan_port,
                    :error_code => ''
                   }
         service_list << service
