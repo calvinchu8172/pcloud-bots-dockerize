@@ -380,8 +380,13 @@ module XMPPController
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id = info[:device_id]
         expire_time = info[:expire_time]
+
+        cancel_msg = SESSION_CANCEL_REQUEST % [device_xmpp_account, @bot_xmpp_account, 'pair', device_id, XMPP_API_VERSION]
+        write_to_stream cancel_msg
+
         msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, device_id, XMPP_API_VERSION]
         write_to_stream msg
+
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
@@ -397,8 +402,9 @@ module XMPPController
         df.callback do |x|
           device_id = x
           pairing = @rd_conn.rd_pairing_session_access(device_id)
-          status = !pairing.nil? ? pairing["status"] : nil
-          if KSTATUS_START == status || KSTATUS_WAITING == status || KSTATUS_OFFLINE == status then
+          expire_at = !pairing.nil? ? pairing["expire_at"].to_i : Time.now.to_i
+          status = !pairing.nil? ? pairing["status"] : nil                                          #check expire time for prevent pair start double send
+          if (KSTATUS_START == status || KSTATUS_WAITING == status || KSTATUS_OFFLINE == status) && Time.now.to_i > (expire_at - 1) then
             data = {device_id: device_id, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_pairing_session_update(data) if KSTATUS_START == status || KSTATUS_WAITING == status
 
@@ -2209,7 +2215,8 @@ module XMPPController
         enabled = false
         description = ''
         path = ''
-        port = ''
+        lan_port = ''
+        wan_port = ''
 
         item["field"].each do |field|
           var = field["var"]
@@ -2224,8 +2231,10 @@ module XMPPController
               description = field["value"]
             when 'path'
               path = field["value"].nil? ? '' : field["value"]
-            when 'port'
-              port = field["value"].nil? ? '' : field["value"]
+            when 'lan-port'
+              lan_port = field["value"].nil? ? '' : field["value"]
+            when 'wan-port'
+              wan_port = field["value"].nil? ? '' : field["value"]
           end
         end
             
@@ -2234,7 +2243,8 @@ module XMPPController
                    :enabled => enabled,
                    :description => description,
                    :path => path,
-                   :port => port,
+                   :lan_port => lan_port,
+                   :wan_port => wan_port,
                    :error_code => ''
                   }
         service_list << service

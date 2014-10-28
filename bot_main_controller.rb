@@ -2,6 +2,8 @@
 
 $stdout.sync = true
 
+Encoding.default_external = Encoding::UTF_8
+
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
@@ -154,9 +156,10 @@ def worker(sqs, db_conn, rd_conn)
             enabled = item["enabled"].to_s
             description = item["description"].to_s
             path = item["path"].to_s
-            port = item["port"].to_i
+            lan_port = item["lan_port"].to_i
+            wan_port = item["wan_port"].to_i
             
-            field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description, path, port]
+            field_item += UPNP_FIELD_ITEM % [service_name, status, enabled, description, path, lan_port, wan_port]
           end
         end
         
