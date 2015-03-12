@@ -1,5 +1,5 @@
 require_relative '../lib/bot_queue_access'
-require 'aws-sdk'
+require 'aws-sdk-v1'
 
 describe BotQueueAccess do
   let(:sqs) {BotQueueAccess.new}

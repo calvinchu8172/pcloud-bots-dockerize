@@ -1,5 +1,5 @@
 require_relative '../lib/bot_route_access'
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'resolv'
 
 describe BotRouteAccess do
