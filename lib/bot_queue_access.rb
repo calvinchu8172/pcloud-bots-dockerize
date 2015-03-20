@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'json'
 require 'yaml'
 require_relative './bot_unit'
