@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'aws-sdk'
+require 'aws-sdk-v1'
 
 ROUTE_CONFIG_FILE = '../config/bot_route_config.yml'
 

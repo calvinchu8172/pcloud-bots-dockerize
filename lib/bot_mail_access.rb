@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require_relative 'bot_mail_content_template'
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'yaml'
 require 'net/smtp'
 
