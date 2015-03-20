@@ -43,7 +43,7 @@ config['notify_list'].each do |note|
   end
 end
 
-bots_revision = `git rev-parse HEAD`.strip
+bots_revision = `cd #{File.dirname(__FILE__)} && git rev-parse HEAD`.strip
 
 i = 0
 XMPP_CONFIG.each do |c|
