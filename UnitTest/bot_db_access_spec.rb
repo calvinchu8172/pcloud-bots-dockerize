@@ -61,7 +61,7 @@ describe BotDBAccess do
     end
     
     it 'Add new record into Pairing table' do
-      pair = db.db_pairing_insert(pair_data[:user_id], pair_data[:device_id])
+      pair = db.db_pairing_insert(User.first.id, Devices.first.id)
       expect(pair).to respond_to(:id)
       pair_id = pair.id
       
@@ -70,9 +70,8 @@ describe BotDBAccess do
     end
     
     it 'Update Pairing record' do
-      device_id = 12345678
-      pair_data[:id] = pair_id
-      pair_data[:device_id] = device_id
+      device_id = Devices.first.id
+      pair_data = {id: pair_id, device_id: device_id}
       isSuccess = db.db_pairing_update(pair_data)
       expect(isSuccess).to be true
       
@@ -110,13 +109,13 @@ describe BotDBAccess do
     end
     
     it 'Access non-exist record from Device table' do
-      data = {serial_number: 'NS123456789', mac_address: '0e:11:83:t6', model_name: 'beta2', firmware_version: '1.000.000'}
+      data = {serial_number: 'NS123456789', mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id}
       device = db.db_device_access(data)
       expect(device).to be_nil
     end
     
     it 'Add new record into Device table re-test access method' do
-      data = {serial_number: 'NS123456789', mac_address: '0e:11:83:t6', model_name: 'beta2', firmware_version: '1.000.000'}
+      data = {serial_number: 'NS123456789', mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id}
       device = db.db_device_insert(data)
       expect(device).to respond_to(:id)
       device_id = device.id
@@ -163,80 +162,107 @@ describe BotDBAccess do
       index = Time.now.to_i
       host_name = "ut%s" % index
       device_id = index
-      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
-      ddns = db.db_ddns_access(data)
+      ddns = db.db_ddns_access({
+                                device_id: device_id, 
+                                ip_address: '10.1.1.111', 
+                                full_domain: "%s.#{Domain.first.domain_name}" % host_name
+                              })
       expect(ddns).to be_nil
     end
     
     it 'Add new record into DDNS table and re-test access method' do
       index = Time.now.to_i
       host_name = "ut%s" % index
-      device_id = index
-      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
+      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
+
+      data = {
+        device_id: device.id, 
+        ip_address: '10.1.1.111', 
+        full_domain: "%s.#{Domain.first.domain_name}" % host_name
+      }
+
       ddns = db.db_ddns_insert(data)
       expect(ddns).to respond_to(:id)
-      ddns_id = ddns.id
-      
-      access = db.db_ddns_access({id: ddns_id})
-      isDeleted = db.db_ddns_delete(ddns_id)
+
+      access = db.db_ddns_access({id: ddns.id})
 
       expect(access).to respond_to(:id)
+      expect(access.full_domain).to eq(data[:full_domain])
       expect(access.device_id).to eq(data[:device_id])
       expect(access.ip_address).to eq(data[:ip_address])
-      expect(access.full_domain).to eq(data[:full_domain])
 
+      isDeleted = db.db_ddns_delete(access.id) && db.db_device_delete(device.id)
       expect(isDeleted).to be true
     end
     
     it 'Update DDNS record' do
       index = Time.now.to_i
       host_name = "ut%s" % index
-      device_id = index
-      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
-      ddns_insert = db.db_ddns_insert(data)
-      ddns_id = ddns_insert.id
+      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
+
+      data = {
+        device_id: device.id, 
+        ip_address: '10.1.1.111', 
+        full_domain: "%s.#{Domain.first.domain_name}" % host_name
+      }
+
+      ddns = db.db_ddns_insert(data)
+      expect(ddns).to respond_to(:id)
 
       sleep(1.2)
+      
+      index = Time.now.to_i
       host_name = "ut%s" % index
-      ip_address = '10.1.1.112'
-      data = {id: ddns_id, device_id: device_id, ip_address: ip_address, full_domain: "%s.demo.ecoworkinc.com." % host_name}
-      isSuccessUpdate = db.db_ddns_update(data)
+      ddns = {
+        id: ddns.id,
+        ip_address: '10.1.1.112',
+        full_domain: "%s.#{Domain.first.domain_name}" % host_name
+      }
 
-      ddns_access = db.db_ddns_access({id: ddns_id})
-      isDeleted = db.db_ddns_delete(ddns_id)
+      isSuccessUpdate = db.db_ddns_update(ddns)
 
-      expect(ddns_insert).to respond_to(:id)
+      access = db.db_ddns_access({id: ddns[:id]})
+
       expect(isSuccessUpdate).to be true
-      expect(ddns_access.ip_address).to eq(ip_address)
-      expect(ddns_access.hostname).to eq(host_name)
+      expect(access).to respond_to(:id)
+      expect(access.hostname).to eq(host_name)
+      expect(access.ip_address).to eq(ddns[:ip_address])
+      
+      isDeleted = db.db_ddns_delete(access.id) && db.db_device_delete(device.id)
       expect(isDeleted).to be true
     end
     
     it 'Delete DDNS record' do
       index = Time.now.to_i
       host_name = "ut%s" % index
-      device_id = index
-      data = {device_id: device_id, ip_address: '10.1.1.111', full_domain: "%s.demo.ecoworkinc.com." % host_name}
-      ddns_insert = db.db_ddns_insert(data)
-      ddns_id = ddns_insert.id
+      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
 
-      isSuccess = db.db_ddns_delete(ddns_id)
-      expect(isSuccess).to be true
+      data = {
+        device_id: device.id, 
+        ip_address: '10.1.1.111', 
+        full_domain: "%s.#{Domain.first.domain_name}" % host_name
+      }
+
+      ddns = db.db_ddns_insert(data)
+
+      isDeleted = db.db_ddns_delete(ddns.id) && db.db_device_delete(device.id)
+      expect(isDeleted).to be true
       
-      isSuccess = db.db_ddns_delete(ddns_id)
+      isSuccess = db.db_ddns_delete(ddns)
       expect(isSuccess).to be false
-      expect(ddns_id).not_to be_nil
+      expect(ddns).not_to be_nil
     end
   end
   
   context "About User info access" do
     
     it 'Retrieve user local by device id' do
-      device_id = Time.now.to_i
-      user_id = 1
-      pairing = db.db_pairing_insert(user_id, device_id)
-      user_local = db.db_retrive_user_local_by_device_id(device_id)
-      isDeleted = db.db_pairing_delete(pairing.id)
+      index = Time.now.to_i
+      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
+      user = db.db_user_access(1)
+      pairing = db.db_pairing_insert(user.id, device.id)
+      user_local = db.db_retrive_user_local_by_device_id(device.id)
+      isDeleted = db.db_pairing_delete(pairing.id) && db.db_device_delete(device.id)
 
       expect(pairing).not_to be_nil
       expect(user_local).to be_an_instance_of(String)
@@ -244,11 +270,12 @@ describe BotDBAccess do
     end
 
     it 'Retrieve user email by device id' do
-      device_id = Time.now.to_i
-      user_id = 1
-      pairing = db.db_pairing_insert(user_id, device_id)
-      user_email = db.db_retrive_user_email_by_device_id(device_id)
-      isDeleted = db.db_pairing_delete(pairing.id)
+      index = Time.now.to_i
+      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
+      user = db.db_user_access(1)
+      pairing = db.db_pairing_insert(user.id, device.id)
+      user_email = db.db_retrive_user_email_by_device_id(device.id)
+      isDeleted = db.db_pairing_delete(pairing.id) && db.db_device_delete(device.id)
 
       expect(pairing).not_to be_nil
       expect(user_email).to be_an_instance_of(String)
