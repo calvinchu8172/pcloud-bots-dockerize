@@ -4,7 +4,23 @@ require 'yaml'
 #DB_CONFIG_FILE = '../config/bot_db_config.yml'
 
 describe BotDBAccess do
-  let(:db) {BotDBAccess.new}
+  let(:db){BotDBAccess.new}
+  let(:user){User.find_or_create_by({email: 'test@ecoworkinc.com', display_name: 'test'})}
+  let(:device){db.db_device_insert({serial_number: 'NS123456789',
+                                    mac_address: '000000000000',
+                                    firmware_version: '1.000.000',
+                                    product_id: '26'})}
+
+  after(:all) do
+    user = User.find_by({email: 'test@ecoworkinc.com', display_name: 'test'}  )
+    user.destroy!
+
+    device = Devices.find_by({serial_number: 'NS123456789',
+                              mac_address: '000000000000',
+                              firmware_version: '1.000.000',
+                              product_id: '26'})
+    device.destroy   if !device.nil?
+  end
 
   it 'Config file check' do
     config_file = File.join(File.dirname(__FILE__), DB_CONFIG_FILE)
@@ -32,11 +48,10 @@ describe BotDBAccess do
 
   context "About User table" do
     it 'Access user table' do
-      user = db.db_user_access(1)
       expect(user).to respond_to(:id)
 
-      user = db.db_user_access(0)
-      expect(user).to be_nil
+      invalidUser = db.db_user_access(0)
+      expect(invalidUser).to be_nil
     end
   end
 
@@ -63,43 +78,49 @@ describe BotDBAccess do
     end
 
     it 'Add new record into Pairing table' do
-      device = db.db_device_insert(device_data)
-
-      pair = db.db_pairing_insert(User.first.id, device.id)
+      # Add pairing record
+      pair = db.db_pairing_insert(user.id, device.id)
       expect(pair).to respond_to(:id)
-      pair_id = pair.id
 
-      access = db.db_pairing_access({id: pair_id})
+      access = db.db_pairing_access({id: pair.id})
       expect(access).to respond_to(:id)
+
+      isDeleted = db.db_pairing_delete(pair.id)
+      expect(isDeleted).to be true
     end
 
     it 'Update Pairing record' do
-      device = db.db_device_access(device_data)
-      device_id = device.id
-      pair_data = {id: pair_id, device_id: device_id}
+      # Add pairing record
+      pair = db.db_pairing_insert(user.id, device.id)
+      expect(pair).to respond_to(:id)
+
+      # update pairing record
+      pair_data = {id: pair.id, device_id: device.id}
       isSuccess = db.db_pairing_update(pair_data)
       expect(isSuccess).to be true
 
-      pair = db.db_pairing_access({id: pair_id})
+      # Check pairing record
+      pair = db.db_pairing_access({id: pair.id})
       expect(pair).to respond_to(:id)
-      expect(pair.device_id.to_d).to eq(device_id)
+      expect(pair.device_id.to_d).to eq(device.id)
 
       pair_data[:id] = 0
       isSuccess = db.db_pairing_update(pair_data)
       expect(isSuccess).to be false
+
+      # Recovery
+      isDeleted = db.db_pairing_delete(pair.id)
+      expect(isDeleted).to be true
     end
 
     it 'Delete Pairing record' do
-      isSuccess = db.db_pairing_delete(pair_id)
+      # Add pairing record
+      pair = db.db_pairing_insert(user.id, device.id)
+      expect(pair).to respond_to(:id)
+
+      # Delete pairing record
+      isSuccess = db.db_pairing_delete(pair.id)
       expect(isSuccess).to be true
-      pair_id = nil
-
-      isSuccess = db.db_pairing_delete(0)
-      expect(isSuccess).to be false
-
-      device = db.db_device_access(device_data)
-      isDeleted = db.db_device_delete(device.id)
-      expect(isDeleted).to be true
     end
   end
 
@@ -207,7 +228,6 @@ describe BotDBAccess do
     it 'Update DDNS record' do
       index = Time.now.to_i
       host_name = "ut%s" % index
-      device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
 
       data = {
         device_id: device.id,
@@ -268,7 +288,6 @@ describe BotDBAccess do
     it 'Retrieve user local by device id' do
       index = Time.now.to_i
       device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
-      user = db.db_user_access(1)
       pairing = db.db_pairing_insert(user.id, device.id)
       user_local = db.db_retrive_user_local_by_device_id(device.id)
       isDeleted = db.db_pairing_delete(pairing.id) && db.db_device_delete(device.id)
@@ -281,7 +300,6 @@ describe BotDBAccess do
     it 'Retrieve user email by device id' do
       index = Time.now.to_i
       device = db.db_device_insert({serial_number: index, mac_address: '0e:11:83:t6', firmware_version: '1.000.000', product_id: Product.first.id})
-      user = db.db_user_access(1)
       pairing = db.db_pairing_insert(user.id, device.id)
       user_email = db.db_retrive_user_email_by_device_id(device.id)
       isDeleted = db.db_pairing_delete(pairing.id) && db.db_device_delete(device.id)
