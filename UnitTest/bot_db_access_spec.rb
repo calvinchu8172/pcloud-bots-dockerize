@@ -155,11 +155,11 @@ describe BotDBAccess do
     end
 
     it 'Update Device record' do
-      data = {id: device_id, serial_number: 'NS123456789', mac_address: '0e:11:83:t6', model_name: 'beta2', firmware_version: '1.000.001'}
+      data = {id: device_id, serial_number: 'NS123456789', mac_address: '0e:11:83:t6', firmware_version: '1.000.001'}
       isSuccess = db.db_device_update(data)
       expect(isSuccess).to be true
 
-      data = {id: 0, serial_number: 'NS123456789', mac_address: '0e:11:83:t6', model_name: 'beta2', firmware_version: '1.000.001'}
+      data = {id: 0, serial_number: 'NS123456789', mac_address: '0e:11:83:t6', firmware_version: '1.000.001'}
       isSuccess = db.db_device_update(data)
       expect(isSuccess).to be false
     end
