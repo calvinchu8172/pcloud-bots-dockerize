@@ -23,7 +23,7 @@ describe BotRouteAccess do
   let(:route) {BotRouteAccess.new}
   let(:resolv_i){Resolv::DNS.new(:nameserver => ['168.95.1.1'])}
   
-  dns_data = {host_name: 'mytest3', domain_name: 'demo.ecoworkinc.com.', ip: '10.1.1.112'}
+  dns_data = {host_name: 'mytest3', domain_name: 'pcloud.ecoworkinc.com.', ip: '10.1.1.112'}
   ipv4 = nil
   
   it "Return reserved host name list" do
@@ -55,16 +55,21 @@ describe BotRouteAccess do
       
     expect(ipv4).to be_an_instance_of(Resolv::IPv4)
     
-    dns_data[:domain_name] = 'demo.ecoworkinc.com'
+    dns_data[:domain_name] = 'pcloud.ecoworkinc.com'
     isSuccess = route.create_record(dns_data)
     expect(isSuccess).to be false
     
-    dns_data[:domain_name] = 'demo.ecoworkinc.com.'
+    dns_data[:domain_name] = 'pcloud.ecoworkinc.com.'
+
+    sleep 1
+
+    isDelete = route.delete_record(dns_data)
+    expect(isDelete).to be true
   end
   
   it 'Create DNS record in batch mode' do
     records = Array.new
-    domain = 'demo.ecoworkinc.com.'
+    domain = 'pcloud.ecoworkinc.com.'
 
     10.times.each do |t|
       host_name = "test%d" % Time.now.to_i
@@ -121,15 +126,21 @@ describe BotRouteAccess do
   end
 
   it "Update DNS record #{dns_data[:host_name]}.#{dns_data[:domain_name]} - #{dns_data[:ip]}" do
+    isCreate = route.create_record(dns_data)
+    expect(isCreate).to be true
+
     dns_data[:ip] = '10.1.1.115'
     isSuccess = route.update_record(dns_data)
     expect(isSuccess).to be true
     
-    dns_data[:domain_name] = 'demo.ecoworkinc.com'
+    dns_data[:domain_name] = 'pcloud.ecoworkinc.com'
     isSuccess = route.update_record(dns_data)
     expect(isSuccess).to be false
     
-    dns_data[:domain_name] = 'demo.ecoworkinc.com.'
+    dns_data[:domain_name] = 'pcloud.ecoworkinc.com.'
+
+    isDelete = route.delete_record(dns_data)
+    expect(isDelete).to be true
   end
   
   it "Delete DNS record #{dns_data[:host_name]}.#{dns_data[:domain_name]} - #{dns_data[:ip]}" do
@@ -151,7 +162,7 @@ describe BotRouteAccess do
       
     expect(ipv4).to be_nil
     
-    dns_data[:domain_name] = 'demo.ecoworkinc.com'
+    dns_data[:domain_name] = 'pcloud.ecoworkinc.com'
     isSuccess = route.delete_record(dns_data)
     expect(isSuccess).to be false
   end

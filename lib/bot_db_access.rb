@@ -48,6 +48,10 @@ class Domain < ActiveRecord::Base
   self.table_name = "domains"
 end
 
+class Product < ActiveRecord::Base
+  self.table_name = "products"
+end
+
 class BotDBAccess
   
   def initialize
@@ -152,7 +156,7 @@ class BotDBAccess
 #===============================================  
   
   def db_device_access(data={})
-    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:model_name) && !data.has_key?(:firmware_version))
+    return nil if data.empty? || (!data.has_key?(:id) && !data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:product_id) && !data.has_key?(:firmware_version))
     
     rows = Devices.where(data).first
     
@@ -164,13 +168,13 @@ class BotDBAccess
   end
   
   def db_device_insert(data={})
-    return nil if data.empty? || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:model_name) || !data.has_key?(:firmware_version)
+    return nil if data.empty? || !data.has_key?(:serial_number) || !data.has_key?(:mac_address) || !data.has_key?(:product_id) || !data.has_key?(:firmware_version)
 
     rows = self.db_device_access(data)
     if rows.nil? then
       isSuccess = Devices.create(:serial_number => data[:serial_number],
                                  :mac_address => data[:mac_address],
-                                 :model_name => data[:model_name],
+                                 :product_id => data[:product_id],
                                  :firmware_version => data[:firmware_version])
       
       return self.db_device_access(data) if isSuccess
@@ -180,14 +184,14 @@ class BotDBAccess
   end
   
   def db_device_update(data={})
-    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:model_name) && !data.has_key?(:firmware_version))
+    return nil if data.empty? || !data.has_key?(:id) || (!data.has_key?(:serial_number) && !data.has_key?(:mac_address) && !data.has_key?(:product_id) && !data.has_key?(:firmware_version))
     
     result = Devices.find_by(:id => data[:id])
     
     if !result.nil? then
       result.update(serial_number: data[:serial_number]) if data.has_key?(:serial_number)
       result.update(mac_address: data[:mac_address]) if data.has_key?(:mac_address)
-      result.update(model_name: data[:model_name]) if data.has_key?(:model_name)
+      result.update(product_id: data[:product_id]) if data.has_key?(:product_id)
       result.update(firmware_version: data[:firmware_version]) if data.has_key?(:firmware_version)
       result.update(updated_at: DateTime.now)
     end

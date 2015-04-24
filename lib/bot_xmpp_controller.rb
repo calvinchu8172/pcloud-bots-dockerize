@@ -54,25 +54,25 @@ XMPP_API_VERSION = 'v1.0'
 
 module XMPPController
   extend Blather::DSL
-  
+
   def self.new(account, password)
     @db_conn = nil
     @bot_xmpp_account = account
     @bot_xmpp_password = password
-    
+
     setup @bot_xmpp_account, @bot_xmpp_password
-    
+
     @db_conn = BotDBAccess.new
     @rd_conn = BotRedisAccess.new
     @route_conn = BotRouteAccess.new
     @mail_conn = BotMailAccessSMTP.new
-    
+
     @xmpp_server_domain = '@%s' % client.jid.domain
     @xmpp_resource_id = '/device'
-    
+
     Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
   end
-  
+
   def self.run
     EM.run {
       Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
@@ -86,15 +86,15 @@ module XMPPController
       EM.add_periodic_timer(0.3) {
         batch_register_ddns
       }
-        
+
       client.run
       }
   end
-  
+
   def self.container(data)
     yield(data)
   end
-  
+
   def self.alive
     return TRUE
   end
@@ -102,7 +102,7 @@ module XMPPController
   def self.batch_register_ddns
     isLock = @rd_conn.rd_ddns_batch_lock_isSet
     return nil if isLock
-    
+
     count = @rd_conn.rd_ddns_batch_session_count
     return nil if 0 == count
 
@@ -115,19 +115,19 @@ module XMPPController
         temp << result[i]
         i+=1
       end
-      
+
       ddnss = temp.reverse
-      
+
       zones_list = @route_conn.zones_list
       zones_list.each do |zone|
         zone_name = zone["name"]
-      
+
         records = Array.new
         tempR = Array.new
         ddnss.each do |data|
           if valid_json? data then
             ddns = JSON.parse(data)
-        
+
             session_id = ddns["index"]
             full_domain = ddns["full_domain"]
             domain_name = find_domainname(full_domain)
@@ -135,13 +135,14 @@ module XMPPController
             ip = ddns["ip"]
 
             isInclouded = tempR.include?(full_domain)
+
             if zone_name == domain_name && !isInclouded then
               records << {full_domain: full_domain, ip: ip, action: action, index: session_id}
               tempR << full_domain
             end
           end
         end
-      
+
         if records.count > 0 then
           Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                    direction: 'N/A',
@@ -151,9 +152,9 @@ module XMPPController
                                                    full_domain: 'N/A',
                                                    message:"Batch register DDNS record ...",
                                                    data: 'N/A'})
-        
+
           isSuccess = @route_conn.batch_create_records({domain_name: zone_name, records: records})
-          
+
           #if update records failure, remove delete action and do again.
           if !isSuccess then
             i = 0
@@ -163,15 +164,15 @@ module XMPPController
               i+=1
             end
             sleep(0.3)
-            
+
             isSuccess = @route_conn.batch_create_records({domain_name: zone_name, records: records})
           end
-        
+
           mails = Array.new
           ddnss.each do |data|
             if valid_json? data then
               ddns = JSON.parse(data)
-          
+
               session_id = ddns["index"]
               device_id = ddns["device_id"]
               full_domain = ddns["full_domain"]
@@ -180,7 +181,7 @@ module XMPPController
               ip = ddns["ip"]
 
               user_email = @db_conn.db_retrive_user_email_by_device_id(device_id)
-          
+
               Fluent::Logger.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
@@ -190,14 +191,14 @@ module XMPPController
                                      full_domain: full_domain,
                                      message:"Batch register DDNS record %s" % [isSuccess ? 'success' : 'failure'] ,
                                      data: {ip: ip}})
-          
+
               if isSuccess then
                 if hasMailed && 'update' == action then
                   mails << user_email
                 end
                 ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                 @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_SUCCESS}) if !ddns_session.nil?
-                
+
                 isDeleted = @rd_conn.rd_ddns_batch_session_delete(data)
                 Fluent::Logger.post(isDeleted ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
@@ -213,7 +214,7 @@ module XMPPController
                   mails << user_email
                   ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                   @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_FAILURE}) if !ddns_session.nil?
-                  
+
                   @rd_conn.rd_ddns_batch_session_delete(data)
                   retry_data = {index: session_id, device_id: device_id, full_domain: full_domain, ip: ip, action: 'update', hasMailed: true}
                   @rd_conn.rd_ddns_batch_session_insert(JSON.generate(retry_data), session_id)
@@ -273,9 +274,8 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
   def self.send_request(job, info)
-    
     case job
 # SENDER: SESSION CANCEL REQUEST
       when KSESSION_CANCEL_REQUEST
@@ -419,19 +419,19 @@ module XMPPController
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
         msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
         write_to_stream msg
-      
+
 # SENDER: PAIR COMPLETED FAILURE RESPONSE
       when KPAIR_COMPLETED_FAILURE_RESPONSE
         msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-      
+
 # SENDER: UNPAIR REQUEST
       when KUNPAIR_ASK_REQUEST
-        
+
         EM.defer {
           xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
           session_id = info[:session_id]
-          
+
           if !info[:full_domain].nil?
             index = @rd_conn.rd_ddns_session_index_get
             ddns_record = @db_conn.db_ddns_access({device_id: info[:session_id]})
@@ -449,7 +449,7 @@ module XMPPController
                                    full_domain: info[:full_domain],
                                    message:"Delete Route53 DDNS record %s as unpair" % [isDeleted ? 'success' : 'failure'] ,
                                    data: 'N/A'})
-          
+
             isDeleted = FALSE
             ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
             isDeleted = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
@@ -463,7 +463,7 @@ module XMPPController
                                    message:"Delete DB DDNS record as unpair %s" % [isDeleted ? 'success' : 'failure'] ,
                                    data: 'N/A'})
           end
-          
+
           msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id, XMPP_API_VERSION]
           write_to_stream msg
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
@@ -474,7 +474,7 @@ module XMPPController
                                                     full_domain: 'N/A',
                                                     message:"Send UNPAIR ASK REQUEST message to device" ,
                                                     data: 'N/A'})
-          
+
           df = EM::DefaultDeferrable.new
           periodic_timer = EM.add_periodic_timer(15) {
             unpair_session = @rd_conn.rd_unpair_session_access(session_id)
@@ -497,11 +497,11 @@ module XMPPController
           }
           df.callback do |x|
             unpair_session = @rd_conn.rd_unpair_session_access(session_id)
-            
+
             if !unpair_session.nil? then
               @rd_conn.rd_unpair_session_delete(session_id)
             end
-            
+
             EM.cancel_timer(periodic_timer)
             Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UNPAIR',
                                                       direction: 'N/A',
@@ -514,7 +514,7 @@ module XMPPController
           end
         }
         #unpairThread.abort_on_exception = FALSE
-        
+
 # SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
         session_id = info[:session_id]
@@ -559,7 +559,7 @@ module XMPPController
                                    data: 'N/A'})
           end
         end
-        
+
 # SENDER: UPNP SETTING REQUEST
       when KUPNP_SETTING_REQUEST
         session_id = info[:session_id]
@@ -573,7 +573,7 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send UPNP SETTING RESPONSE message to device" ,
                                                   data: {language: info[:language], field_item: info[:field_item]}})
-        
+
         df = EM::DefaultDeferrable.new
         EM.add_timer(KUPNP_EXPIRE_TIME * 1) {
           df.set_deferred_status :succeeded, session_id
@@ -611,7 +611,7 @@ module XMPPController
           begin
           host_name = find_hostname(info[:full_domain])
           domain_name = find_domainname(info[:full_domain])
-        
+
           @rd_conn.rd_ddns_session_update({index: info[:session_id], status: KSTATUS_WAITING})
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                     direction: 'N/A',
@@ -621,12 +621,12 @@ module XMPPController
                                                     full_domain: info[:full_domain],
                                                     message:"Prepare send DDNS SETTING REQUEST to device" ,
                                                     data: 'N/A'})
-          
+
           ddns_record = @db_conn.db_ddns_access({device_id: info[:device_id].to_i})
-          
+
           device = @rd_conn.rd_device_session_access(info[:device_id])
           ip = device["ip"]
-          
+
           batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update', hasMailed: false}
           @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), info[:session_id])
 
@@ -644,7 +644,7 @@ module XMPPController
                                    full_domain: info[:full_domain],
                                    message:"Update DB DDNS setting %s" % [isUpdated ? 'success' : 'failure'] ,
                                    data: {ip: info[:ip]}})
-            
+
             if old_full_domain != info[:full_domain]
               del_index = @rd_conn.rd_ddns_session_index_get
               ip = ddns_record.ip_address
@@ -723,7 +723,7 @@ module XMPPController
               index = x
               resend = @rd_conn.rd_ddns_resend_session_access(index)
               @rd_conn.rd_ddns_resend_session_delete(index) if !resend.nil?
-            
+
               EM.cancel_timer(periodic_timer)
               Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'DDNS',
                                                         direction: 'N/A',
@@ -739,19 +739,19 @@ module XMPPController
             Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
           end
         }
-        
+
 # SENDER: DDNS SETTING SUCCESS RESPONSE
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
         write_to_stream msg
-      
+
 # SENDER: DDNS SETTING FAILURE RESPONSE
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
     end
   end
-  
+
   def self.result_syslog(msg)
     Fluent::Logger.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
@@ -763,7 +763,7 @@ module XMPPController
                             message:"Receive RESULT message - %s from device" % msg.form.title ,
                             data: {xml: msg.to_s.gsub(/\n\s+/, "")}})
   end
-  
+
   def self.submit_syslog(msg)
     Fluent::Logger.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
@@ -775,7 +775,7 @@ module XMPPController
                            message:"Receive SUBMIT message - %s from device" % msg.form.title,
                            data: {xml: msg.to_s.gsub(/\n\s+/, "")}})
   end
-  
+
   def self.cancel_syslog(msg)
     Fluent::Logger.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
@@ -787,7 +787,7 @@ module XMPPController
                            message:"Receive CANCEL message - %s from device" % msg.form.title,
                            data: {xml: msg.to_s.gsub(/\n\s+/, "")}})
   end
-  
+
   def self.form_syslog(msg)
     Fluent::Logger.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
@@ -821,7 +821,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
       result_syslog(msg)
-      
+
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       expire_time = pairing["expire_at"] if !pairing.nil?
@@ -905,7 +905,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'unpair' == m.form.title} do |msg|
     begin
       result_syslog(msg)
-      
+
       device_id = msg.thread
       isSuccess = FALSE
       unpair_session = @rd_conn.rd_unpair_session_access(device_id)
@@ -914,7 +914,7 @@ module XMPPController
       else
         isSuccess = TRUE
       end
-      
+
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
@@ -928,7 +928,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Result:Get_upnp_service:Timeout
   message :normal?, proc {|m| m.form.result? && 'get_upnp_service' == m.form.title && 'timeout' == m.form.field('action').value} do |msg|
     begin
@@ -1025,7 +1025,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
-      
+
       session_id = msg.thread
       data = {index: session_id, status: KSTATUS_UPDATED}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
@@ -1047,7 +1047,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'config_ddns' == m.form.title} do |msg|
     begin
       result_syslog(msg)
-      
+
       index = msg.thread
       @rd_conn.rd_ddns_resend_session_delete(index)
       Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
@@ -1068,7 +1068,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'completed' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
-      
+
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       expire_time = pairing["expire_at"] if !pairing.nil?
@@ -1087,7 +1087,7 @@ module XMPPController
                                  full_domain: 'N/A',
                                  message:"Update the status of pairing session to COMPLETED %s as receive PAIR CONPLETED RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                                  data: 'N/A'})
-                
+
           pairing_insert = @db_conn.db_pairing_insert(pairing["user_id"].to_i, device_id.to_i)
           Fluent::Logger.post(nil != pairing_insert ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
@@ -1098,7 +1098,7 @@ module XMPPController
                                  full_domain: 'N/A',
                                  message:"Insert paired data into pairing table %s as receive PAIR CONPLETED RESPONSE message from device" % [nil != pairing_insert ? 'success' : 'failure'] ,
                                  data: {user_id: pairing["user_id"], device_id: device_id}})
-            
+
           user = @db_conn.db_user_access(pairing["user_id"].to_i)
           info = {xmpp_account: msg.from, session_id: device_id, email: user.nil? ? '' : user.email}
           send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
@@ -1114,7 +1114,7 @@ module XMPPController
         else
           data = {device_id: device_id, status: KSTATUS_TIMEOUT}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
-            
+
           info = {xmpp_account: msg.from, error_code: 899, session_id: device_id}
           send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
           Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
@@ -1149,7 +1149,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.submit? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       submit_syslog(msg)
-      
+
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       status = !pairing.nil? ? pairing["status"] : nil
@@ -1166,7 +1166,7 @@ module XMPPController
                                full_domain: 'N/A',
                                message:"Update the status of pairing session to 'CANCEL' %s as receive PAIR CANCEL RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
                                data: 'N/A'})
-            
+
         if isUpdated
           info = {xmpp_account: msg.from, title: 'pair', tag: device_id}
           send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
@@ -1205,7 +1205,7 @@ module XMPPController
                                message:"Send PAIR CANCEL FAILURE RESPONSE message to device as pairing session id not find or status wrong",
                                data: {error_code: 898}})
       end
-      
+
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
@@ -1540,7 +1540,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.submit? && 'config_ddns' == m.form.title} do |msg|
     begin
       submit_syslog(msg)
-      
+
       session_id = msg.thread
       host_name = nil
       domain_name = nil
@@ -1548,25 +1548,18 @@ module XMPPController
         host_name = field.value.downcase if 'hostname_prefix' == field.var
         domain_name = field.value.downcase if 'hostname_suffix' == field.var
       end
-          
-      regex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(.)$/
-      dns_valid = regex.match(host_name + '.' + domain_name)
-          
+
       domain_name += '.' if '.' != domain_name[-1, 1]
 
-      isValidZoneName = FALSE
-      @route_conn.zones_list.each do |zone|
-        isValidZoneName = TRUE if domain_name.downcase == zone["name"].downcase
-      end
-      
-      is_invalid_length = (host_name.length > 63 || host_name.length < 3)
-      
-      isReserved = FALSE
-      @route_conn.reserved_hostname.each do |host|
-        isReserved = TRUE if host == host_name
-      end
+      host_name_regex = /^[a-zA-Z][a-zA-Z0-9\-]*$/
+      isValidHostName =  host_name.length.between?(3, 63) &&
+                        !host_name_regex.match(host_name).nil? &&
+                        !@route_conn.reserved_hostname.include?(host_name)
 
-      if !host_name.empty? && !domain_name.empty? && !dns_valid.nil? && isValidZoneName && !is_invalid_length && !isReserved then
+      isValidZoneName = !domain_name.empty? &&
+                        !@route_conn.zones_list.include?(domain_name)
+
+      if isValidHostName && isValidZoneName then
         device_ip = nil
         device_id = nil
         old_device_id = nil
@@ -1574,10 +1567,10 @@ module XMPPController
         device_id = @rd_conn.rd_xmpp_session_access(xmpp_account).to_i
         device = @rd_conn.rd_device_session_access(device_id)
         device_ip = device["ip"] if !device.nil?
-        
+
         ddns_record = @db_conn.db_ddns_access({full_domain: host_name + '.' + domain_name})
         old_device_id = ddns_record.device_id if !ddns_record.nil?
-            
+
         if !device_id.nil? && old_device_id.nil? && !device_ip.nil? then
           data = {host_name: host_name,
                   domain_name: domain_name,
@@ -1590,7 +1583,7 @@ module XMPPController
           # Use container for provied variable over write
           container(data){
             |x|
-                
+
             EM.defer {
               session_id = x[:session_id]
               ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
@@ -1686,7 +1679,7 @@ module XMPPController
               end
             }
           }
-              
+
         elsif !device_id.nil? && !old_device_id.nil? && !device_ip.nil? then
           if device_id == old_device_id then
             data = {host_name: host_name,
@@ -1702,7 +1695,7 @@ module XMPPController
               EM.defer {
                 session_id = x[:session_id]
                 ddns_record = @db_conn.db_ddns_access({device_id: x[:device_id]})
-                
+
                 index = @rd_conn.rd_ddns_session_index_get
                 device = @rd_conn.rd_device_session_access(x[:device_id])
                 ip = device["ip"]
@@ -1840,7 +1833,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       status = !pairing.nil? ? pairing["status"] : nil
@@ -1886,12 +1879,12 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Cancel:Pair:Completed
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'completed' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       device_id = msg.thread
       data = {device_id: device_id, status: KSTATUS_FAILURE}
       error_code = msg.form.field('ERROR_CODE').value
@@ -1909,12 +1902,12 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Cancel:Pair:Cancel
   message :normal?, proc {|m| m.form.cancel? && 'pair' == m.form.title && 'cancel' == m.form.field('action').value} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       if !pairing.nil? then
@@ -1938,7 +1931,7 @@ module XMPPController
   message :normal?, proc {|m| m.form.cancel? && 'unpair' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       device_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = FALSE
@@ -1948,7 +1941,7 @@ module XMPPController
       else
         isSuccess = TRUE
       end
-      
+
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
@@ -1958,17 +1951,17 @@ module XMPPController
                              full_domain: 'N/A',
                              message:"Delete the record of unpair session %s as receive UNPAIR FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
-      
+
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Cancel:Get_upnp_service:nil
   message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
       data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
@@ -1986,7 +1979,7 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Cancel:Get_upnp_service:!nil:Timeout
   message :normal?, proc {|m| m.form.cancel? && 'get_upnp_service' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
     begin
@@ -2064,33 +2057,33 @@ module XMPPController
   message :normal?, proc {|m| m.form.cancel? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       hasX = FALSE
       hasITEM = FALSE
       session_id = msg.thread
       error_code_record = Array.new
-      
+
       upnp_session = @rd_conn.rd_upnp_session_access(session_id)
       if !upnp_session.nil? then
         service_list = JSON.parse(upnp_session["service_list"].to_s)
-      
+
         MultiXml.parser = :rexml
         xml = MultiXml.parse(msg.form.to_s)
         hasX = xml.has_key?("x")
         hasITEM = xml["x"].has_key?("item") if hasX
-      
+
         if !xml.nil? && hasX && hasITEM then
-        
+
           if !xml["x"]["item"].instance_of?(Array) then
             items = Array.new
             items << xml["x"]["item"]
             xml["x"]["item"] = items
           end
-        
+
           xml["x"]["item"].each do |item|
             servicename = nil
             error_code = nil
-          
+
             item["field"].each do |field|
               var = field["var"]
               case var
@@ -2100,19 +2093,19 @@ module XMPPController
                   error_code = field["value"]
               end
             end
-          
+
             service_list.each do |service|
               if service["service_name"] == servicename then
                 service["error_code"] = error_code
               end
             end
-          
+
             error_code_record << {service_name: servicename, error_code: error_code}
           end
         end
-      
+
         service_list_json = JSON.generate(service_list)
-      
+
         data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json}
         isSuccess = @rd_conn.rd_upnp_session_update(data)
         Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
@@ -2162,12 +2155,12 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
-  
+
 # HANDLER: Cancel:Config_ddns
   message :normal?, proc {|m| m.form.cancel? && 'config_ddns' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
-      
+
       index = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
       @rd_conn.rd_ddns_resend_session_delete(index)
@@ -2189,26 +2182,26 @@ module XMPPController
   message :normal?, proc {|m| m.form.form? && 'get_upnp_service' == m.form.title} do |msg|
     begin
       form_syslog(msg)
-      
+
       hasX = nil
       hasITEM = nil
       session_id = msg.thread
       service_list = Array.new
-          
+
       MultiXml.parser = :rexml
       xml = MultiXml.parse(msg.form.to_s)
       hasX = xml.has_key?("x")
       hasITEM = xml["x"].has_key?("item") if hasX
       lan_ip = xml["x"]["field"]["value"] if xml["x"].has_key?("field") && 'lanip' == xml["x"]["field"]["var"]
- 
+
       if !xml.nil? && hasX && hasITEM then
-        
+
         if !xml["x"]["item"].instance_of?(Array) then
           items = Array.new
           items << xml["x"]["item"]
           xml["x"]["item"] = items
         end
-        
+
         xml["x"]["item"].each do |item|
         service_name = ''
         status = false
@@ -2237,7 +2230,7 @@ module XMPPController
               wan_port = field["value"].nil? ? '' : field["value"]
           end
         end
-            
+
         service = {:service_name => service_name,
                    :status => status,
                    :enabled => enabled,
@@ -2253,7 +2246,7 @@ module XMPPController
       else
         service_list_json = ''
       end
-          
+
       data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, lan_ip: lan_ip}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
