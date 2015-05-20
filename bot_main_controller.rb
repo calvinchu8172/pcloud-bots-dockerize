@@ -248,8 +248,32 @@ def worker(sqs, db_conn, rd_conn)
                   title: title}
           XMPPController.send_request(KSESSION_CANCEL_REQUEST, info) if !xmpp_account.nil?
         end
+
+      when 'create_permission' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Portal->Bot',
+                                                  to: XMPP_CONFIG[:jid],
+                                                  from: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of Create-permission", data: data})
+
+        invitation_id      = data[:invitation_id]
+        user_email         = data[:user_email]
+
+        permission_session = rd_conn.rd_permission_session_access(invitation_id, user_email)
+
+        device             = rd_conn.rd_device_session_access(permission_session["device_id"]) if !permission_session.nil?
+        xmpp_account       = device["xmpp_account"] if !device.nil?
+
+        info = {invitation_id:  invitation_id,
+                user_email:     user_email,
+                xmpp_account:   xmpp_account.to_s}
+
+        XMPPController.send_request(KPERMISSION_START_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
+
     end
-    
+
     rescue
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end

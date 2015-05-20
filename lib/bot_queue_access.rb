@@ -58,6 +58,11 @@ class BotQueueAccess
           data = {session_id: msg["session_id"]}
           yield(job, data)
 
+        elsif msg["job"] == "create_permission" && block_given? then
+          job = msg["job"]
+          data = {invitation_id: msg["invitation_id"], user_email: msg["user_email"]}
+          yield(job, data)
+
         else
           puts 'Data type non JSON'
         end

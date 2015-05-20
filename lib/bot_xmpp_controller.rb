@@ -20,6 +20,10 @@ KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 
+KPERMISSION_START_REQUEST = 'permission_start_request'
+KPERMISSION_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
+KPERMISSION_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
+
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
 KUPNP_ASK_REQUEST = 'upnp_ask_request'
@@ -424,6 +428,48 @@ module XMPPController
       when KPAIR_COMPLETED_FAILURE_RESPONSE
         msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
+
+# SENDER: PERMISSION START REQUEST
+      when KPERMISSION_START_REQUEST
+
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+
+        expire_time = 300
+        expire_at   = (Time.now + expire_time).to_i
+
+        permission_session  = rd_conn.rd_permission_session_access(invitation_id, user_email)
+        share_point = permission_session["share_point"]
+        permission  = permission_session["permission"]
+        cloud_id    = permission_session["cloud_id"]
+
+        msg = PERMISSION_SETTING_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
+        write_to_stream msg
+
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: device_id,
+                                                  full_domain: 'N/A',
+                                                  message:"Send User Permission START REQUEST message to device",
+                                                  data: 'N/A'})
+
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(expire_time){
+          df.set_deferred_status :succeeded, permission_session
+        }
+
+        df.callback do |x|
+          status = !permission_session.nil? ? permission_session["status"] : nil
+          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
+            @rd_conn.rd_pairing_session_update(data)
+
+            device = @rd_conn.rd_device_session_access(device_id)
+            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
+          end
+        end
 
 # SENDER: UNPAIR REQUEST
       when KUNPAIR_ASK_REQUEST
@@ -1037,6 +1083,32 @@ module XMPPController
                              id: session_id,
                              full_domain: 'N/A',
                              message:"Update the status of unpnp session table to UPDATED %s as receive UPNP SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             data: 'N/A'})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+# HANDLER: Result:permission:nil
+  message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      result_syslog(msg)
+      invitation_id     = msg.thread
+      user_id           = msg.form.field('user_id').value
+      status            = msg.form.field('status').value
+      error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
+
+      data              = {invitation_id: invitation_id, status: status, email: user_id}
+      data[:error_code] = error_code if !error_code.nil?
+
+      isSuccess         = @rd_conn.rd_upnp_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'PERMISSION',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: device_id,
+                             message:"Update the status of permission session table to UPDATED %s as receive PERMISSION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})

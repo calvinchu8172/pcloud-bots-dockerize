@@ -240,3 +240,64 @@ DDNS_SETTING_FAILURE_RESPONSE = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#PERMISSION_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SHARE_POINT', 'PERMISSION', 'CLOUD_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+PERMISSION_SETTING_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+   <x xmlns="jabber:x:data" type="submit">
+      <title>resources_permission</title>
+      <field type='hidden' var='action'>
+         <value>create</value>
+      </field>
+     <field type='hidden' var='share_point'>
+         <value>%s</value>
+      </field>
+      <field type='hidden' var='permission'>
+         <value>%s</value>
+      </field>
+     <field type='hidden' var='cloud_id'>
+         <value>%s</value>
+      </field>
+      <field type='hidden' var='timeout'>
+         <value>%s</value>
+      </field>
+   </x>
+   <thread>%s</thread>
+   <api_version>%s</api_version>
+</message>
+EOT
+
+#PERMISSION_SETTING_SUCCESS_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'USER_EMAIL', 'SESSION_ID']
+PERMISSION_SETTING_SUCCESS_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="result">
+    <title>permission</title>
+    <field type='hidden' var='status'>
+       <value>success</value>
+    </field>
+    <field type='text-single' var='user_id'>
+       <value>%s</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+#PERMISSION_SETTING_FAILURE_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'USER_EMAIL', 'ERROR_CODE', 'SESSION_ID']
+PERMISSION_SETTING_FAILURE_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+    <title>permission</title>
+    <field type='hidden' var='status'>
+       <value>failure</value>
+    </field>
+    <field type='text-single' var='user_id'>
+       <value>%s</value>
+    </field>
+    <field type='text-single' var='ERROR_CODE'>
+       <value>%s</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
