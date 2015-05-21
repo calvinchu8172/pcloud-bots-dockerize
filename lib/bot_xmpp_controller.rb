@@ -433,11 +433,13 @@ module XMPPController
       when KPERMISSION_START_REQUEST
 
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        invitation_id       = info[:invitation_id]
+        user_email          = info[:user_email]
 
         expire_time = 300
         expire_at   = (Time.now + expire_time).to_i
 
-        permission_session  = rd_conn.rd_permission_session_access(invitation_id, user_email)
+        permission_session  = @rd_conn.rd_permission_session_access(invitation_id, user_email)
         share_point = permission_session["share_point"]
         permission  = permission_session["permission"]
         cloud_id    = permission_session["cloud_id"]
