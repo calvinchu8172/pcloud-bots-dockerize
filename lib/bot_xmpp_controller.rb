@@ -1052,6 +1052,10 @@ module XMPPController
       invitation_id     = msg.thread
       user_email        = msg.form.field('user_email').value
       status            = msg.form.field('status').value
+
+      # follow portal rule
+      status = KSTATUS_DONE if status = KSTATUS_SUCCESS
+
       error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
 
       data              = {invitation_id: invitation_id, status: status, user_email: user_email}
