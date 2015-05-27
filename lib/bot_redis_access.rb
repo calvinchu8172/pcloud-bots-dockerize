@@ -26,7 +26,7 @@ DDNS_RESEND_EXPIRE_TIME = 60
 
 XMPP_SESSION_KEY = "xmpp:%s:session"
 
-USER_PERMISSION_KEY = "invitation:%s:%s"
+USER_PERMISSION_KEY = "invitation:%s:%s:session"
 
 class BotRedisAccess
 

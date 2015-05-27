@@ -273,7 +273,7 @@ PERMISSION_SETTING_SUCCESS_RESPONSE = <<EOT
   <x xmlns="jabber:x:data" type="result">
     <title>permission</title>
     <field type='hidden' var='status'>
-       <value>success</value>
+       <value>done</value>
     </field>
     <field type='text-single' var='user_email'>
        <value>%s</value>
