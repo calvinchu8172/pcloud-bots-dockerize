@@ -395,7 +395,7 @@ module XMPPController
         permission_session  = @rd_conn.rd_permission_session_access(invitation_id, user_email)
         share_point = permission_session["share_point"]
         permission  = permission_session["permission"]
-        cloud_id    = permission_session["cloud_id"]
+        cloud_id    = permission_session['cloud_id']
 
         msg = PERMISSION_SETTING_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
         write_to_stream msg
@@ -1048,15 +1048,16 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
+
       invitation_id     = msg.thread
-      user_id           = msg.form.field('user_id').value
+      user_email        = msg.form.field('user_email').value
       status            = msg.form.field('status').value
       error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
 
-      data              = {invitation_id: invitation_id, status: status, email: user_id}
+      data              = {invitation_id: invitation_id, status: status, user_email: user_email}
       data[:error_code] = error_code if !error_code.nil?
 
-      isSuccess         = @rd_conn.rd_upnp_session_update(data)
+      isSuccess         = @rd_conn.rd_permission_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PERMISSION',
                              direction: 'Device->Bot',

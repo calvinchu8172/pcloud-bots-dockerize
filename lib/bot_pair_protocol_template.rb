@@ -275,7 +275,7 @@ PERMISSION_SETTING_SUCCESS_RESPONSE = <<EOT
     <field type='hidden' var='status'>
        <value>success</value>
     </field>
-    <field type='text-single' var='user_id'>
+    <field type='text-single' var='user_email'>
        <value>%s</value>
     </field>
   </x>
@@ -286,12 +286,12 @@ EOT
 #PERMISSION_SETTING_FAILURE_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'USER_EMAIL', 'ERROR_CODE', 'SESSION_ID']
 PERMISSION_SETTING_FAILURE_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
-  <x xmlns="jabber:x:data" type="cancel">
+  <x xmlns="jabber:x:data" type="result">
     <title>permission</title>
     <field type='hidden' var='status'>
        <value>failure</value>
     </field>
-    <field type='text-single' var='user_id'>
+    <field type='text-single' var='user_email'>
        <value>%s</value>
     </field>
     <field type='text-single' var='ERROR_CODE'>
