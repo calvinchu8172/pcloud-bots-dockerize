@@ -241,8 +241,8 @@ DDNS_SETTING_FAILURE_RESPONSE = <<EOT
 </message>
 EOT
 
-#PERMISSION_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SHARE_POINT', 'PERMISSION', 'CLOUD_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
-PERMISSION_SETTING_REQUEST = <<EOT
+#PERMISSION_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SHARE_POINT', 'PERMISSION', 'CLOUD_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+PERMISSION_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
    <x xmlns="jabber:x:data" type="submit">
       <title>resources_permission</title>
@@ -267,37 +267,16 @@ PERMISSION_SETTING_REQUEST = <<EOT
 </message>
 EOT
 
-#PERMISSION_SETTING_SUCCESS_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'USER_EMAIL', 'SESSION_ID']
-PERMISSION_SETTING_SUCCESS_RESPONSE = <<EOT
-<message to="%s" type="normal" from="%s" xml:lang="en">
-  <x xmlns="jabber:x:data" type="result">
-    <title>permission</title>
-    <field type='hidden' var='status'>
-       <value>success</value>
-    </field>
-    <field type='text-single' var='user_email'>
-       <value>%s</value>
-    </field>
-  </x>
-  <thread>%d</thread>
-</message>
-EOT
-
-#PERMISSION_SETTING_FAILURE_RESPONSE % ['REQUEST_ID', 'RESPONSE_ID', 'USER_EMAIL', 'ERROR_CODE', 'SESSION_ID']
-PERMISSION_SETTING_FAILURE_RESPONSE = <<EOT
-<message to="%s" type="normal" from="%s" xml:lang="en">
-  <x xmlns="jabber:x:data" type="result">
-    <title>permission</title>
-    <field type='hidden' var='status'>
-       <value>failure</value>
-    </field>
-    <field type='text-single' var='user_email'>
-       <value>%s</value>
-    </field>
-    <field type='text-single' var='ERROR_CODE'>
-       <value>%s</value>
-    </field>
-  </x>
-  <thread>%d</thread>
+#DEVICE_INFO_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+DEVICE_INFO_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+    <x xmlns="jabber:x:data" type="submit">
+        <title>bot_get_device_information</title>
+        <field type=”hidden” var=”timeout”>
+          <value>%d</value>
+        </field>
+    </x>
+    <thread>%d</thread>
+    <api_version>%s</api_version>
 </message>
 EOT
