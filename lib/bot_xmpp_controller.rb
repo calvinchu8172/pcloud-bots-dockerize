@@ -20,6 +20,10 @@ KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 
+KPERMISSION_ASK_REQUEST = 'permission_ask_request'
+KPERMISSION_EXPIRE_TIME = 300
+
+
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
 KUPNP_ASK_REQUEST = 'upnp_ask_request'
@@ -168,7 +172,6 @@ module XMPPController
             isSuccess = @route_conn.batch_create_records({domain_name: zone_name, records: records})
           end
 
-          mails = Array.new
           ddnss.each do |data|
             if valid_json? data then
               ddns = JSON.parse(data)
@@ -176,7 +179,6 @@ module XMPPController
               session_id = ddns["index"]
               device_id = ddns["device_id"]
               full_domain = ddns["full_domain"]
-              hasMailed = ddns["hasMailed"]
               action = ddns["action"]
               ip = ddns["ip"]
 
@@ -193,9 +195,6 @@ module XMPPController
                                      data: {ip: ip}})
 
               if isSuccess then
-                if hasMailed && 'update' == action then
-                  mails << user_email
-                end
                 ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                 @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_SUCCESS}) if !ddns_session.nil?
 
@@ -210,58 +209,16 @@ module XMPPController
                                      message:"Delete DDNS batch session %s" % [isDeleted ? 'success' : 'failure'] ,
                                      data: 'N/A'})
               else
-                if !hasMailed && 'update' == action then
-                  mails << user_email
+                if 'update' == action then
                   ddns_session = @rd_conn.rd_ddns_session_access(session_id)
                   @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_FAILURE}) if !ddns_session.nil?
 
                   @rd_conn.rd_ddns_batch_session_delete(data)
-                  retry_data = {index: session_id, device_id: device_id, full_domain: full_domain, ip: ip, action: 'update', hasMailed: true}
+                  retry_data = {index: session_id, device_id: device_id, full_domain: full_domain, ip: ip, action: 'update'}
                   @rd_conn.rd_ddns_batch_session_insert(JSON.generate(retry_data), session_id)
                 else
                   @rd_conn.rd_ddns_batch_session_delete(data) if 'delete' == action
                 end
-              end
-            end
-          end
-
-          if mails.count > 0
-            if isSuccess then
-              if mails.count > 50 then
-                isSendMail = @mail_conn.send_online_mail(mails[0..49])
-                isSendMail = @mail_conn.send_online_mail(mails[50..99])
-              else
-                isSendMail = @mail_conn.send_online_mail(mails)
-              end
-
-              mails.each do |mail|
-                Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
-                                    {event: 'DDNS',
-                                     direction: 'N/A',
-                                     to: 'N/A',
-                                     from: 'N/A',
-                                     id: 'N/A',
-                                     full_domain: 'N/A',
-                                     message:"Send online mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
-                                     data: {user_email: mail}})
-              end
-            else
-              if mails.count > 50 then
-                isSendMail = @mail_conn.send_offline_mail(mails[0..49])
-                isSendMail = @mail_conn.send_offline_mail(mails[50..99])
-              else
-                isSendMail = @mail_conn.send_offline_mail(mails)
-              end
-              mails.each do |mail|
-                Fluent::Logger.post(isSendMail ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
-                                    {event: 'DDNS',
-                                     direction: 'N/A',
-                                     to: 'N/A',
-                                     from: 'N/A',
-                                     id: 'N/A',
-                                     full_domain: 'N/A',
-                                     message:"Send offline mail to user %s" % [isSendMail ? 'success' : 'failure'] ,
-                                     data: {user_email: mail}})
               end
             end
           end
@@ -437,7 +394,7 @@ module XMPPController
             ddns_record = @db_conn.db_ddns_access({device_id: info[:session_id]})
             ip = ddns_record.ip_address
 
-            batch_data = {index: index, device_id: info[:session_id], full_domain: info[:full_domain], ip: ip, action: 'delete', hasMailed: false}
+            batch_data = {index: index, device_id: info[:session_id], full_domain: info[:full_domain], ip: ip, action: 'delete'}
             isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
 
             Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
@@ -514,6 +471,72 @@ module XMPPController
           end
         }
         #unpairThread.abort_on_exception = FALSE
+
+# SENDER: PERMISSION REQUEST
+      when KPERMISSION_ASK_REQUEST
+
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        invitation_id       = info[:invitation_id]
+        user_email          = info[:user_email]
+        device_id           = info[:device_id]
+
+        expire_time = KPERMISSION_EXPIRE_TIME
+        expire_at   = (Time.now + expire_time).to_i
+
+        permission_session = info[:permission_session]
+
+        share_point        = permission_session["share_point"]
+        permission         = permission_session["permission"]
+        cloud_id           = permission_session["cloud_id"]
+
+        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
+        write_to_stream msg
+
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: device_id,
+                                                  full_domain: 'N/A',
+                                                  message:"Send User Permission START REQUEST message to device",
+                                                  data: 'N/A'})
+
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(expire_time){
+          df.set_deferred_status :succeeded, permission_session
+        }
+
+        df.callback do |x|
+          status = !permission_session.nil? ? permission_session["status"] : nil
+          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
+            @rd_conn.rd_pairing_session_update(data)
+
+            device = @rd_conn.rd_device_session_access(device_id)
+            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
+          end
+        end
+
+# SENDER: DEVICE INFOMATION REQUEST
+      when KDEVICE_INFO_ASK_REQUEST
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        session_id = info[:session_id]
+
+        expire_time = KDEVICE_INFO_EXPIRE_TIME
+
+        msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, session_id, XMPP_API_VERSION]
+        write_to_stream msg
+
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: device_id,
+                                                  full_domain: 'N/A',
+                                                  message:"Send User Permission START REQUEST message to device",
+                                                  data: 'N/A'})
+
 
 # SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
@@ -627,7 +650,7 @@ module XMPPController
           device = @rd_conn.rd_device_session_access(info[:device_id])
           ip = device["ip"]
 
-          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update', hasMailed: false}
+          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update'}
           @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), info[:session_id])
 
           if !ddns_record.nil? then
@@ -649,7 +672,7 @@ module XMPPController
               del_index = @rd_conn.rd_ddns_session_index_get
               ip = ddns_record.ip_address
 
-              batch_data = {index: del_index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+              batch_data = {index: del_index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
               isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
               Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                     {event: 'DDNS',
@@ -1037,6 +1060,38 @@ module XMPPController
                              id: session_id,
                              full_domain: 'N/A',
                              message:"Update the status of unpnp session table to UPDATED %s as receive UPNP SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             data: 'N/A'})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+# HANDLER: Result:permission:nil
+  message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      result_syslog(msg)
+
+      invitation_id     = msg.thread
+      user_email        = msg.form.field('user_email').value
+      status            = msg.form.field('status').value
+
+      # follow portal rule
+      status = KSTATUS_DONE if status = KSTATUS_SUCCESS
+
+      error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
+
+      data              = {invitation_id: invitation_id, status: status, user_email: user_email}
+
+      data[:error_code] = error_code if !error_code.nil?
+
+      isSuccess         = @rd_conn.rd_permission_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'PERMISSION',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: device_id,
+                             message:"Update the status of permission session table to UPDATED %s as receive PERMISSION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
@@ -1593,7 +1648,7 @@ module XMPPController
               ip = device["ip"]
               session_data = {index: index, device_id: x[:device_id], host_name: x[:host_name], domain_name: x[:domain_name], status: KSTATUS_START}
               @rd_conn.rd_ddns_session_insert(session_data)
-              batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
+              batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update'}
               @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
 
               if !ddns_record.nil? then
@@ -1615,7 +1670,7 @@ module XMPPController
                   del_index = @rd_conn.rd_ddns_session_index_get
                   ip = ddns_record.ip_address
 
-                  batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                  batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
                   isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
 
                   Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
@@ -1701,7 +1756,7 @@ module XMPPController
                 ip = device["ip"]
                 session_data = {index: index, device_id: x[:device_id], host_name: x[:host_name], domain_name: x[:domain_name], status: KSTATUS_START}
                 @rd_conn.rd_ddns_session_insert(session_data)
-                batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update', hasMailed: false}
+                batch_data = {index: index, device_id: x[:device_id], full_domain: "%s.%s" % [x[:host_name], x[:domain_name]], ip: ip, action: 'update'}
                 @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
 
                 if !ddns_record.nil? then
@@ -1725,7 +1780,7 @@ module XMPPController
                     del_index = @rd_conn.rd_ddns_session_index_get
                     ip = ddns_record.ip_address
 
-                    batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete', hasMailed: false}
+                    batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
                     isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
                     Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                           {event: 'DDNS',
