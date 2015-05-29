@@ -262,15 +262,18 @@ def worker(sqs, db_conn, rd_conn)
         user_email         = data[:user_email]
 
         permission_session = rd_conn.rd_permission_session_access(invitation_id, user_email)
+        device_id          = permission_session["device_id"]
+        device             = rd_conn.rd_device_session_access(device_id) if !permission_session.nil?
 
-        device             = rd_conn.rd_device_session_access(permission_session["device_id"]) if !permission_session.nil?
         xmpp_account       = device["xmpp_account"] if !device.nil?
 
         info = {invitation_id:  invitation_id,
                 user_email:     user_email,
-                xmpp_account:   xmpp_account.to_s}
+                device_id:      device_id,
+                xmpp_account:   xmpp_account.to_s,
+                permission_session: permission_session}
 
-        XMPPController.send_request(KPERMISSION_START_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
+        XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
 
     end
 

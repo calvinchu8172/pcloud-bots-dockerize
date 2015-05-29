@@ -20,9 +20,9 @@ KPAIR_START_REQUEST = 'pair_start_request'
 KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 
-KPERMISSION_START_REQUEST = 'permission_start_request'
-KPERMISSION_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
-KPERMISSION_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
+KPERMISSION_ASK_REQUEST = 'permission_ask_request'
+KPERMISSION_EXPIRE_TIME = 300
+
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
@@ -382,50 +382,6 @@ module XMPPController
         msg = PAIR_COMPLETED_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
 
-# SENDER: PERMISSION START REQUEST
-      when KPERMISSION_START_REQUEST
-
-        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
-        invitation_id       = info[:invitation_id]
-        user_email          = info[:user_email]
-
-        expire_time = 300
-        expire_at   = (Time.now + expire_time).to_i
-
-        permission_session  = @rd_conn.rd_permission_session_access(invitation_id, user_email)
-        share_point = permission_session["share_point"]
-        permission  = permission_session["permission"]
-        cloud_id    = permission_session['cloud_id']
-
-        msg = PERMISSION_SETTING_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
-        write_to_stream msg
-
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
-                                                  direction: 'Bot->Device',
-                                                  to: device_xmpp_account,
-                                                  from: @bot_xmpp_account,
-                                                  id: device_id,
-                                                  full_domain: 'N/A',
-                                                  message:"Send User Permission START REQUEST message to device",
-                                                  data: 'N/A'})
-
-        df = EM::DefaultDeferrable.new
-        EM.add_timer(expire_time){
-          df.set_deferred_status :succeeded, permission_session
-        }
-
-        df.callback do |x|
-          status = !permission_session.nil? ? permission_session["status"] : nil
-          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
-            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
-            @rd_conn.rd_pairing_session_update(data)
-
-            device = @rd_conn.rd_device_session_access(device_id)
-            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
-            send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
-          end
-        end
-
 # SENDER: UNPAIR REQUEST
       when KUNPAIR_ASK_REQUEST
 
@@ -515,6 +471,72 @@ module XMPPController
           end
         }
         #unpairThread.abort_on_exception = FALSE
+
+# SENDER: PERMISSION REQUEST
+      when KPERMISSION_ASK_REQUEST
+
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        invitation_id       = info[:invitation_id]
+        user_email          = info[:user_email]
+        device_id           = info[:device_id]
+
+        expire_time = KPERMISSION_EXPIRE_TIME
+        expire_at   = (Time.now + expire_time).to_i
+
+        permission_session = info[:permission_session]
+
+        share_point        = permission_session["share_point"]
+        permission         = permission_session["permission"]
+        cloud_id           = permission_session["cloud_id"]
+
+        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
+        write_to_stream msg
+
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: device_id,
+                                                  full_domain: 'N/A',
+                                                  message:"Send User Permission START REQUEST message to device",
+                                                  data: 'N/A'})
+
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(expire_time){
+          df.set_deferred_status :succeeded, permission_session
+        }
+
+        df.callback do |x|
+          status = !permission_session.nil? ? permission_session["status"] : nil
+          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
+            @rd_conn.rd_pairing_session_update(data)
+
+            device = @rd_conn.rd_device_session_access(device_id)
+            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
+          end
+        end
+
+# SENDER: DEVICE INFOMATION REQUEST
+      when KDEVICE_INFO_ASK_REQUEST
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        session_id = info[:session_id]
+
+        expire_time = KDEVICE_INFO_EXPIRE_TIME
+
+        msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, session_id, XMPP_API_VERSION]
+        write_to_stream msg
+
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+                                                  direction: 'Bot->Device',
+                                                  to: device_xmpp_account,
+                                                  from: @bot_xmpp_account,
+                                                  id: device_id,
+                                                  full_domain: 'N/A',
+                                                  message:"Send User Permission START REQUEST message to device",
+                                                  data: 'N/A'})
+
 
 # SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
@@ -1059,6 +1081,7 @@ module XMPPController
       error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
 
       data              = {invitation_id: invitation_id, status: status, user_email: user_email}
+
       data[:error_code] = error_code if !error_code.nil?
 
       isSuccess         = @rd_conn.rd_permission_session_update(data)
