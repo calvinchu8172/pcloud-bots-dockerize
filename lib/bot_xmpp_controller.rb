@@ -23,6 +23,7 @@ KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 KPERMISSION_ASK_REQUEST = 'permission_ask_request'
 KPERMISSION_EXPIRE_TIME = 300
 
+KDEVICE_INFO_EXPIRE_TIME = 10
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
@@ -523,9 +524,7 @@ module XMPPController
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         session_id = info[:session_id]
 
-        expire_time = KDEVICE_INFO_EXPIRE_TIME
-
-        msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, session_id, XMPP_API_VERSION]
+        msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, KDEVICE_INFO_EXPIRE_TIME, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
@@ -536,7 +535,37 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send User Permission START REQUEST message to device",
                                                   data: 'N/A'})
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(KDEVICE_INFO_EXPIRE_TIME * 1){
+          df.set_deferred_status :succeeded, session_id
+        }
+        df.callback do |x|
+          index = x
+          device_info = @rd_conn.rd_info_session_access(index)
+          status = !device_info.nil? ? device_info["status"] : nil
 
+          if KSTATUS_START == status then
+            data = {index: index, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_permission_session_update(data)
+
+            device = @rd_conn.rd_device_session_access(device_info["device_id"])
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'ask_device_information', tag: index}
+            send_request(KSESSION_TIMEOUT_REQUEST, info)
+
+            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                  {event: 'UPNP',
+                                   direction: 'N/A',
+                                   to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
+                                   from: @bot_xmpp_account,
+                                   id: index,
+                                   full_domain: 'N/A',
+                                   message:"Update status of device information session to 'TIMEOUT' as ask device information expired from device",
+                                   data: 'N/A'})
+          end
+
+
+        end
 
 # SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
@@ -623,7 +652,7 @@ module XMPPController
                                    from: @bot_xmpp_account,
                                    id: index,
                                    full_domain: 'N/A',
-                                   message:"Update status of upnp session to 'TIMEOUT' as set service list expired frome device",
+                                   message:"Update status of upnp session to 'TIMEOUT' as set service list expired from device",
                                    data: 'N/A'})
           end
         end
@@ -1066,7 +1095,7 @@ module XMPPController
     end
   end
 
-# HANDLER: Result:permission:nil
+# HANDLER: Result:permission
   message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)

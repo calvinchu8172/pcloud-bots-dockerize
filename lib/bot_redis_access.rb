@@ -24,6 +24,8 @@ DDNS_BATCH_LOCK_EXPIRE_TIME = 20
 DDNS_RESEND_SESSION_KEY = "ddns:%d:resend_session"
 DDNS_RESEND_EXPIRE_TIME = 60
 
+DEVICE_INFORMATION_KEY = "device:%d:info:session"
+
 XMPP_SESSION_KEY = "xmpp:%s:session"
 
 USER_PERMISSION_KEY = "invitation:%s:%s:session"
@@ -552,4 +554,36 @@ class BotRedisAccess
     end
   end
 
+#========== DEVICE INFO SESSION Methods =========
+#===============================================
+
+  def rd_info_session_access(index = nil)
+    return nil if nil == index
+
+    key = DEVICE_INFORMATION_KEY % [index]
+    result = @redis.hgetall(key)
+    if !result.empty? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_permission_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:invitation_id) || !data.has_key?(:user_email) || !data.has_key?(:status)
+
+    isExist = self.rd_permission_session_access(data[:invitation_id], data[:user_email])
+    if isExist then
+      key = USER_PERMISSION_KEY % [data[:invitation_id], data[:user_email]]
+
+      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+      @redis.hset(key, "info", data[:info]) if data.has_key?(:info)
+
+      return TRUE
+    else
+      return FALSE
+    end
+  end
 end
