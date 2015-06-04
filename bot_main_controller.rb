@@ -285,17 +285,18 @@ def worker(sqs, db_conn, rd_conn)
                                                   message:"Get SQS queue of Device Information", data: data})
 
         session_id  = data[:session_id]
-        device_info = rd_conn.rd_info_session_access(session_id)
-        device_id   = device_info["device_id"]
+        device_info_session = rd_conn.rd_device_info_session_access(session_id)
+        device_id   = device_info_session["device_id"]
 
-        device      = rd_conn.rd_device_session_access(device_id) if !device_info.nil?
+        device      = rd_conn.rd_device_session_access(device_id) if !device_info_session.nil?
         xmpp_account= device["xmpp_account"] if !device.nil?
 
         info = {session_id:     session_id,
                 device_id:      device_id,
                 xmpp_account:   xmpp_account.to_s}
 
-        XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
+
+        XMPPController.send_request(KDEVICE_INFO_ASK_REQUEST, info) if !xmpp_account.nil? && !device_info_session.nil?
 
     end
 

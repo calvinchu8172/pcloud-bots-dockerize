@@ -23,6 +23,8 @@ KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 KPERMISSION_ASK_REQUEST = 'permission_ask_request'
 KPERMISSION_EXPIRE_TIME = 300
 
+KDEVICE_INFO_ASK_REQUEST = 'device_info_query'
+
 KDEVICE_INFO_EXPIRE_TIME = 10
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
@@ -541,7 +543,7 @@ module XMPPController
         }
         df.callback do |x|
           index = x
-          device_info = @rd_conn.rd_info_session_access(index)
+          device_info = @rd_conn.rd_device_info_session_access(index)
           status = !device_info.nil? ? device_info["status"] : nil
 
           if KSTATUS_START == status then
@@ -554,7 +556,7 @@ module XMPPController
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
-                                  {event: 'UPNP',
+                                  {event: 'DEVICE-INFOMATION',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
                                    from: @bot_xmpp_account,
@@ -563,8 +565,6 @@ module XMPPController
                                    message:"Update status of device information session to 'TIMEOUT' as ask device information expired from device",
                                    data: 'N/A'})
           end
-
-
         end
 
 # SENDER: UPNP GETTING REQUEST
@@ -1119,8 +1119,63 @@ module XMPPController
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
-                             id: device_id,
+                             id: session_id,
                              message:"Update the status of permission session table to UPDATED %s as receive PERMISSION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             data: 'N/A'})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+# HANDLER: Result:Get_device_information
+  message :normal?, proc {|m| m.form.result? && 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      result_syslog(msg)
+
+      session_id = msg.thread
+
+      if msg.form.field('ERROR_CODE').nil?
+        # Device basic information
+        info_key_list = ["fan-speed", "cpu-temperature-celsius", "cpu-temperature-fahrenheit",
+                         "cpu-temperature-warning", "raid-status"]
+
+        ## Store device info to hash
+        device_info = Hash.new
+        info_key_list.each do |key|
+          key_field = msg.form.field("#{key}")
+          if !key_field.nil?
+            device_info_key = key.gsub("-", "_")
+            device_info[device_info_key.to_sym] = key_field.value
+          end
+        end
+
+        ## Define item list
+        MultiXml.parser = :rexml
+        xml = MultiXml.parse(msg.form.to_s)
+
+        ## Store volume info in each item
+        volume_list = Array.new
+        xml["x"]["item"].each do |item|
+          volume_list << item['field']
+        end
+
+        device_info[:volume_list] = volume_list
+        device_info = JSON.generate(device_info)
+
+        data = {session_id: session_id, status: KSTATUS_DONE, device_info: device_info}
+      else
+        error_code = msg.form.field('ERROR_CODE').value
+        data = {session_id: session_id, status: KSTATUS_FAILURE, error_code: error_code}
+      end
+
+      isSuccess         = @rd_conn.rd_device_info_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'DEVICE-INFOMATION',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             message:"Update the status of device information session table to UPDATED %s as receive DEVICE-INFOMATION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})

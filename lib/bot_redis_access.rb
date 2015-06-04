@@ -557,7 +557,7 @@ class BotRedisAccess
 #========== DEVICE INFO SESSION Methods =========
 #===============================================
 
-  def rd_info_session_access(index = nil)
+  def rd_device_info_session_access(index = nil)
     return nil if nil == index
 
     key = DEVICE_INFORMATION_KEY % [index]
@@ -569,12 +569,12 @@ class BotRedisAccess
     end
   end
 
-  def rd_permission_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:invitation_id) || !data.has_key?(:user_email) || !data.has_key?(:status)
+  def rd_device_info_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:session_id)  || !data.has_key?(:status)
 
-    isExist = self.rd_permission_session_access(data[:invitation_id], data[:user_email])
+    isExist = self.rd_device_info_session_access(data[:session_id])
     if isExist then
-      key = USER_PERMISSION_KEY % [data[:invitation_id], data[:user_email]]
+      key = DEVICE_INFORMATION_KEY % [data[:session_id]]
 
       @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
