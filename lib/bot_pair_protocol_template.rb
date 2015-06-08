@@ -280,3 +280,17 @@ DEVICE_INFO_ASK_REQUEST = <<EOT
     <api_version>%s</api_version>
 </message>
 EOT
+
+# LED_INDICATOR_REQUEST % ['DEVICE_ID', 'BOT_ID', 'BLINK_TIME', 'SESSION_ID', 'VERSION']
+LED_INDICATOR_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+    <title>bot_led_indicator</title>
+    <field var="blink-second" type="text-single">
+      <value>%d</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+  <api_version>%s</api_version>
+</message>
+EOT

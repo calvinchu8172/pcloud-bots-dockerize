@@ -68,6 +68,11 @@ class BotQueueAccess
           data = {session_id: msg["session_id"]}
           yield(job, data)
 
+        elsif msg["job"] == "led_indicator" && block_given? then
+          job = msg["job"]
+          data = {session_id: msg["session_id"]}
+          yield(job, data)
+
         else
           puts 'Data type non JSON'
         end
