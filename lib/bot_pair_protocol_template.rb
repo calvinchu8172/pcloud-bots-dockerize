@@ -272,7 +272,7 @@ DEVICE_INFO_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
     <x xmlns="jabber:x:data" type="submit">
         <title>bot_get_device_information</title>
-        <field type=”hidden” var=”timeout”>
+        <field type="hidden" var="timeout">
           <value>%d</value>
         </field>
     </x>
