@@ -28,6 +28,8 @@ XMPP_SESSION_KEY = "xmpp:%s:session"
 
 USER_PERMISSION_KEY = "invitation:%s:%s:session"
 
+LED_INDICATOR_SESSION_KEY = "device:indicator:%d:session"
+
 class BotRedisAccess
 
   def initialize
@@ -512,6 +514,20 @@ class BotRedisAccess
       return TRUE
     else
       return FALSE
+    end
+  end
+
+  #================ LED INDICATOR Methods ===============
+  #===============================================
+
+  def led_indicator_session_access(index=nil)
+    return nil if index.nil?
+    key = LED_INDICATOR_SESSION_KEY % index
+    result = @redis.hgetall(key)
+    if !result.nil? then
+      return result
+    else
+      return nil
     end
   end
 

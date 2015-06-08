@@ -275,6 +275,29 @@ def worker(sqs, db_conn, rd_conn)
 
         XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
 
+    when 'led_indicator' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'LED INDICATOR',
+                                                  direction: 'Portal->Bot',
+                                                  to: XMPP_CONFIG[:jid],
+                                                  from: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of led indicator", data: data})
+
+        device = nil
+        xmpp_account = nil
+        session_id = data[:session_id]
+        led_session = rd_conn.led_indicator_session_access(session_id)
+        device = rd_conn.rd_device_session_access(led_session["device_id"]) if !led_session.nil?
+        xmpp_account = device["xmpp_account"] if !device.nil?
+
+
+        info = {xmpp_account: xmpp_account,
+                session_id: session_id,
+               }
+
+        XMPPController.send_request(KLED_INDICATOR_REQUEST, info) if !device.nil?
+
     end
 
     rescue Exception => error

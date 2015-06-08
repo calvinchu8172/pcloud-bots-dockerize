@@ -42,6 +42,11 @@ KSESSION_TIMEOUT_REQUEST = 'session_timeout_request'
 KSESSION_TIMEOUT_SUCCESS_RESPONSE = 'session_timeout_success_response'
 KSESSION_TIMEOUT_FAILURE_RESPONSE = 'session_timeout_failure_response'
 
+KLED_INDICATOR_REQUEST = 'led_indicator'
+KLED_INDICATOR_SUCCESS_RESPONSE = 'pair_completed_success_response'
+KLED_INDICATOR_FAILURE_RESPONSE = 'pair_completed_failure_response'
+KLED_INDICATOR_BLINK_TIME = 3
+
 KSTATUS_START = 'start'
 KSTATUS_WAITING = 'waiting'
 KSTATUS_CANCEL = 'cancel'
@@ -772,6 +777,12 @@ module XMPPController
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
+
+      when KLED_INDICATOR_REQUEST
+        msg = LED_INDICATOR_REQUEST % [info[:xmpp_account], @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
+        #puts msg
+        write_to_stream msg
+
     end
   end
 
@@ -2317,4 +2328,26 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
+
+  # HANDLER: Result : LED indicator
+  message :normal?, proc {|m| m.form && 'bot_led_indicator' == m.form.title } do |msg|
+    begin
+      result_syslog(msg)
+      session_id = msg.thread
+      isSuccess = msg.form.type.to_s == 'result' ? true : false
+      response_error = isSuccess ? {} : {error_code: msg.form.field('ERROR_CODE').value }
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'LED_INDICATOR_RESPONSE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Request LED indicator %s" % [isSuccess ? 'success' : 'failure'],
+                             data: isSuccess ? '' : response_error })
+      rescue Exception => error
+        Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      end
+  end
+
 end
