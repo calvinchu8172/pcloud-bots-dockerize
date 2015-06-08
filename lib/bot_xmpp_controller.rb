@@ -1155,8 +1155,15 @@ module XMPPController
 
         ## Store volume info in each item
         volume_list = Array.new
+
         xml["x"]["item"].each do |item|
-          volume_list << item['field']
+          item_list = Array.new
+          item['field'].each do |field|
+            new_field = Hash.new
+            new_field[field["var"].to_sym] = field["value"]
+            item_list << new_field
+          end
+          volume_list << item_list
         end
 
         device_info[:volume_list] = volume_list

@@ -24,7 +24,7 @@ DDNS_BATCH_LOCK_EXPIRE_TIME = 20
 DDNS_RESEND_SESSION_KEY = "ddns:%d:resend_session"
 DDNS_RESEND_EXPIRE_TIME = 60
 
-DEVICE_INFORMATION_KEY = "device:%d:info:session"
+DEVICE_INFORMATION_KEY = "device:info:%d:session"
 
 XMPP_SESSION_KEY = "xmpp:%s:session"
 
@@ -579,7 +579,7 @@ class BotRedisAccess
       @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
       @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
-      @redis.hset(key, "info", data[:info]) if data.has_key?(:info)
+      @redis.hset(key, "info", data[:device_info]) if data.has_key?(:device_info)
 
       return TRUE
     else
