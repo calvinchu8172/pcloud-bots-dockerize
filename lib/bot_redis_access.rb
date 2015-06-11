@@ -252,6 +252,7 @@ class BotRedisAccess
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
       @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
       @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
+      @redis.hset(key, "used_wan_port_list", data[:used_wan_port_list]) if data.has_key?(:used_wan_port_list)
       @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
       return TRUE

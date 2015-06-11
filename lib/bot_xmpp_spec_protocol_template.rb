@@ -75,25 +75,35 @@ UPNP_ASK_RESPONSE_SINGLE_ITEM = <<EOT
   <x xmlns="jabber:x:data" type="form">
 	<title>get_upnp_service</title>
 	  <item>
-		<field var='service-name' type='text-single'>
-		  <value>FTP</value>
-		</field>
-		<field var='status' type='boolean'>
-		  <value>true</value>
-		</field>
-		<field var='enabled' type='boolean'>
-		  <value>true</value>
-		</field>
-		<field var='description' type='text-multi'>
-		  <value>FTP configuration</value>
-		</field>
-		<field var='port' type='text-single'>
-          <value>21</value>
-        </field>
-        <field var='path' type='text-single'>
-          <value>ftp://wanip:port</value>
-        </field>
+  		<field var='service-name' type='text-single'>
+  		  <value>FTP</value>
+  		</field>
+  		<field var='status' type='boolean'>
+  		  <value>true</value>
+  		</field>
+  		<field var='enabled' type='boolean'>
+  		  <value>true</value>
+  		</field>
+  		<field var='description' type='text-multi'>
+  		  <value>FTP configuration</value>
+  		</field>
+  		<field var='port' type='text-single'>
+        <value>21</value>
+      </field>
+      <field var='path' type='text-single'>
+        <value>ftp://wanip:port</value>
+      </field>
 	  </item>
+    <item>
+      <field var='used-wan-port' type='text-single'>
+          <value>8000</value>
+      </field>
+    </item>
+    <item>
+      <field var='used-wan-port' type='text-single'>
+          <value>9000</value>
+      </field>
+    </item>
   </x>
   <thread>%d</thread>
 </message>
@@ -104,7 +114,7 @@ UPNP_ASK_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="form">
 	<title>get_upnp_service</title>
-	  <item>
+  <item>
 		<field var='service-name' type='text-single'>
 		  <value>FTP</value>
 		</field>
@@ -118,13 +128,13 @@ UPNP_ASK_RESPONSE = <<EOT
 		  <value>FTP configuration</value>
 		</field>
 		<field var='port' type='text-single'>
-          <value>21</value>
-        </field>
-        <field var='path' type='text-single'>
-          <value>ftp://wanip:port</value>
-        </field>
-	  </item>
-	  <item>
+      <value>21</value>
+    </field>
+    <field var='path' type='text-single'>
+      <value>ftp://wanip:port</value>
+    </field>
+  </item>
+  <item>
 		<field var='service-name' type='text-single'>
 		  <value>DDNS</value>
 		</field>
@@ -138,13 +148,13 @@ UPNP_ASK_RESPONSE = <<EOT
 		  <value>DDNS configuration</value>
 		</field>
 		<field var='port' type='text-single'>
-          <value>53</value>
-        </field>
-        <field var='path' type='text-single'>
-          <value></value>
-        </field>
-	  </item>
-	  <item>
+      <value>53</value>
+    </field>
+    <field var='path' type='text-single'>
+      <value></value>
+    </field>
+  </item>
+  <item>
 		<field var='service-name' type='text-single'>
 		  <value>HTTP</value>
 		</field>
@@ -157,13 +167,23 @@ UPNP_ASK_RESPONSE = <<EOT
 		<field var='description' type='text-multi'>
 		  <value>HTTP configuration</value>
 		</field>
-		<field var='port' type='text-single'>
-          <value>80</value>
-        </field>
-        <field var='path' type='text-single'>
-          <value>http://wanip:port</value>
-        </field>
-	  </item>
+	  <field var='port' type='text-single'>
+      <value>80</value>
+    </field>
+    <field var='path' type='text-single'>
+      <value>http://wanip:port</value>
+    </field>
+  </item>
+  <item>
+    <field var='used-wan-port' type='text-single'>
+        <value>8000</value>
+    </field>
+  </item>
+  <item>
+    <field var='used-wan-port' type='text-single'>
+        <value>9000</value>
+    </field>
+  </item>
   </x>
   <thread>%d</thread>
 </message>
