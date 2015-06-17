@@ -24,7 +24,13 @@ DDNS_BATCH_LOCK_EXPIRE_TIME = 20
 DDNS_RESEND_SESSION_KEY = "ddns:%d:resend_session"
 DDNS_RESEND_EXPIRE_TIME = 60
 
+DEVICE_INFORMATION_KEY = "device:info:%d:session"
+
 XMPP_SESSION_KEY = "xmpp:%s:session"
+
+USER_PERMISSION_KEY = "invitation:%s:%s:session"
+
+LED_INDICATOR_SESSION_KEY = "device:indicator:%d:session"
 
 class BotRedisAccess
 
@@ -237,7 +243,7 @@ class BotRedisAccess
     return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:service_list) && !data.has_key?(:lan_ip))
 
     isExist = self.rd_upnp_session_access(data[:index])
-    
+
     if isExist then
       key = UPNP_SESSION_KEY % data[:index]
 
@@ -268,7 +274,7 @@ class BotRedisAccess
   end
 
 #================ DDNS Methods =================
-#===============================================  
+#===============================================
   def rd_ddns_session_index_get
     key = DDNS_SESSION_INDEX_KEY
     return @redis.incr(key)
@@ -305,7 +311,7 @@ class BotRedisAccess
     return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:device_id) && !data.has_key?(:host_name) && !data.has_key?(:domain_name) && !data.has_key?(:status) && !data.has_key?(:error_code))
 
     isExist = self.rd_ddns_session_access(data[:index])
-    
+
     if isExist then
       key = DDNS_SESSION_KEY % data[:index]
 
@@ -375,7 +381,7 @@ class BotRedisAccess
       return FALSE
     end
   end
-  
+
   def rd_unpair_session_delete(device_id)
     return nil if nil == device_id
 
@@ -405,7 +411,7 @@ class BotRedisAccess
   def rd_ddns_batch_session_access()
     key = DDNS_BATCH_SESSION_KEY
     result = @redis.zrange(key, 0, -1)
-    
+
     if !result.empty? then
       return result
     else
@@ -415,21 +421,21 @@ class BotRedisAccess
 
   def rd_ddns_batch_session_insert(value=nil, index=nil)
     return nil if nil == value || nil == index
-    
+
     key = DDNS_BATCH_SESSION_KEY
     result = @redis.zadd(key, index.to_i, value)
-    
+
     if result then
       return TRUE
     else
       return FALSE
     end
   end
-    
+
   def rd_ddns_batch_session_delete(value)
     key = DDNS_BATCH_SESSION_KEY
     result = @redis.zrem(key, value)
-    
+
     if result then
       return TRUE
     else
@@ -449,7 +455,7 @@ class BotRedisAccess
       return FALSE
     end
   end
-  
+
   def rd_ddns_batch_lock_isSet
     key = DDNS_BATCH_LOCK_KEY
     result = @redis.get(key)
@@ -460,7 +466,7 @@ class BotRedisAccess
       return FALSE
     end
   end
-  
+
   def rd_ddns_batch_lock_delete
     key = DDNS_BATCH_LOCK_KEY
     result = @redis.del(key)
@@ -476,7 +482,7 @@ class BotRedisAccess
 #===============================================
   def rd_ddns_resend_session_access(index=nil)
     return nil if index.nil?
-    
+
     key = DDNS_RESEND_SESSION_KEY % index
     result = @redis.get(key)
 
@@ -489,7 +495,7 @@ class BotRedisAccess
 
   def rd_ddns_resend_session_insert(index=nil)
     return nil if index.nil?
-    
+
     key = DDNS_RESEND_SESSION_KEY % index
     result = @redis.setex(key, DDNS_RESEND_EXPIRE_TIME, "1")
 
@@ -499,10 +505,10 @@ class BotRedisAccess
       return FALSE
     end
   end
-  
+
   def rd_ddns_resend_session_delete(index=nil)
     return nil if index.nil?
-    
+
     key = DDNS_RESEND_SESSION_KEY % index
     result = @redis.del(key)
 
@@ -513,7 +519,87 @@ class BotRedisAccess
     end
   end
 
+  #================ LED INDICATOR Methods ===============
+  #===============================================
+
+  def led_indicator_session_access(index=nil)
+    return nil if index.nil?
+    key = LED_INDICATOR_SESSION_KEY % index
+    result = @redis.hgetall(key)
+    if !result.nil? then
+      return result
+    else
+      return nil
+    end
+  end
+
   def close
     @redis.quit
+  end
+
+#========== PERMISSION SESSION Methods =========
+#===============================================
+
+  def rd_permission_session_access(invitation_id, user_email)
+    return nil if nil == invitation_id
+    return nil if nil == user_email
+
+    key = USER_PERMISSION_KEY % [invitation_id, user_email]
+    result = @redis.hgetall(key)
+    if !result.empty? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_permission_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:invitation_id) || !data.has_key?(:user_email) || !data.has_key?(:status)
+
+    isExist = self.rd_permission_session_access(data[:invitation_id], data[:user_email])
+    if isExist then
+      key = USER_PERMISSION_KEY % [data[:invitation_id], data[:user_email]]
+
+      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+
+#========== DEVICE INFO SESSION Methods =========
+#===============================================
+
+  def rd_device_info_session_access(index = nil)
+    return nil if nil == index
+
+    key = DEVICE_INFORMATION_KEY % [index]
+    result = @redis.hgetall(key)
+    if !result.empty? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_device_info_session_update(data={})
+    return nil if data.empty? || !data.has_key?(:session_id)  || !data.has_key?(:status)
+
+    isExist = self.rd_device_info_session_access(data[:session_id])
+    if isExist then
+      key = DEVICE_INFORMATION_KEY % [data[:session_id]]
+
+      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+      @redis.hset(key, "info", data[:device_info]) if data.has_key?(:device_info)
+
+      return TRUE
+    else
+      return FALSE
+    end
   end
 end

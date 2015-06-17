@@ -240,3 +240,57 @@ DDNS_SETTING_FAILURE_RESPONSE = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#PERMISSION_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'SHARE_POINT', 'PERMISSION', 'CLOUD_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+PERMISSION_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+   <x xmlns="jabber:x:data" type="submit">
+      <title>resources_permission</title>
+      <field type='hidden' var='action'>
+         <value>create</value>
+      </field>
+     <field type='hidden' var='share_point'>
+         <value>%s</value>
+      </field>
+      <field type='hidden' var='permission'>
+         <value>%s</value>
+      </field>
+     <field type='hidden' var='cloud_id'>
+         <value>%s</value>
+      </field>
+      <field type='hidden' var='timeout'>
+         <value>%s</value>
+      </field>
+   </x>
+   <thread>%s</thread>
+   <api_version>%s</api_version>
+</message>
+EOT
+
+#DEVICE_INFO_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+DEVICE_INFO_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+    <x xmlns="jabber:x:data" type="submit">
+        <title>bot_get_device_information</title>
+        <field type="hidden" var="timeout">
+          <value>%d</value>
+        </field>
+    </x>
+    <thread>%d</thread>
+    <api_version>%s</api_version>
+</message>
+EOT
+
+# LED_INDICATOR_REQUEST % ['DEVICE_ID', 'BOT_ID', 'BLINK_TIME', 'SESSION_ID', 'VERSION']
+LED_INDICATOR_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+    <title>bot_led_indicator</title>
+    <field var="blink-second" type="text-single">
+      <value>%d</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+  <api_version>%s</api_version>
+</message>
+EOT

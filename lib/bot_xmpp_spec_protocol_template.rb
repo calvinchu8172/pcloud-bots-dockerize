@@ -268,3 +268,91 @@ UNPAIR_RESPONSE_FAILURE = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#DEVICE_INFO_RESPONSE_SUCCESS % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+DEVICE_INFO_RESPONSE_SUCCESS = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+    <x xmlns="jabber:x:data" type="result">
+        <title>bot_get_device_information</title>
+        <field var="fan-speed" type="text-single">
+            <value>759</value>
+        </field>
+        <field var="cpu-temperature-celsius" type="text-single">
+          <value>39.00</value>
+        </field>
+        <field var="cpu-temperature-fahrenheit" type="text-single">
+          <value>102.20</value>
+        </field>
+        <field var="cpu-temperature-warning" type="boolean">
+            <value>false</value>
+        </field>
+        <field var="raid-status" type="text-single">
+            <value>healthy</value>
+        </field>
+    <item>
+        <field var="volume-name" type="text-single">
+            <value>Volume1</value>
+        </field>
+        <field var="used-capacity" type="text-single">
+            <value>336.93</value>
+        </field>
+        <field var="total-capacity" type="text-single">
+            <value>1832.96</value>
+        </field>
+        <field var="warning" type="boolean">
+            <value>false</value>
+        </field>
+    </item>
+    <item>
+        <field var="volume-name" type="text-single">
+          <value>Volume2</value>
+        </field>
+        <field var="used-capacity" type="text-single">
+          <value>400</value>
+        </field>
+        <field var="total-capacity" type="text-single">
+          <value>1832.96</value>
+        </field>
+        <field var="warning" type="boolean">
+          <value>false</value>
+        </field>
+    </item>
+    </x>
+    <thread>%d</thread>
+</message>
+EOT
+
+#DEVICE_INFO_RESPONSE_FAILURE % ['BOT_ID', 'DEVICE_ID', 'ERROR_CODE', 'SESSION_ID']
+DEVICE_INFO_RESPONSE_FAILURE = <<EOT
+<message to "%s" type="normal" from="%s" lang="en">
+    <x xmlns="jabber:x:data" type="cancel">
+        <title>bot_get_device_information</title>
+        <field var="ERROR_CODE" type="text-single">
+            <value>%d</value>
+        </field>
+    </x>
+    <thread>%d</thread>
+EOT
+
+# LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID',  'SESSION_ID']
+LED_INDICATOR_REQUEST_SUCCESS_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="result">
+    <title>bot_led_indicator</title>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
+
+# LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
+LED_INDICATOR_REQUEST_FAILUR_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+    <title>bot_led_indicator</title>
+    <field type='text-single' var='ERROR_CODE'>
+      <value>%d</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
+EOT
