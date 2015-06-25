@@ -2361,6 +2361,7 @@ module XMPPController
           xml["x"]["item"] = items
         end
 
+        # Handle item value
         xml["x"]["item"].each do |item|
           service_name = ''
           status = false
@@ -2390,6 +2391,7 @@ module XMPPController
                   wan_port = field["value"].nil? ? '' : field["value"]
               end
             end
+
             service = {:service_name => service_name,
                        :status => status,
                        :enabled => enabled,
@@ -2404,9 +2406,10 @@ module XMPPController
             used_wan_port =  item['field']['value']
             used_wan_port_list << used_wan_port
           end
-      end
+        end
+
         service_list_json = JSON.generate(service_list)
-        used_wan_port_list_json = JSON.generate(used_wan_port_list)
+        used_wan_port_list_json = !used_wan_port_list.empty? ? JSON.generate(used_wan_port_list) : ''
       else
         service_list_json = ''
       end
