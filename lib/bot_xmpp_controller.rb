@@ -46,9 +46,7 @@ KSESSION_TIMEOUT_SUCCESS_RESPONSE = 'session_timeout_success_response'
 KSESSION_TIMEOUT_FAILURE_RESPONSE = 'session_timeout_failure_response'
 
 KLED_INDICATOR_REQUEST = 'led_indicator'
-KLED_INDICATOR_SUCCESS_RESPONSE = 'pair_completed_success_response'
-KLED_INDICATOR_FAILURE_RESPONSE = 'pair_completed_failure_response'
-KLED_INDICATOR_BLINK_TIME = 3
+KLED_INDICATOR_BLINK_TIME = 30
 
 KSTATUS_START = 'start'
 KSTATUS_WAITING = 'waiting'
@@ -797,6 +795,20 @@ module XMPPController
           end
         }
 
+# SENDER: LED INDICATOR REQUEST
+      when KLED_INDICATOR_REQUEST
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        msg = LED_INDICATOR_REQUEST % [device_xmpp_account, @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'LED_INDICATOR_REQUEST',
+                                                  direction: 'Bot->Device',
+                                                  to: info[:xmpp_account],
+                                                  from: @bot_xmpp_account,
+                                                  id: info[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Send LED INDICATOR REQUEST message to device" ,
+                                                  data: 'N/A'})
+
 # SENDER: DDNS SETTING SUCCESS RESPONSE
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
@@ -806,12 +818,6 @@ module XMPPController
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-
-      when KLED_INDICATOR_REQUEST
-        msg = LED_INDICATOR_REQUEST % [info[:xmpp_account], @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
-        #puts msg
-        write_to_stream msg
-
     end
   end
 
@@ -2335,6 +2341,28 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:bot_led_indicator
+  message :normal?, proc {|m| m.form.cancel? && 'bot_led_indicator' == m.form.title} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      session_id = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                            {event: 'LED_INDICATOR_RESPONSE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Receive LED INDICATOR FAILURE RESPONSE message from device",
+                             data: {error_code: error_code } })
+      rescue Exception => error
+        Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      end
+  end
+
 # HANDLER: Form:Get_upnp_service
   message :normal?, proc {|m| m.form.form? && 'get_upnp_service' == m.form.title} do |msg|
     begin
@@ -2420,22 +2448,20 @@ module XMPPController
     end
   end
 
-  # HANDLER: Result : LED indicator
-  message :normal?, proc {|m| m.form && 'bot_led_indicator' == m.form.title } do |msg|
+# HANDLER: Result:bot_led_indicator
+  message :normal?, proc {|m| m.form.form? && 'bot_led_indicator' == m.form.title } do |msg|
     begin
       result_syslog(msg)
       session_id = msg.thread
-      isSuccess = msg.form.type.to_s == 'result' ? true : false
-      response_error = isSuccess ? {} : {error_code: msg.form.field('ERROR_CODE').value }
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                             {event: 'LED_INDICATOR_RESPONSE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
                              id: session_id,
                              full_domain: 'N/A',
-                             message:"Request LED indicator %s" % [isSuccess ? 'success' : 'failure'],
-                             data: isSuccess ? '' : response_error })
+                             message:"Receive LED INDICATOR SUCCESS message from device",
+                             data: 'N/A' })
       rescue Exception => error
         Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end

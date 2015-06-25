@@ -334,7 +334,7 @@ DEVICE_INFO_RESPONSE_FAILURE = <<EOT
     <thread>%d</thread>
 EOT
 
-# LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID',  'SESSION_ID']
+# LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
 LED_INDICATOR_REQUEST_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
   <x xmlns="jabber:x:data" type="result">
@@ -344,8 +344,8 @@ LED_INDICATOR_REQUEST_SUCCESS_RESPONSE = <<EOT
 </message>
 EOT
 
-# LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'ERROR_CODE', 'SESSION_ID']
-LED_INDICATOR_REQUEST_FAILUR_RESPONSE = <<EOT
+# LED_INDICATOR_REQUEST_FAILURE_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'ERROR_CODE', 'SESSION_ID']
+LED_INDICATOR_REQUEST_FAILURE_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
   <x xmlns="jabber:x:data" type="cancel">
     <title>bot_led_indicator</title>
