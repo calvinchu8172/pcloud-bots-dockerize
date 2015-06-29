@@ -245,7 +245,7 @@ EOT
 PERMISSION_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
    <x xmlns="jabber:x:data" type="submit">
-      <title>resources_permission</title>
+      <title>bot_set_share_permission</title>
       <field type='hidden' var='action'>
          <value>create</value>
       </field>

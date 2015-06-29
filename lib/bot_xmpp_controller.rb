@@ -532,13 +532,13 @@ module XMPPController
         msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, KDEVICE_INFO_EXPIRE_TIME, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
                                                   id: device_id,
                                                   full_domain: 'N/A',
-                                                  message:"Send User Permission START REQUEST message to device",
+                                                  message:"Send DEVICE INFOMATION START REQUEST message to device",
                                                   data: 'N/A'})
         df = EM::DefaultDeferrable.new
         EM.add_timer(KDEVICE_INFO_EXPIRE_TIME * 1){
@@ -551,7 +551,7 @@ module XMPPController
 
           if KSTATUS_START == status then
             data = {index: index, status: KSTATUS_TIMEOUT}
-            @rd_conn.rd_permission_session_update(data)
+            @rd_conn.rd_device_info_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
             xmpp_account = device["xmpp_account"] if !device.nil?
@@ -1113,7 +1113,7 @@ module XMPPController
   end
 
 # HANDLER: Result:permission
-  message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
+  message :normal?, proc {|m| m.form.result? && 'bot_set_share_permission' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
 
