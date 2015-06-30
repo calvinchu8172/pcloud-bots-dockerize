@@ -21,7 +21,7 @@ KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 
 KPERMISSION_ASK_REQUEST = 'permission_ask_request'
-KPERMISSION_EXPIRE_TIME = 300
+KPERMISSION_EXPIRE_TIME = 60
 
 KDEVICE_INFO_ASK_REQUEST = 'device_info_query'
 
@@ -482,18 +482,17 @@ module XMPPController
       when KPERMISSION_ASK_REQUEST
 
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
-        invitation_id       = info[:invitation_id]
-        user_email          = info[:user_email]
         device_id           = info[:device_id]
 
-        expire_time = KPERMISSION_EXPIRE_TIME
-        expire_at   = (Time.now + expire_time).to_i
+        expire_time         = KPERMISSION_EXPIRE_TIME
+        expire_at           = (Time.now + expire_time).to_i
 
-        permission_session = info[:permission_session]
+        permission_session  = info[:permission_session]
 
-        share_point        = permission_session["share_point"]
-        permission         = permission_session["permission"]
-        cloud_id           = permission_session["cloud_id"]
+        # follow redis format
+        share_point         = permission_session["share_point"]
+        permission          = permission_session["permission"]
+        cloud_id            = permission_session["cloud_id"]
 
         msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
         write_to_stream msg
@@ -515,7 +514,7 @@ module XMPPController
         df.callback do |x|
           status = !permission_session.nil? ? permission_session["status"] : nil
           if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
-            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
+            data = { index: session_id, status: KSTATUS_TIMEOUT }
             @rd_conn.rd_pairing_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
@@ -1117,20 +1116,11 @@ module XMPPController
     begin
       result_syslog(msg)
 
-      invitation_id     = msg.thread
-      user_email        = msg.form.field('user_email').value
-      status            = msg.form.field('status').value
+      session_id = msg.thread
+      cloud_id   = msg.form.field('user_cloud_id').value
+      data       = {index: session_id, status: KSTATUS_DONE}
 
-      # follow portal rule
-      status = KSTATUS_DONE if status = KSTATUS_SUCCESS
-
-      error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
-
-      data              = {invitation_id: invitation_id, status: status, user_email: user_email}
-
-      data[:error_code] = error_code if !error_code.nil?
-
-      isSuccess         = @rd_conn.rd_permission_session_update(data)
+      isSuccess  = @rd_conn.rd_permission_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PERMISSION',
                              direction: 'Device->Bot',
@@ -1262,8 +1252,8 @@ module XMPPController
                                  message:"Insert paired data into pairing table %s as receive PAIR CONPLETED RESPONSE message from device" % [nil != pairing_insert ? 'success' : 'failure'] ,
                                  data: {user_id: pairing["user_id"], device_id: device_id}})
 
-          user = @db_conn.db_user_access(pairing["user_id"].to_i)
-          info = {xmpp_account: msg.from, session_id: device_id, email: user.nil? ? '' : user.email}
+          cloud_id = pairing["cloud_id"]
+          info = {xmpp_account: msg.from, session_id: device_id, cloud_id: cloud_id.nil? ? '' : cloud_id}
           send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
@@ -1273,7 +1263,7 @@ module XMPPController
                                  id: device_id,
                                  full_domain: 'N/A',
                                  message:"Send PAIR COMPLETED SUCCESS RESPONSE message to device after pairing successful",
-                                 data: {email: user.nil? ? 'user email invalid' : user.email}})
+                                 data: {cloud_id: info["cloud_id"]}})
         else
           data = {device_id: device_id, status: KSTATUS_TIMEOUT}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
@@ -2361,6 +2351,32 @@ module XMPPController
       rescue Exception => error
         Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end
+  end
+
+# HANDLER: Cancel:permission
+  message :normal?, proc {|m| m.form.cancel? && 'bot_led_indicator' == m.form.title} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      session_id = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value || nil
+
+      data       = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
+      @rd_conn.rd_permission_session_update(data)
+
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                            {event: 'PERMISSION',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Receive PERMISSION FAILURE RESPONSE message from device",
+                             data: {error_code: error_code } })
+
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
   end
 
 # HANDLER: Form:Get_upnp_service

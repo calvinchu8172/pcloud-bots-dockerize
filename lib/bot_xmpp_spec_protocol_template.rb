@@ -269,6 +269,41 @@ UNPAIR_RESPONSE_FAILURE = <<EOT
 </message>
 EOT
 
+#PERMISSION_SETTING_SUCCESS_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'USER_EMAIL', 'SESSION_ID']
+PERMISSION_SETTING_SUCCESS_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+   <x xmlns="jabber:x:data" type="result">
+    <title>bot_set_share_permission</title>
+    <field type='hidden' var='status'>
+       <value>success</value>
+    </field>
+    <field type="text-single" var="user_cloud_id">
+        <value>%s</value>
+    </field>
+   </x>
+   <thread>%d</thread>
+</message>
+EOT
+
+#PERMISSION_SETTING_FAILURE_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'USER_EMAIL', 'ERROR_CODE', 'SESSION_ID']
+PERMISSION_SETTING_FAILURE_RESPONSE = <<EOT
+<message to="%s" type="normal" from="$s" lang="en">
+   <x xmlns="jabber:x:data" type="cancel">
+    <title>bot_set_share_permission</title>
+    <field type='hidden' var='status'>
+       <value>failure</value>
+    </field>
+    <field type="text-single" var="user_email">
+        <value>%s</value>
+    </field>
+    <field type="text-single" var="ERROR_CODE">
+        <value>%d</value>
+    </field>
+   </x>
+   <thread>%d</thread>
+</message>
+EOT
+
 #DEVICE_INFO_RESPONSE_SUCCESS % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
 DEVICE_INFO_RESPONSE_SUCCESS = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">

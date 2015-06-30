@@ -246,20 +246,17 @@ PERMISSION_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
    <x xmlns="jabber:x:data" type="submit">
       <title>bot_set_share_permission</title>
-      <field type='hidden' var='action'>
-         <value>create</value>
+      <field type='text-single' var='sharename'>
+        <value>%s</value>
       </field>
-     <field type='hidden' var='share_point'>
-         <value>%s</value>
+      <field type='text-single' var='user_new_permission'>
+        <value>%s</value>
       </field>
-      <field type='hidden' var='permission'>
-         <value>%s</value>
-      </field>
-     <field type='hidden' var='cloud_id'>
-         <value>%s</value>
+      <field type='text-single' var='user_cloud_id'>
+        <value>%s</value>
       </field>
       <field type='hidden' var='timeout'>
-         <value>%s</value>
+        <value>%d</value>
       </field>
    </x>
    <thread>%s</thread>
