@@ -258,9 +258,10 @@ def worker(sqs, db_conn, rd_conn)
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of Create-permission", data: data})
 
-        index              = data[:session_id]
+        session_id         = data[:session_id]
 
-        permission_session = rd_conn.rd_permission_session_access(index)
+        permission_session = rd_conn.rd_permission_session_access(session_id)
+
         device_id          = permission_session["device_id"]
         device             = rd_conn.rd_device_session_access(device_id) if !permission_session.nil?
 
@@ -268,6 +269,7 @@ def worker(sqs, db_conn, rd_conn)
 
         info = {device_id:      device_id,
                 xmpp_account:   xmpp_account.to_s,
+                session_id: session_id,
                 permission_session: permission_session}
 
         XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?

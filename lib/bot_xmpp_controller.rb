@@ -483,6 +483,7 @@ module XMPPController
 
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         device_id           = info[:device_id]
+        session_id          = info[:session_id]
 
         expire_time         = KPERMISSION_EXPIRE_TIME
         expire_at           = (Time.now + expire_time).to_i
@@ -494,7 +495,7 @@ module XMPPController
         permission          = permission_session["permission"]
         cloud_id            = permission_session["cloud_id"]
 
-        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
+        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
@@ -507,15 +508,15 @@ module XMPPController
                                                   data: 'N/A'})
 
         df = EM::DefaultDeferrable.new
-        EM.add_timer(expire_time){
-          df.set_deferred_status :succeeded, permission_session
+        EM.add_timer(expire_time * 1){
+          df.set_deferred_status :succeeded, session_id
         }
 
         df.callback do |x|
           status = !permission_session.nil? ? permission_session["status"] : nil
           if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
             data = { index: session_id, status: KSTATUS_TIMEOUT }
-            @rd_conn.rd_pairing_session_update(data)
+            @rd_conn.rd_permission_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
             info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
@@ -2354,7 +2355,7 @@ module XMPPController
   end
 
 # HANDLER: Cancel:permission
-  message :normal?, proc {|m| m.form.cancel? && 'bot_led_indicator' == m.form.title} do |msg|
+  message :normal?, proc {|m| m.form.cancel? && 'bot_set_share_permission' == m.form.title} do |msg|
     begin
       cancel_syslog(msg)
 

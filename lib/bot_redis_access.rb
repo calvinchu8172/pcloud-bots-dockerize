@@ -553,7 +553,7 @@ class BotRedisAccess
   end
 
   def rd_permission_session_update(data={})
-    return nil if data.empty? || !data.has_key(:index) || !data.has_key?(:status)
+    return nil if data.empty? || !data.has_key?(:index) || !data.has_key?(:status)
 
     isExist = self.rd_permission_session_access(data[:index])
     if isExist then
