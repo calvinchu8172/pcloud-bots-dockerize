@@ -1118,8 +1118,7 @@ module XMPPController
       result_syslog(msg)
 
       session_id = msg.thread
-      cloud_id   = msg.form.field('user_cloud_id').value
-      data       = {index: session_id, status: KSTATUS_DONE}
+      data       = {index: session_id, status: KSTATUS_DONE, error_code: ''}
 
       isSuccess  = @rd_conn.rd_permission_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
