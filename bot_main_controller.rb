@@ -274,7 +274,7 @@ def worker(sqs, db_conn, rd_conn)
 
         XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
 
-      when 'device_info_query' then
+      when 'device_info' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],

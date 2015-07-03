@@ -63,7 +63,7 @@ class BotQueueAccess
           data = {session_id: msg["session_id"]}
           yield(job, data)
 
-        elsif msg["job"] == "device_info_query" && block_given? then
+        elsif msg["job"] == "device_info" && block_given? then
           job = msg["job"]
           data = {session_id: msg["session_id"]}
           yield(job, data)
