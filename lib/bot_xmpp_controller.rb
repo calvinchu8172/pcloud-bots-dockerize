@@ -2394,61 +2394,71 @@ module XMPPController
       hasX = xml.has_key?("x")
       hasITEM = xml["x"].has_key?("item") if hasX
       lan_ip = xml["x"]["field"]["value"] if xml["x"].has_key?("field") && 'lanip' == xml["x"]["field"]["var"]
+      used_wan_port_list = Array.new
 
       if !xml.nil? && hasX && hasITEM then
 
+        # Service item
         if !xml["x"]["item"].instance_of?(Array) then
           items = Array.new
           items << xml["x"]["item"]
           xml["x"]["item"] = items
         end
 
+        # Handle item value
         xml["x"]["item"].each do |item|
-        service_name = ''
-        status = false
-        enabled = false
-        description = ''
-        path = ''
-        lan_port = ''
-        wan_port = ''
+          service_name = ''
+          status = false
+          enabled = false
+          description = ''
+          path = ''
+          lan_port = ''
+          wan_port = ''
 
-        item["field"].each do |field|
-          var = field["var"]
-          case var
-            when 'service-name'
-              service_name = field["value"].nil? ? '' : field["value"]
-            when 'status'
-              status = field["value"] == 'true' ? true : false
-            when 'enabled'
-              enabled = field["value"] == 'true' ? true : false
-            when 'description'
-              description = field["value"]
-            when 'path'
-              path = field["value"].nil? ? '' : field["value"]
-            when 'lan-port'
-              lan_port = field["value"].nil? ? '' : field["value"]
-            when 'wan-port'
-              wan_port = field["value"].nil? ? '' : field["value"]
+          if !item['field'].instance_of?(Hash)
+            item["field"].each do |field|
+              var = field["var"]
+              case var
+                when 'service-name'
+                  service_name = field["value"].nil? ? '' : field["value"]
+                when 'status'
+                  status = field["value"] == 'true' ? true : false
+                when 'enabled'
+                  enabled = field["value"] == 'true' ? true : false
+                when 'description'
+                  description = field["value"]
+                when 'path'
+                  path = field["value"].nil? ? '' : field["value"]
+                when 'lan-port'
+                  lan_port = field["value"].nil? ? '' : field["value"]
+                when 'wan-port'
+                  wan_port = field["value"].nil? ? '' : field["value"]
+              end
+            end
+
+            service = {:service_name => service_name,
+                       :status => status,
+                       :enabled => enabled,
+                       :description => description,
+                       :path => path,
+                       :lan_port => lan_port,
+                       :wan_port => wan_port,
+                       :error_code => ''
+                      }
+            service_list << service
+          elsif item['field']['var'] == 'used-wan-port'
+            used_wan_port =  item['field']['value']
+            used_wan_port_list << used_wan_port
           end
         end
 
-        service = {:service_name => service_name,
-                   :status => status,
-                   :enabled => enabled,
-                   :description => description,
-                   :path => path,
-                   :lan_port => lan_port,
-                   :wan_port => wan_port,
-                   :error_code => ''
-                  }
-        service_list << service
-      end
         service_list_json = JSON.generate(service_list)
+        used_wan_port_list_json = !used_wan_port_list.empty? ? JSON.generate(used_wan_port_list) : ''
       else
         service_list_json = ''
       end
 
-      data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, lan_ip: lan_ip}
+      data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, used_wan_port_list: used_wan_port_list_json, lan_ip: lan_ip}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
