@@ -28,7 +28,7 @@ DEVICE_INFORMATION_KEY = "device:info:%d:session"
 
 XMPP_SESSION_KEY = "xmpp:%s:session"
 
-USER_PERMISSION_KEY = "invitation:%s:%s:session"
+USER_PERMISSION_KEY = "invitation:%d:session"
 
 LED_INDICATOR_SESSION_KEY = "device:indicator:%d:session"
 
@@ -252,6 +252,7 @@ class BotRedisAccess
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
       @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
       @redis.hset(key, "service_list", data[:service_list]) if data.has_key?(:service_list)
+      @redis.hset(key, "used_wan_port_list", data[:used_wan_port_list]) if data.has_key?(:used_wan_port_list)
       @redis.hset(key, "lan_ip", data[:lan_ip]) if data.has_key?(:lan_ip)
 
       return TRUE
@@ -540,11 +541,10 @@ class BotRedisAccess
 #========== PERMISSION SESSION Methods =========
 #===============================================
 
-  def rd_permission_session_access(invitation_id, user_email)
-    return nil if nil == invitation_id
-    return nil if nil == user_email
+  def rd_permission_session_access(index=nil)
+    return nil if index.nil?
 
-    key = USER_PERMISSION_KEY % [invitation_id, user_email]
+    key = USER_PERMISSION_KEY % [index]
     result = @redis.hgetall(key)
     if !result.empty? then
       return result
@@ -554,13 +554,12 @@ class BotRedisAccess
   end
 
   def rd_permission_session_update(data={})
-    return nil if data.empty? || !data.has_key?(:invitation_id) || !data.has_key?(:user_email) || !data.has_key?(:status)
+    return nil if data.empty? || !data.has_key?(:index) || !data.has_key?(:status)
 
-    isExist = self.rd_permission_session_access(data[:invitation_id], data[:user_email])
+    isExist = self.rd_permission_session_access(data[:index])
     if isExist then
-      key = USER_PERMISSION_KEY % [data[:invitation_id], data[:user_email]]
+      key = USER_PERMISSION_KEY % [data[:index]]
 
-      @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
       @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
       @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
 

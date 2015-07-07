@@ -103,7 +103,7 @@ PAIR_START_REQUEST = <<EOT
 </message>
 EOT
 
-# PAIR_COMPLETED_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'EMAIL', 'SESSION_ID']
+# PAIR_COMPLETED_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'CLOUD_ID', 'SESSION_ID']
 PAIR_COMPLETED_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="result">
@@ -111,7 +111,7 @@ PAIR_COMPLETED_SUCCESS_RESPONSE = <<EOT
     <field type='hidden' var='action'>
       <value>completed</value>
     </field>
-    <field type='hidden' var='email'>
+    <field type='hidden' var='cloud_id'>
       <value>%s</value>
     </field>
   </x>
@@ -245,21 +245,18 @@ EOT
 PERMISSION_ASK_REQUEST = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
    <x xmlns="jabber:x:data" type="submit">
-      <title>resources_permission</title>
-      <field type='hidden' var='action'>
-         <value>create</value>
+      <title>bot_set_share_permission</title>
+      <field type='text-single' var='sharename'>
+        <value>%s</value>
       </field>
-     <field type='hidden' var='share_point'>
-         <value>%s</value>
+      <field type='text-single' var='user_new_permission'>
+        <value>%s</value>
       </field>
-      <field type='hidden' var='permission'>
-         <value>%s</value>
-      </field>
-     <field type='hidden' var='cloud_id'>
-         <value>%s</value>
+      <field type='text-single' var='user_cloud_id'>
+        <value>%s</value>
       </field>
       <field type='hidden' var='timeout'>
-         <value>%s</value>
+        <value>%d</value>
       </field>
    </x>
    <thread>%s</thread>

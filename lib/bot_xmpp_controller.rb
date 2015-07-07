@@ -21,7 +21,7 @@ KPAIR_COMPLETED_SUCCESS_RESPONSE = 'pair_completed_success_response'
 KPAIR_COMPLETED_FAILURE_RESPONSE = 'pair_completed_failure_response'
 
 KPERMISSION_ASK_REQUEST = 'permission_ask_request'
-KPERMISSION_EXPIRE_TIME = 300
+KPERMISSION_EXPIRE_TIME = 60
 
 KDEVICE_INFO_ASK_REQUEST = 'device_info_query'
 
@@ -46,9 +46,7 @@ KSESSION_TIMEOUT_SUCCESS_RESPONSE = 'session_timeout_success_response'
 KSESSION_TIMEOUT_FAILURE_RESPONSE = 'session_timeout_failure_response'
 
 KLED_INDICATOR_REQUEST = 'led_indicator'
-KLED_INDICATOR_SUCCESS_RESPONSE = 'pair_completed_success_response'
-KLED_INDICATOR_FAILURE_RESPONSE = 'pair_completed_failure_response'
-KLED_INDICATOR_BLINK_TIME = 3
+KLED_INDICATOR_BLINK_TIME = 30
 
 KSTATUS_START = 'start'
 KSTATUS_WAITING = 'waiting'
@@ -382,7 +380,7 @@ module XMPPController
 
 # SENDER: PAIR COMPLETED SUCCESS RESPONSE
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
-        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
+        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:cloud_id], info[:session_id]]
         write_to_stream msg
 
 # SENDER: PAIR COMPLETED FAILURE RESPONSE
@@ -484,20 +482,20 @@ module XMPPController
       when KPERMISSION_ASK_REQUEST
 
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
-        invitation_id       = info[:invitation_id]
-        user_email          = info[:user_email]
         device_id           = info[:device_id]
+        session_id          = info[:session_id]
 
-        expire_time = KPERMISSION_EXPIRE_TIME
-        expire_at   = (Time.now + expire_time).to_i
+        expire_time         = KPERMISSION_EXPIRE_TIME
+        expire_at           = (Time.now + expire_time).to_i
 
-        permission_session = info[:permission_session]
+        permission_session  = info[:permission_session]
 
-        share_point        = permission_session["share_point"]
-        permission         = permission_session["permission"]
-        cloud_id           = permission_session["cloud_id"]
+        # follow redis format
+        share_point         = permission_session["share_point"]
+        permission          = permission_session["permission"]
+        cloud_id            = permission_session["cloud_id"]
 
-        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, invitation_id, XMPP_API_VERSION]
+        msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
@@ -510,15 +508,15 @@ module XMPPController
                                                   data: 'N/A'})
 
         df = EM::DefaultDeferrable.new
-        EM.add_timer(expire_time){
-          df.set_deferred_status :succeeded, permission_session
+        EM.add_timer(expire_time * 1){
+          df.set_deferred_status :succeeded, session_id
         }
 
         df.callback do |x|
           status = !permission_session.nil? ? permission_session["status"] : nil
           if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
-            data = { invitation_id: info["invitation_id"], user_email: info["user_email"], status: KSTATUS_TIMEOUT }
-            @rd_conn.rd_pairing_session_update(data)
+            data = { index: session_id, status: KSTATUS_TIMEOUT }
+            @rd_conn.rd_permission_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
             info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
@@ -534,13 +532,13 @@ module XMPPController
         msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, KDEVICE_INFO_EXPIRE_TIME, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
                                                   id: device_id,
                                                   full_domain: 'N/A',
-                                                  message:"Send User Permission START REQUEST message to device",
+                                                  message:"Send DEVICE INFOMATION START REQUEST message to device",
                                                   data: 'N/A'})
         df = EM::DefaultDeferrable.new
         EM.add_timer(KDEVICE_INFO_EXPIRE_TIME * 1){
@@ -553,7 +551,7 @@ module XMPPController
 
           if KSTATUS_START == status then
             data = {index: index, status: KSTATUS_TIMEOUT}
-            @rd_conn.rd_permission_session_update(data)
+            @rd_conn.rd_device_info_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
             xmpp_account = device["xmpp_account"] if !device.nil?
@@ -797,6 +795,20 @@ module XMPPController
           end
         }
 
+# SENDER: LED INDICATOR REQUEST
+      when KLED_INDICATOR_REQUEST
+        device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
+        msg = LED_INDICATOR_REQUEST % [device_xmpp_account, @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'LED_INDICATOR_REQUEST',
+                                                  direction: 'Bot->Device',
+                                                  to: info[:xmpp_account],
+                                                  from: @bot_xmpp_account,
+                                                  id: info[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Send LED INDICATOR REQUEST message to device" ,
+                                                  data: 'N/A'})
+
 # SENDER: DDNS SETTING SUCCESS RESPONSE
       when KDDNS_SETTING_SUCCESS_RESPONSE
         msg = DDNS_SETTING_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:session_id]]
@@ -806,12 +818,6 @@ module XMPPController
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
-
-      when KLED_INDICATOR_REQUEST
-        msg = LED_INDICATOR_REQUEST % [info[:xmpp_account], @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
-        #puts msg
-        write_to_stream msg
-
     end
   end
 
@@ -1107,24 +1113,14 @@ module XMPPController
   end
 
 # HANDLER: Result:permission
-  message :normal?, proc {|m| m.form.result? && 'permission' == m.form.title && nil == m.form.field('action')} do |msg|
+  message :normal?, proc {|m| m.form.result? && 'bot_set_share_permission' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
 
-      invitation_id     = msg.thread
-      user_email        = msg.form.field('user_email').value
-      status            = msg.form.field('status').value
+      session_id = msg.thread
+      data       = {index: session_id, status: KSTATUS_DONE, error_code: ''}
 
-      # follow portal rule
-      status = KSTATUS_DONE if status = KSTATUS_SUCCESS
-
-      error_code        = (status == KSTATUS_FAILURE) ? msg.form.field('ERROR_CODE').value : nil
-
-      data              = {invitation_id: invitation_id, status: status, user_email: user_email}
-
-      data[:error_code] = error_code if !error_code.nil?
-
-      isSuccess         = @rd_conn.rd_permission_session_update(data)
+      isSuccess  = @rd_conn.rd_permission_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PERMISSION',
                              direction: 'Device->Bot',
@@ -1256,8 +1252,8 @@ module XMPPController
                                  message:"Insert paired data into pairing table %s as receive PAIR CONPLETED RESPONSE message from device" % [nil != pairing_insert ? 'success' : 'failure'] ,
                                  data: {user_id: pairing["user_id"], device_id: device_id}})
 
-          user = @db_conn.db_user_access(pairing["user_id"].to_i)
-          info = {xmpp_account: msg.from, session_id: device_id, email: user.nil? ? '' : user.email}
+          cloud_id = pairing["cloud_id"]
+          info = {xmpp_account: msg.from, session_id: device_id, cloud_id: cloud_id.nil? ? '' : cloud_id}
           send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
           Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
@@ -1267,7 +1263,7 @@ module XMPPController
                                  id: device_id,
                                  full_domain: 'N/A',
                                  message:"Send PAIR COMPLETED SUCCESS RESPONSE message to device after pairing successful",
-                                 data: {email: user.nil? ? 'user email invalid' : user.email}})
+                                 data: {cloud_id: info["cloud_id"]}})
         else
           data = {device_id: device_id, status: KSTATUS_TIMEOUT}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
@@ -2335,6 +2331,54 @@ module XMPPController
     end
   end
 
+# HANDLER: Cancel:bot_led_indicator
+  message :normal?, proc {|m| m.form.cancel? && 'bot_led_indicator' == m.form.title} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      session_id = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                            {event: 'LED_INDICATOR_RESPONSE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Receive LED INDICATOR FAILURE RESPONSE message from device",
+                             data: {error_code: error_code } })
+      rescue Exception => error
+        Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      end
+  end
+
+# HANDLER: Cancel:permission
+  message :normal?, proc {|m| m.form.cancel? && 'bot_set_share_permission' == m.form.title} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      session_id = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value || nil
+
+      data       = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
+      @rd_conn.rd_permission_session_update(data)
+
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                            {event: 'PERMISSION',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Receive PERMISSION FAILURE RESPONSE message from device",
+                             data: {error_code: error_code } })
+
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
 # HANDLER: Form:Get_upnp_service
   message :normal?, proc {|m| m.form.form? && 'get_upnp_service' == m.form.title} do |msg|
     begin
@@ -2350,61 +2394,71 @@ module XMPPController
       hasX = xml.has_key?("x")
       hasITEM = xml["x"].has_key?("item") if hasX
       lan_ip = xml["x"]["field"]["value"] if xml["x"].has_key?("field") && 'lanip' == xml["x"]["field"]["var"]
+      used_wan_port_list = Array.new
 
       if !xml.nil? && hasX && hasITEM then
 
+        # Service item
         if !xml["x"]["item"].instance_of?(Array) then
           items = Array.new
           items << xml["x"]["item"]
           xml["x"]["item"] = items
         end
 
+        # Handle item value
         xml["x"]["item"].each do |item|
-        service_name = ''
-        status = false
-        enabled = false
-        description = ''
-        path = ''
-        lan_port = ''
-        wan_port = ''
+          service_name = ''
+          status = false
+          enabled = false
+          description = ''
+          path = ''
+          lan_port = ''
+          wan_port = ''
 
-        item["field"].each do |field|
-          var = field["var"]
-          case var
-            when 'service-name'
-              service_name = field["value"].nil? ? '' : field["value"]
-            when 'status'
-              status = field["value"] == 'true' ? true : false
-            when 'enabled'
-              enabled = field["value"] == 'true' ? true : false
-            when 'description'
-              description = field["value"]
-            when 'path'
-              path = field["value"].nil? ? '' : field["value"]
-            when 'lan-port'
-              lan_port = field["value"].nil? ? '' : field["value"]
-            when 'wan-port'
-              wan_port = field["value"].nil? ? '' : field["value"]
+          if !item['field'].instance_of?(Hash)
+            item["field"].each do |field|
+              var = field["var"]
+              case var
+                when 'service-name'
+                  service_name = field["value"].nil? ? '' : field["value"]
+                when 'status'
+                  status = field["value"] == 'true' ? true : false
+                when 'enabled'
+                  enabled = field["value"] == 'true' ? true : false
+                when 'description'
+                  description = field["value"]
+                when 'path'
+                  path = field["value"].nil? ? '' : field["value"]
+                when 'lan-port'
+                  lan_port = field["value"].nil? ? '' : field["value"]
+                when 'wan-port'
+                  wan_port = field["value"].nil? ? '' : field["value"]
+              end
+            end
+
+            service = {:service_name => service_name,
+                       :status => status,
+                       :enabled => enabled,
+                       :description => description,
+                       :path => path,
+                       :lan_port => lan_port,
+                       :wan_port => wan_port,
+                       :error_code => ''
+                      }
+            service_list << service
+          elsif item['field']['var'] == 'used-wan-port'
+            used_wan_port =  item['field']['value']
+            used_wan_port_list << used_wan_port
           end
         end
 
-        service = {:service_name => service_name,
-                   :status => status,
-                   :enabled => enabled,
-                   :description => description,
-                   :path => path,
-                   :lan_port => lan_port,
-                   :wan_port => wan_port,
-                   :error_code => ''
-                  }
-        service_list << service
-      end
         service_list_json = JSON.generate(service_list)
+        used_wan_port_list_json = !used_wan_port_list.empty? ? JSON.generate(used_wan_port_list) : ''
       else
         service_list_json = ''
       end
 
-      data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, lan_ip: lan_ip}
+      data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, used_wan_port_list: used_wan_port_list_json, lan_ip: lan_ip}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
       Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
@@ -2420,22 +2474,20 @@ module XMPPController
     end
   end
 
-  # HANDLER: Result : LED indicator
-  message :normal?, proc {|m| m.form && 'bot_led_indicator' == m.form.title } do |msg|
+# HANDLER: Result:bot_led_indicator
+  message :normal?, proc {|m| m.form.form? && 'bot_led_indicator' == m.form.title } do |msg|
     begin
       result_syslog(msg)
       session_id = msg.thread
-      isSuccess = msg.form.type.to_s == 'result' ? true : false
-      response_error = isSuccess ? {} : {error_code: msg.form.field('ERROR_CODE').value }
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
                             {event: 'LED_INDICATOR_RESPONSE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
                              from: msg.from.to_s,
                              id: session_id,
                              full_domain: 'N/A',
-                             message:"Request LED indicator %s" % [isSuccess ? 'success' : 'failure'],
-                             data: isSuccess ? '' : response_error })
+                             message:"Receive LED INDICATOR SUCCESS message from device",
+                             data: 'N/A' })
       rescue Exception => error
         Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end
