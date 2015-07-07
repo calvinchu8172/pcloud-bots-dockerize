@@ -103,7 +103,7 @@ PAIR_START_REQUEST = <<EOT
 </message>
 EOT
 
-# PAIR_COMPLETED_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'EMAIL', 'SESSION_ID']
+# PAIR_COMPLETED_SUCCESS_RESPONSE % ['DEVICE_ID', 'BOT_ID', 'CLOUD_ID', 'SESSION_ID']
 PAIR_COMPLETED_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
   <x xmlns="jabber:x:data" type="result">
@@ -111,7 +111,7 @@ PAIR_COMPLETED_SUCCESS_RESPONSE = <<EOT
     <field type='hidden' var='action'>
       <value>completed</value>
     </field>
-    <field type='hidden' var='email'>
+    <field type='hidden' var='cloud_id'>
       <value>%s</value>
     </field>
   </x>

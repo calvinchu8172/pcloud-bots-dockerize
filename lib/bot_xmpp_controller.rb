@@ -380,7 +380,7 @@ module XMPPController
 
 # SENDER: PAIR COMPLETED SUCCESS RESPONSE
       when KPAIR_COMPLETED_SUCCESS_RESPONSE
-        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:email], info[:session_id]]
+        msg = PAIR_COMPLETED_SUCCESS_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:cloud_id], info[:session_id]]
         write_to_stream msg
 
 # SENDER: PAIR COMPLETED FAILURE RESPONSE
