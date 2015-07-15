@@ -1,0 +1,5 @@
+bot_xmpp_account: <Ex. bot1@192.168.50.10/bot>
+bot_xmpp_password: <Ex. 12345>
+device_xmpp_account: <Ex. d000000000000-a123456@192.168.50.10/device>
+device_xmpp_password: <Ex. 12345>
+domain_name:  <AWS Route 53 Hosted Zone ID>
