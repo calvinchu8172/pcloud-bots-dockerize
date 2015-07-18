@@ -81,7 +81,6 @@ Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
 def worker(sqs, db_conn, rd_conn)
   sqs.sqs_listen{
     |job, data|
-
     begin
     case job
 
@@ -189,6 +188,60 @@ def worker(sqs, db_conn, rd_conn)
                 session_id: data[:session_id]}
 
         XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? && !language.nil?
+
+      when 'package_submit' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+                                                  direction: 'Portal->Bot',
+                                                  to: XMPP_CONFIG[:jid],
+                                                  from: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of PACKAGE SUBMIT", data: data})
+        xmpp_account = nil
+        package_list = nil
+        session_id = data[:session_id]
+        package = rd_conn.rd_package_session_access(session_id)
+        device = rd_conn.rd_device_session_access(package["device_id"]) if !package.nil?
+        xmpp_account = device["xmpp_account"] if !device.nil?
+        package_list = package["package_list"].to_s if !package.nil?
+        field_item = ""
+
+        if valid_json? package_list then
+          package_list_json = JSON.parse(package_list)
+          package_list_json.each do |item|
+            next if item["enabled"] == item["status"]
+            package_name = item["package_name"].to_s
+            enabled = item["enabled"].to_s
+            field_item += PACKAGE_FIELD_ITEM % [package_name,  enabled]
+          end
+        end
+        info = {xmpp_account: xmpp_account.to_s,
+                session_id: session_id,
+                field_item: field_item}
+        XMPPController.send_request(KPACKAGE_SETTING_REQUEST, info) if !xmpp_account.nil?
+
+
+      when 'package_query' then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+                                                  direction: 'Portal->Bot',
+                                                  to: XMPP_CONFIG[:jid],
+                                                  from: 'N/A',
+                                                  id: data[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Get SQS queue of package-query", data: data})
+
+        xmpp_account = nil
+        session_id = data[:session_id]
+        package = rd_conn.rd_package_session_access(session_id)
+
+        device = rd_conn.rd_device_session_access(package["device_id"]) if !package.nil?
+
+        xmpp_account = device["xmpp_account"] if !device.nil?
+        info = {xmpp_account: xmpp_account.to_s,
+                session_id: data[:session_id]}
+
+        XMPPController.send_request(KPACKAGE_ASK_REQUEST, info) if !xmpp_account.nil?
+
 
       when 'ddns' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
