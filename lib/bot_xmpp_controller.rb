@@ -33,6 +33,10 @@ KUPNP_ASK_REQUEST = 'upnp_ask_request'
 KUPNP_SETTING_REQUEST = 'upnp_setting_request'
 KUPNP_EXPIRE_TIME = 360
 
+KPACKAGE_ASK_REQUEST = 'package_ask_request'
+KPACKAGE_SETTING_REQUEST = 'package_setting_request'
+KPACKAGE_EXPIRE_TIME = 360
+
 KDDNS_SETTING_REQUEST = 'ddns_setting_request'
 KDDNS_SETTING_SUCCESS_RESPONSE = 'ddns_setting_success_response'
 KDDNS_SETTING_FAILURE_RESPONSE = 'ddns_setting_failure_response'
@@ -569,6 +573,95 @@ module XMPPController
                                    data: 'N/A'})
           end
         end
+# SENDER: PACKAGE GETTING REQUEST
+      when KPACKAGE_ASK_REQUEST
+        session_id = info[:session_id]
+        msg = PACKAGE_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, 300, session_id, XMPP_API_VERSION]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+                                                  direction: 'Bot->Device',
+                                                  to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
+                                                  from: @bot_xmpp_account,
+                                                  id: info[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Send package ASK REQUEST message to device" ,
+                                                  data: 'N/A'})
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(KPACKAGE_EXPIRE_TIME * 1) {
+          df.set_deferred_status :succeeded, session_id
+        }
+        df.callback do |x|
+          index = x
+          package = @rd_conn.rd_package_session_access(index)
+          status = !package.nil? ? package["status"] : nil
+
+          if KSTATUS_START == status then
+            data = {index: index, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_package_session_update(data)
+
+            device_id = package["device_id"]
+            device = @rd_conn.rd_device_session_access(device_id)
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'get_package_service', tag: index}
+            send_request(KSESSION_TIMEOUT_REQUEST, info)
+
+            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                  {event: 'PCAKAGE',
+                                   direction: 'N/A',
+                                   to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
+                                   from: @bot_xmpp_account,
+                                   id: index,
+                                   full_domain: 'N/A',
+                                   message:"Update status of package session to 'TIMEOUT' as get service list expired frome device",
+                                   data: 'N/A'})
+          end
+        end
+
+# SENDER: PACKAGE SETTING REQUEST
+      when KPACKAGE_SETTING_REQUEST
+        session_id = info[:session_id]
+        msg = PACKAGE_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, 300,  info[:field_item], session_id]
+        write_to_stream msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+                                                  direction: 'Bot->Device',
+                                                  to: info[:xmpp_account],
+                                                  from: @bot_xmpp_account,
+                                                  id: info[:session_id],
+                                                  full_domain: 'N/A',
+                                                  message:"Send PACKAGE SETTING RESPONSE message to device" ,
+                                                  data: {field_item: info[:field_item]}})
+
+        df = EM::DefaultDeferrable.new
+        EM.add_timer(KPACKAGE_EXPIRE_TIME * 1) {
+          df.set_deferred_status :succeeded, session_id
+        }
+        df.callback do |x|
+          index = x
+          package = @rd_conn.rd_package_session_access(index)
+          status = !package.nil? ? package["status"] : nil
+
+          if KSTATUS_SUBMIT == status then
+            data = {index: index, status: KSTATUS_TIMEOUT}
+            @rd_conn.rd_package_session_update(data)
+
+            device_id = package["device_id"]
+            device = @rd_conn.rd_device_session_access(device_id)
+            xmpp_account = device["xmpp_account"] if !device.nil?
+            info = {xmpp_account: xmpp_account, title: 'set_package_service', tag: index}
+            send_request(KSESSION_TIMEOUT_REQUEST, info)
+
+            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                                  {event: 'PACKAGE',
+                                   direction: 'N/A',
+                                   to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
+                                   from: @bot_xmpp_account,
+                                   id: index,
+                                   full_domain: 'N/A',
+                                   message:"Update status of package session to 'TIMEOUT' as set service list expired from device",
+                                   data: 'N/A'})
+          end
+        end
+
 
 # SENDER: UPNP GETTING REQUEST
       when KUPNP_ASK_REQUEST
@@ -2491,6 +2584,220 @@ module XMPPController
       rescue Exception => error
         Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end
+  end
+
+ # HANDLER: Result:bot_get_package_list
+  message :normal?, proc {|m| m.form.result? && 'bot_get_package_list' == m.form.title } do |msg|
+    begin
+      form_syslog(msg)
+      hasX = nil
+      hasITEM = nil
+      session_id = msg.thread
+      package_list = Array.new
+      package_list_json = ''
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(msg.form.to_s)
+      hasX = xml.has_key?("x")
+      hasITEM = xml["x"].has_key?("item") if hasX
+
+      if !xml.nil? && hasX && hasITEM then
+
+        # Package item
+        if !xml["x"]["item"].instance_of?(Array) then
+          items = Array.new
+          items << xml["x"]["item"]
+          xml["x"]["item"] = items
+        end
+
+        # Handle item value
+        xml["x"]["item"].each do |item|
+          packagename = ''
+          status = false
+          enabled = false
+          description = Array.new
+          package_version = ''
+          package = Hash.new
+
+          requires = Array.new
+
+          if !item['field'].instance_of?(Hash)
+            item["field"].each do |field|
+              var = field["var"]
+              case var
+                when 'package-name'
+                  packagename = field["value"].nil? ? '' : field["value"]
+                when 'version'
+                  package_version = field["value"].nil? ? '' : field["value"]
+                when 'status'
+                  status = field["value"] == 'true' ? true : false
+                when 'enabled'
+                  enabled = field["value"] == 'true' ? true : false
+                when 'description'
+                  if field["value"].instance_of?(Array)
+                    field["value"].each do |description_item|
+                      description << description_item
+                    end
+                  else
+                    description << field["value"]
+                  end
+                when 'requires'
+                  if field["value"].instance_of?(Array)
+                    field["value"].each do |required_item|
+                      requires << required_item
+                    end
+                  else
+                    requires << field["value"]
+                  end
+              end
+            end
+            continue if packagename == ''
+            package = {:package_name => packagename,
+                       :status => status,
+                       :enabled => enabled,
+                       :description => description,
+                       :requires => requires,
+                       :version => package_version,
+                       :error_code => ''
+                      }
+
+            package_list << package
+        end
+        package_list_json = JSON.generate( package_list )
+      end
+      else
+
+      end
+
+      data = {index: session_id, status: KSTATUS_FORM, package_list: package_list_json}
+      isSuccess = @rd_conn.rd_package_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'PACKAGE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Update the status & service list of package session %s as receive package SETTING RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                             data: {package_list: package_list_json}})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  # HANDLER: Cancel:Get_package_service:nil
+  message :normal?, proc {|m| m.form.cancel? && 'bot_get_package_list' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      cancel_syslog(msg)
+
+      session_id = msg.thread
+      error_code = msg.form.field('ERROR_CODE').value
+      data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
+      isSuccess = @rd_conn.rd_package_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+                            {event: 'PACKAGE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Update the status of PACKAGE session to FAILURE %s as receive PACKAGE GET LIST FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
+                             data: {error_code: error_code}})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+
+# HANDLER: Result:bot_set_package_list:!nil:Timeout
+  message :normal?, proc {|m| m.form.result? && 'bot_set_package_list' == m.form.title && nil != m.form.field('action') && 'timeout' == m.form.field('action').value} do |msg|
+    begin
+      result_syslog(msg)
+
+      index = msg.thread
+      upnp = @rd_conn.rd_package_session_access(index)
+      if !package.nil? then
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                              {event: 'PACKAGE',
+                               direction: 'Device->Bot',
+                               to: @bot_xmpp_account,
+                               from: msg.from.to_s,
+                               id: index,
+                               full_domain: 'N/A',
+                               message:"Receive PACKAGE SETTING TIMEOUT SUCCESS RESPONSE message from device success",
+                               data: 'N/A'})
+      end
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+
+# HANDLER: Result:bot_set_package_list:nil
+  message :normal?, proc {|m| m.form.result? && 'bot_set_package_list' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      result_syslog(msg)
+      session_id = msg.thread
+      data = {index: session_id, status: KSTATUS_UPDATED}
+      #info = {xmpp_account: msg.from.to_s,session_id: session_id}
+
+      #send_request(KPACKAGE_ASK_REQUEST, info)
+      isSuccess = @rd_conn.rd_package_session_update(data)
+      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                            {event: 'PACKAGE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Update the status of package session table to UPDATED %s as receive PACKAGE SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
+                             data: 'N/A'})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
+  end
+
+  # HANDLER: Result:bot_set_package_list:Cancel
+  message :normal?, proc {|m| m.form.cancel? && 'bot_set_package_list' == m.form.title && nil == m.form.field('action')} do |msg|
+    begin
+      result_syslog(msg)
+      item_list = Hash.new
+      ## Define item list
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(msg.form.to_s)
+      xml["x"]["item"].each do |item|
+        package_name = ''
+        error_code = ''
+        item['field'].each do |field|
+          package_name = field["value"]  if field["var"] == 'package-name'
+          error_code = field["value"]  if field["var"] == 'ERROR_CODE'
+        end
+        item_list[package_name] = error_code
+      end
+      session_id = msg.thread
+      package = @rd_conn.rd_package_session_access(session_id)
+      package_list_json = package["package_list"].to_s if !package.nil?
+      if valid_json? package_list_json then
+        package_list = JSON.parse(package_list_json)
+        package_list.each do |item|
+          item_list.each do |failure_item_name , error_code|
+            item['error_code']= error_code if item['package_name'] == failure_item_name
+          end
+        end
+      end
+      data = {index: session_id, status: KSTATUS_UPDATED, package_list: JSON.generate(package_list) }
+      isSuccess = @rd_conn.rd_package_session_update(data)
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                            {event: 'PACKAGE',
+                             direction: 'Device->Bot',
+                             to: @bot_xmpp_account,
+                             from: msg.from.to_s,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             message:"Receive SET PACKAGE LIST FAILURE RESPONSE message from device ",
+                             data: 'N/A'})
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
   end
 
 end

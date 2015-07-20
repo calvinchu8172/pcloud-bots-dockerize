@@ -291,3 +291,45 @@ LED_INDICATOR_REQUEST = <<EOT
   <api_version>%s</api_version>
 </message>
 EOT
+
+#PACKAGE_ASK_REQUEST % ['DEVICE_ID', 'BOT_ID', 'EXPIRE_TIME', 'SESSION_ID', 'VERSION']
+PACKAGE_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+  <x xmlns="jabber:x:data" type="submit">
+     <title>bot_get_package_list</title>
+  <field var="timeout" type="text-single">
+    <value>%s</value>
+  </field>
+    </x>
+    <thread>%s</thread>
+    <api_version>%s</api_version>
+</message>
+EOT
+
+
+#PACKAGE_FIELD_ITEM % ['PACKAGE_NAME', 'new-status']
+PACKAGE_FIELD_ITEM = <<EOT
+<item>
+       <field var="package-name" type="text-single">
+         <value>%s</value>
+       </field>
+       <field var="new-status" type="boolean">
+         <value>%s</value>
+       </field>
+</item>
+EOT
+
+#PACKAGE_SETTING_REQUEST % ['DEVICE_ID', 'BOT_ID','EXPIRE_TIME', 'FIELD_ITEM',  'SESSION_ID']
+PACKAGE_SETTING_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+   <x xmlns="jabber:x:data" type="submit">
+     <title>bot_set_package_list</title>
+     <field type='hidden' var='timeout'>
+        <value>%d</value>
+     </field>
+    %s
+  </x>
+  <thread>%s</thread>
+  <api_version>v1.0</api_version>
+</message>
+EOT

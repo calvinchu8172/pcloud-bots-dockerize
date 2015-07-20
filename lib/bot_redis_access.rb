@@ -31,6 +31,7 @@ XMPP_SESSION_KEY = "xmpp:%s:session"
 USER_PERMISSION_KEY = "invitation:%d:session"
 
 LED_INDICATOR_SESSION_KEY = "device:indicator:%d:session"
+PACKAGE_SESSION_KEY = "package:%d:session"
 
 class BotRedisAccess
 
@@ -206,6 +207,39 @@ class BotRedisAccess
     end
 
     return TRUE
+  end
+
+#================ Package Methods =================
+#===============================================
+
+  def rd_package_session_access(index = nil)
+    return nil if nil == index
+
+    key = PACKAGE_SESSION_KEY % index
+
+    result = @redis.hgetall(key)
+
+    if !result.empty? then
+      return result
+    else
+      return nil
+    end
+  end
+
+  def rd_package_session_update(data={})
+     return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:package_list))
+
+    isExist = self.rd_package_session_access(data[:index])
+    if isExist then
+      key = PACKAGE_SESSION_KEY % data[:index]
+      @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+      @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+      @redis.hset(key, "package_list", data[:package_list]) if data.has_key?(:package_list)
+
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
 #================ Upnp Methods =================

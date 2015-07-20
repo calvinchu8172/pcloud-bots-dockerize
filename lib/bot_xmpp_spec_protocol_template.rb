@@ -402,3 +402,114 @@ LED_INDICATOR_REQUEST_FAILURE_RESPONSE = <<EOT
   <thread>%d</thread>
 </message>
 EOT
+
+#PACKAGE_ASK_REQUEST_FAILURE % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+PACKAGE_ASK_REQUEST_FAILURE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+    <x xmlns="jabber:x:data" type="cancel">
+     <title>bot_get_package_list</title>
+     <field var="ERROR_CODE" type="text-single">
+       <value>489</value>
+     </field>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
+#PACKAGE_ASK_REQUEST % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+PACKAGE_ASK_REQUEST = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+    <x xmlns="jabber:x:data" type="result">
+        <title>bot_get_package_list</title>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>GoogleDriveClient</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>0.4.0zypkg001</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This offers service of 2-way synchronization between NAS and Google Drive.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>ownCloud</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value>pyLoad</value>
+            </field>
+            <field type="text-single" var="version">
+                <value>7.0.2zypkg002</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This allows you to create and manage your private cloud.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>pyLoad</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>0.4.9zypkg004</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>Have the NAS manage your downloads including those from one-click-hosting sites.</value>
+            </field>
+        </item>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
+# SET_PACKAGE_REQUEST_SUCCESS_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+SET_PACKAGE_REQUEST_SUCCESS_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="result">
+     <title>bot_set_package_list</title>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
+# SET_PACKAGE_REQUEST_FAILUR_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+SET_PACKAGE_REQUEST_FAILUR_RESPONSE = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+     <title>bot_set_package_list</title>
+     <item>
+       <field var="package-name" type="text-single">
+         <value>ownCloud</value>
+       </field>
+       <field var="ERROR_CODE" type="text-single">
+         <value>488</value>
+       </field>
+     </item>
+     <item>
+       <field var="package-name" type="text-single">
+         <value>pyLoad</value>
+       </field>
+       <field var="ERROR_CODE" type="text-single">
+         <value>488</value>
+       </field>
+     </item>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
