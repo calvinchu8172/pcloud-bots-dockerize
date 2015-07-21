@@ -336,23 +336,20 @@ DEVICE_INFO_RESPONSE_SUCCESS = <<EOT
         <field var="raid-status" type="text-single">
             <value>Healthy</value>
         </field>
-        <item>
-            <field var="volume-name" type="text-single">
-                <value>Volume3</value>
-            </field>
-            <field var="used-capacity" type="text-single">
-                <value>1223</value>
-            </field>
-            <field var="total-capacity" type="text-single">
-                <value>1873723</value>
-            </field>
-            <field var="warning" type="boolean">
-                <value>false</value>
-            </field>
-            <field var="mount_point" type="text-single">
-                <value>/i-data/a0defeea</value>
-            </field>
-        </item>
+  <item>
+    <field var="volume-name" type="text-single">
+      <value>Volume2</value>
+    </field>
+       <field var="used-capacity" type="text-single">
+         <value>400</value>
+       </field>
+       <field var="total-capacity" type="text-single">
+         <value>1832.96</value>
+       </field>
+    <field var="warning" type="boolean">
+      <value>false</value>
+    </field>
+  </item>
     </x>
     <thread>%d</thread>
 </message>

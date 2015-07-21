@@ -2784,7 +2784,7 @@ module XMPPController
           end
         end
       end
-      data = {index: session_id, status: KSTATUS_UPDATED, package_list: JSON.generate(package_list) }
+      data = {index: session_id, status: KSTATUS_FAILURE, package_list: JSON.generate(package_list) }
       isSuccess = @rd_conn.rd_package_session_update(data)
       Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                             {event: 'PACKAGE',
@@ -2794,7 +2794,7 @@ module XMPPController
                              id: session_id,
                              full_domain: 'N/A',
                              message:"Receive SET PACKAGE LIST FAILURE RESPONSE message from device ",
-                             data: 'N/A'})
+                             data: data})
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
