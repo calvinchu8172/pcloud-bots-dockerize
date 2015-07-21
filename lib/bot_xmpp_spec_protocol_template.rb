@@ -318,51 +318,41 @@ EOT
 #DEVICE_INFO_RESPONSE_SUCCESS % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
 DEVICE_INFO_RESPONSE_SUCCESS = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
-    <x xmlns="jabber:x:data" type="result">
+    <x
+        xmlns="jabber:x:data" type="result">
         <title>bot_get_device_information</title>
-        <field var="fan-speed" type="text-single">
-            <value>759</value>
-        </field>
         <field var="cpu-temperature-celsius" type="text-single">
-          <value>39.00</value>
+            <value>41.00 </value>
         </field>
         <field var="cpu-temperature-fahrenheit" type="text-single">
-          <value>102.20</value>
+            <value> 54.78</value>
         </field>
         <field var="cpu-temperature-warning" type="boolean">
             <value>false</value>
         </field>
+        <field var="fan-speed" type="text-single">
+            <value>740 PRM</value>
+        </field>
         <field var="raid-status" type="text-single">
-            <value>healthy</value>
+            <value>Healthy</value>
         </field>
-    <item>
-        <field var="volume-name" type="text-single">
-            <value>Volume1</value>
-        </field>
-        <field var="used-capacity" type="text-single">
-            <value>336.93</value>
-        </field>
-        <field var="total-capacity" type="text-single">
-            <value>1832.96</value>
-        </field>
-        <field var="warning" type="boolean">
-            <value>false</value>
-        </field>
-    </item>
-    <item>
-        <field var="volume-name" type="text-single">
-          <value>Volume2</value>
-        </field>
-        <field var="used-capacity" type="text-single">
-          <value>400</value>
-        </field>
-        <field var="total-capacity" type="text-single">
-          <value>1832.96</value>
-        </field>
-        <field var="warning" type="boolean">
-          <value>false</value>
-        </field>
-    </item>
+        <item>
+            <field var="volume-name" type="text-single">
+                <value>Volume3</value>
+            </field>
+            <field var="used-capacity" type="text-single">
+                <value>1223</value>
+            </field>
+            <field var="total-capacity" type="text-single">
+                <value>1873723</value>
+            </field>
+            <field var="warning" type="boolean">
+                <value>false</value>
+            </field>
+            <field var="mount_point" type="text-single">
+                <value>/i-data/a0defeea</value>
+            </field>
+        </item>
     </x>
     <thread>%d</thread>
 </message>

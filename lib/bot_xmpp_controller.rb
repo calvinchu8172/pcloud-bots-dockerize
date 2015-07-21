@@ -1255,10 +1255,10 @@ module XMPPController
 
         ## Store volume info in each item
         volume_list = Array.new
-
         xml["x"]["item"].each do |item|
-          item_list = Array.new
-          item['field'].each do |field|
+          item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
+          item_list = Array.new   
+          item_field.each do |field|
             new_field = Hash.new
             new_field[field["var"].to_sym] = field["value"]
             item_list << new_field
