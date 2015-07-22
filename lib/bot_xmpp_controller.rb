@@ -37,6 +37,8 @@ KPACKAGE_ASK_REQUEST = 'package_ask_request'
 KPACKAGE_SETTING_REQUEST = 'package_setting_request'
 KPACKAGE_EXPIRE_TIME = 360
 
+
+
 KDDNS_SETTING_REQUEST = 'ddns_setting_request'
 KDDNS_SETTING_SUCCESS_RESPONSE = 'ddns_setting_success_response'
 KDDNS_SETTING_FAILURE_RESPONSE = 'ddns_setting_failure_response'
