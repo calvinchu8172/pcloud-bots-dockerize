@@ -2784,7 +2784,7 @@ module XMPPController
           end
         end
       end
-      data = {index: session_id, status: KSTATUS_FAILURE, package_list: JSON.generate(package_list) }
+      data = {index: session_id, status: KSTATUS_FORM, package_list: JSON.generate(package_list) }
       isSuccess = @rd_conn.rd_package_session_update(data)
       Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                             {event: 'PACKAGE',
