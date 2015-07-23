@@ -1189,7 +1189,6 @@ module XMPPController
   message :normal?, proc {|m| m.form.result? && 'set_upnp_service' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
-
       session_id = msg.thread
       data = {index: session_id, status: KSTATUS_UPDATED}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
@@ -2769,7 +2768,8 @@ module XMPPController
       xml["x"]["item"].each do |item|
         package_name = ''
         error_code = ''
-        item['field'].each do |field|
+        item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
+        item_field.each do |field|
           package_name = field["value"]  if field["var"] == 'package-name'
           error_code = field["value"]  if field["var"] == 'ERROR_CODE'
         end
