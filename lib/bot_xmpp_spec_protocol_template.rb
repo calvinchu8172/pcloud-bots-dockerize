@@ -410,7 +410,7 @@ PACKAGE_ASK_REQUEST = <<EOT
         <title>bot_get_package_list</title>
         <item>
             <field type="text-single" var="package-name">
-                <value>GoogleDriveClient</value>
+                <value>NZBGet</value>
             </field>
             <field type="text-single" var="status">
                 <value>false</value>
@@ -419,10 +419,112 @@ PACKAGE_ASK_REQUEST = <<EOT
                 <value></value>
             </field>
             <field type="text-single" var="version">
-                <value>0.4.0zypkg001</value>
+                <value>14.1zypkg003</value>
             </field>
             <field type="text-multi" var="description">
-                <value>This offers service of 2-way synchronization between NAS and Google Drive.</value>
+                <value>This package downloads .nzb file from Usenet. Default username:nzbget password:1234</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>PHP-MySQL-phpMyAdmin</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>1.0zypkg003</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This tool can be used to manage MySQL through the web. Enter 'root' as the username and '1234' as the password to log in.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>SqueezeCenter</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value>PHP-MySQL-phpMyAdmin</value>
+            </field>
+            <field type="text-single" var="version">
+                <value>7.7.4zypkg003</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This enables you to manage a Logitech's Squeezebox device connected to the NAS.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>Transmission</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>2.83zypkg003</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This package is another BT download client which supports torrent and magnet.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>WordPress</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value>PHP-MySQL-phpMyAdmin</value>
+            </field>
+            <field type="text-single" var="version">
+                <value>3.9.1zypkg002</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This allows you to create and manage a blog. Use the NSA administrator credentials to log in.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>gallery</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value>PHP-MySQL-phpMyAdmin</value>
+            </field>
+            <field type="text-single" var="version">
+                <value>3.0.9zypkg002</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This web-based application allows your NSA to host pictures. Use the administrator account of your NSA to log in to the Gallery console.</value>
+            </field>
+        </item>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>myZyXELcloud-Agent</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>true</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>1.0.0zypkg0702</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>myZyXELcloud, your solution for remote application management and access to your ZyXEL network storage accessory!</value>
             </field>
         </item>
         <item>
@@ -433,30 +535,13 @@ PACKAGE_ASK_REQUEST = <<EOT
                 <value>false</value>
             </field>
             <field type="text-multi" var="requires">
-                <value>pyLoad</value>
+                <value>PHP-MySQL-phpMyAdmin</value>
             </field>
             <field type="text-single" var="version">
                 <value>7.0.2zypkg002</value>
             </field>
             <field type="text-multi" var="description">
                 <value>This allows you to create and manage your private cloud.</value>
-            </field>
-        </item>
-        <item>
-            <field type="text-single" var="package-name">
-                <value>pyLoad</value>
-            </field>
-            <field type="text-single" var="status">
-                <value>false</value>
-            </field>
-            <field type="text-multi" var="requires">
-                <value></value>
-            </field>
-            <field type="text-single" var="version">
-                <value>0.4.9zypkg004</value>
-            </field>
-            <field type="text-multi" var="description">
-                <value>Have the NAS manage your downloads including those from one-click-hosting sites.</value>
             </field>
         </item>
     </x>
@@ -482,14 +567,6 @@ SET_PACKAGE_REQUEST_FAILUR_RESPONSE = <<EOT
      <item>
        <field var="package-name" type="text-single">
          <value>ownCloud</value>
-       </field>
-       <field var="ERROR_CODE" type="text-single">
-         <value>488</value>
-       </field>
-     </item>
-     <item>
-       <field var="package-name" type="text-single">
-         <value>pyLoad</value>
        </field>
        <field var="ERROR_CODE" type="text-single">
          <value>488</value>
