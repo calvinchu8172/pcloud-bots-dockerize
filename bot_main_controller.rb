@@ -377,6 +377,7 @@ def worker(sqs, db_conn, rd_conn)
     end
     job = nil
     data = nil
+    db_conn.close
   }
 end
 
