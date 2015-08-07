@@ -25,7 +25,7 @@ KPERMISSION_EXPIRE_TIME = 60
 
 KDEVICE_INFO_ASK_REQUEST = 'device_info_query'
 
-KDEVICE_INFO_EXPIRE_TIME = 10
+KDEVICE_INFO_EXPIRE_TIME = 30
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
@@ -561,7 +561,7 @@ module XMPPController
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
             xmpp_account = device["xmpp_account"] if !device.nil?
-            info = {xmpp_account: xmpp_account, title: 'ask_device_information', tag: index}
+            info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
