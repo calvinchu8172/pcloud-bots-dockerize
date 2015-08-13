@@ -143,7 +143,7 @@ def worker(sqs, db_conn, rd_conn)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
         service_list = upnp["service_list"].to_s if !upnp.nil?
-        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
+        #language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
 
         field_item = ""
 
@@ -163,10 +163,10 @@ def worker(sqs, db_conn, rd_conn)
         end
 
         info = {xmpp_account: xmpp_account.to_s,
-                language: language.to_s,
+                language: 'en',
                 session_id: session_id,
                 field_item: field_item}
-        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil? && !language.nil?
+        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
 
       when 'upnp_query' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
@@ -182,13 +182,12 @@ def worker(sqs, db_conn, rd_conn)
         upnp = rd_conn.rd_upnp_session_access(session_id)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
-        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
+        #language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
         info = {xmpp_account: xmpp_account.to_s,
-                language: language.to_s,
+                language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? && !language.nil?
-
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
       when 'package_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',
