@@ -57,7 +57,7 @@ BOT_LIST.each do |c|
     #jid      = username + '@' + XMPP_CONFIG['domain'] + '/' + XMPP_CONFIG['resource']
     #password = @xmpp_db.db_reset_password(username)
 
-    w.name    = "personal-cloud-%d" % i
+   w.name = "personal-cloud-bot-%d" % i
     #w.start   = "#{PATH}bot_main_controller.rb -u #{jid} -p #{password} -r #{bots_revision}"
     w.start   = "#{PATH}bot_main_controller.rb -u #{username} -r #{bots_revision}"
     
