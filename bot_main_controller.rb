@@ -25,15 +25,20 @@ Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 def get_xmpp_config
   input = ARGV
   account = nil
-  password = nil
+
+  god_config_file = './config/god_config.yml'
+  config_file = File.join(File.dirname(__FILE__), god_config_file)
+  god_config = YAML.load(File.read(config_file))
+  #password = nil
   #length = input.length - 1
 
   for i in 0..(input.length - 1)
     option = input[i]
     account = input[i + 1] if '-u' == option
-    password = input[i + 1] if '-p' == option
+    #password = input[i + 1] if '-p' == option
   end
-  return {jid: account, pw: password}
+  #return {jid: account, pw: password}
+  return {jid: account ,domain: god_config['xmpp_config']['domain']}
 end
 
 XMPP_CONFIG = get_xmpp_config
@@ -47,14 +52,13 @@ jobThread = Thread.new {
                                              full_domain: 'N/A',
                                              message:"XMPP Controll running ...",
                                              data: 'N/A'})
-    XMPPController.new(XMPP_CONFIG[:jid], XMPP_CONFIG[:pw])
+    XMPPController.new(XMPP_CONFIG[:jid] , XMPP_CONFIG[:domain])
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
 threads << jobThread
 
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
-
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 

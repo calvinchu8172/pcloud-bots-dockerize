@@ -6,7 +6,7 @@ require 'active_record'
 require 'yaml'
 require 'ipaddr'
 
-DB_CONFIG_FILE = '../config/bot_xmpp_db_config.yml'
+XMPP_DB_CONFIG_FILE = '../config/bot_xmpp_db_config.yml'
 
 class User < ActiveRecord::Base
   self.table_name = "users"
@@ -16,7 +16,7 @@ class BotXmppDBAccess
 
   def initialize
     @Client = nil
-    config_file = File.join(File.dirname(__FILE__), DB_CONFIG_FILE)
+    config_file = File.join(File.dirname(__FILE__), XMPP_DB_CONFIG_FILE)
     config = YAML.load(File.read(config_file))
     @Client = self.db_connection(config)
   end
@@ -42,11 +42,11 @@ class BotXmppDBAccess
                                             :pool     => db_pool,
                                             #:reaping_frequency => db_reaping_frequency
                                             )
-    return connect
+    return ActiveRecord::Base.connection_pool.checkout
   end
 
   def close
-    ActiveRecord::Base.remove_connection(@Client) if !@Client.nil?
+      ActiveRecord::Base.connection_pool.checkin(@Client) if !@Client.nil?
   end
 
 

@@ -403,8 +403,8 @@ PACKAGE_ASK_REQUEST_FAILURE = <<EOT
 </message>
 EOT
 
-#PACKAGE_ASK_REQUEST % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
-PACKAGE_ASK_REQUEST = <<EOT
+#PACKAGE_ASK_REQUEST_SUCCESS % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+PACKAGE_ASK_REQUEST_SUCCESS = <<EOT
 <message to="%s" type="normal" from="%s" xml:lang="en">
     <x xmlns="jabber:x:data" type="result">
         <title>bot_get_package_list</title>
