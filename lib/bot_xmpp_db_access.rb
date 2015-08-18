@@ -8,7 +8,11 @@ require 'ipaddr'
 
 XMPP_DB_CONFIG_FILE = '../config/bot_xmpp_db_config.yml'
 
-class User < ActiveRecord::Base
+class XMPPDatabaseModel < ActiveRecord::Base
+  self.abstract_class = true
+end
+
+class XMPP_User < XMPPDatabaseModel
   self.table_name = "users"
 end
 
@@ -32,7 +36,7 @@ class BotXmppDBAccess
     db_pool = config['db_pool']
     #db_reaping_frequency = config['db_reaping_frequency']
 
-    connect = ActiveRecord::Base.establish_connection(:adapter  => 'mysql2',
+    connect = XMPPDatabaseModel.establish_connection(:adapter  => 'mysql2',
                                             :database => db_name,
                                             :username => db_userid,
                                             :password => db_userpw,
@@ -42,11 +46,11 @@ class BotXmppDBAccess
                                             :pool     => db_pool,
                                             #:reaping_frequency => db_reaping_frequency
                                             )
-    return ActiveRecord::Base.connection_pool.checkout
+    return XMPPDatabaseModel.connection_pool.checkout
   end
 
   def close
-      ActiveRecord::Base.connection_pool.checkin(@Client) if !@Client.nil?
+      XMPPDatabaseModel.connection_pool.checkin(@Client) if !@Client.nil?
   end
 
 
@@ -60,7 +64,7 @@ class BotXmppDBAccess
     origin = [('a'..'z'), ('A'..'Z')].map { |i| i.to_a }.flatten
     new_password = (0...10).map { origin[rand(origin.length)] }.join
 
-    User.find_by(username: username).update(password: new_password)
+    XMPP_User.find_by(username: username).update(password: new_password)
 
     return new_password
   end
