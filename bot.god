@@ -4,6 +4,7 @@ require 'yaml'
 require 'net/smtp'
 require 'net/pop'
 require 'tlsmail'
+#require_relative './lib/bot_xmpp_db_access'
 
 GOD_CONFIG_FILE = './config/god_config.yml'
 config_file = File.join(File.dirname(__FILE__), GOD_CONFIG_FILE)
@@ -45,13 +46,23 @@ end
 
 bots_revision = `cd #{File.dirname(__FILE__)} && git rev-parse HEAD`.strip
 
+#@xmpp_db = BotXmppDBAccess.new
+
+BOT_LIST = XMPP_CONFIG['bot_list']
+
 i = 0
-XMPP_CONFIG.each do |c|
+BOT_LIST.each do |c|
   God.watch do |w|
-    w.name = "personal-cloud-bot-%d" % i
-    w.start = "#{PATH}bot_main_controller.rb -u #{c["jid"]} -p #{c["pw"]} -r #{bots_revision}"
+    username = c["username"]
+    #jid      = username + '@' + XMPP_CONFIG['domain'] + '/' + XMPP_CONFIG['resource']
+    #password = @xmpp_db.db_reset_password(username)
+
+   w.name = "personal-cloud-bot-%d" % i
+    #w.start   = "#{PATH}bot_main_controller.rb -u #{jid} -p #{password} -r #{bots_revision}"
+    w.start   = "#{PATH}bot_main_controller.rb -u #{username} -r #{bots_revision}"
+    
     w.keepalive
-    w.log = "#{PATH}bot.log"
+    w.log     = "#{PATH}bot.log"
     w.err_log = "#{PATH}bot.err"
 
     w.start_if do |on|

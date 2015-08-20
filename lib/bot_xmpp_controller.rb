@@ -6,6 +6,8 @@ require_relative 'bot_redis_access'
 require_relative 'bot_pair_protocol_template'
 require_relative 'bot_mail_access'
 require_relative 'bot_unit'
+require_relative 'bot_xmpp_db_access'
+
 require 'fluent-logger'
 require 'blather/client/dsl'
 require 'multi_xml'
@@ -13,6 +15,8 @@ require 'json'
 require 'yaml'
 require 'rubygems'
 require 'eventmachine'
+
+
 
 BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 
@@ -71,20 +75,23 @@ XMPP_API_VERSION = 'v1.0'
 module XMPPController
   extend Blather::DSL
 
-  def self.new(account, password)
+  #def self.new(account, password)
+  def self.new(account , domain)
     @db_conn = nil
-    @bot_xmpp_account = account
-    @bot_xmpp_password = password
-
-    setup @bot_xmpp_account, @bot_xmpp_password
-
+    #@bot_xmpp_password = password
+    #setup @bot_xmpp_account, @bot_xmpp_password
+    @account = account
     @db_conn = BotDBAccess.new
     @rd_conn = BotRedisAccess.new
+    @xmpp_db = BotXmppDBAccess.new
+
     @route_conn = BotRouteAccess.new
     @mail_conn = BotMailAccessSMTP.new
 
-    @xmpp_server_domain = '@%s' % client.jid.domain
+    #@xmpp_server_domain = '@%s' % client.jid.domain
+    @xmpp_server_domain = '@%s' % domain
     @xmpp_resource_id = '/device'
+    @bot_xmpp_account = @account + @xmpp_server_domain + @xmpp_resource_id
 
     Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
   end
@@ -102,11 +109,15 @@ module XMPPController
       EM.add_periodic_timer(0.3) {
         batch_register_ddns
       }
+      @bot_xmpp_password = @xmpp_db.db_reset_password(@account)
+      setup @bot_xmpp_account, @bot_xmpp_password
+      @xmpp_db.close
 
       client.run
       }
   end
-
+  
+  
   def self.container(data)
     yield(data)
   end
