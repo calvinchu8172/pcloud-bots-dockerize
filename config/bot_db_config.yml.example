@@ -1,5 +1,5 @@
-db_host: 127.0.0.1
-db_name: mogooseim
+db_host: localhost
+db_name: personal_cloud
 db_userid: root
 db_userpw: '12345678'
 db_socket: ''

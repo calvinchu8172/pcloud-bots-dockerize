@@ -19,12 +19,7 @@ class BotQueueAccess
   end
 
   def sqs_connection(config)
-    account = {:access_key_id => config['access_key_id'],
-               :secret_access_key => config['secret_access_key'],
-               :region => config['region']
-              }
-
-    sqs = AWS::SQS.new(account)
+    sqs = AWS::SQS.new(:region => config['region'])
     return sqs.queues.named(config['sqs_queue_name'])
   end
 
