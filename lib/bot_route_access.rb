@@ -14,40 +14,35 @@ class BotRouteAccess
     @zones_list = config['zones_info']
     @Route = self.route_connection(config)
   end
-  
+
   def route_connection(config)
-    account = {:access_key_id => config['access_key_id'],
-               :secret_access_key => config['secret_access_key']
-              }
-    
-    return AWS::Route53.new(account)
+    AWS::Route53.new
   end
-  
+
   def zones_list
     @zones_list
   end
-  
+
   def reserved_hostname
     @reserved_hostname
   end
-  
+
   def find_zone_id(name=nil)
     return nil if name.nil?
-    
+
     zone_id = nil
     @zones_list.each do |zone|
       zone_id = zone["id"] if name.downcase == zone["name"].downcase
     end
-    
-    return zone_id
+    zone_id
   end
-  
+
   def create_record(data={})
     return nil if data.empty? || !data.has_key?(:host_name) || !data.has_key?(:domain_name) || !data.has_key?(:ip)
-    
+
     domain_name = data[:domain_name].downcase
     host_name = data[:host_name].downcase
-    
+
     zone_id = self.find_zone_id(domain_name)
     isSuccess = nil
     if !zone_id.nil? then
@@ -86,10 +81,10 @@ class BotRouteAccess
         puts error
       end
     end
-    
+
     return !zone_id.nil? && !isSuccess.nil? ? TRUE : FALSE
   end
-  
+
   def batch_create_records(data={})
     return nil if data.empty? || !data.has_key?(:domain_name) || !data.has_key?(:records)
     domain_name = data[:domain_name].downcase
@@ -126,17 +121,17 @@ class BotRouteAccess
 
   def update_record(data={})
     return nil if data.empty? || !data.has_key?(:host_name) || !data.has_key?(:domain_name) || !data.has_key?(:ip)
-    
+
     domain_name = data[:domain_name].downcase
     host_name = data[:host_name].downcase
-    
+
     zone_id = self.find_zone_id(domain_name)
     isSuccess = nil
     if !zone_id.nil? then
       rrsets = @Route.hosted_zones[zone_id].rrsets
       rrset = rrsets[host_name + '.' + domain_name, 'A']
       rrset.resource_records = [{:value => data[:ip]}]
-      
+
       begin
         isSuccess = rrset.update
       rescue AWS::Route53::Errors::PriorRequestNotComplete => error
@@ -152,22 +147,22 @@ class BotRouteAccess
         puts error
       end
     end
-    
+
     return !zone_id.nil? && !isSuccess.nil? ? TRUE : FALSE
   end
-  
-  def delete_record(data={}) 
+
+  def delete_record(data={})
     return nil if data.empty? || !data.has_key?(:host_name) || !data.has_key?(:domain_name)
-    
+
     domain_name = data[:domain_name].downcase
     host_name = data[:host_name].downcase
-    
+
     zone_id = self.find_zone_id(domain_name)
     isSuccess = nil
     if !zone_id.nil? then
       rrsets = @Route.hosted_zones[zone_id].rrsets
       rrset = rrsets[host_name + '.' + domain_name, 'A']
-      
+
       begin
         isSuccess = rrset.delete
       rescue AWS::Core::Resource::NotFound => error

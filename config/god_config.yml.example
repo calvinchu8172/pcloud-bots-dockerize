@@ -1,6 +1,6 @@
 path: <Ex. '/vagrant/personal-cloud-bots/' >
 xmpp_config:
-  domain: <Ex. '192.168.50.10' >
+  domain: <Ex. 'localhost' >
   resource: 'robot'
   bot_list:
     - {username: 'bot1'}
