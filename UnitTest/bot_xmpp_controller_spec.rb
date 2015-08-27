@@ -32,7 +32,7 @@ describe XMPPController do
   config = YAML.load(File.read(config_file))
 
   bot_xmpp_account = config["bot_xmpp_account"]
-  bot_xmpp_password = config["bot_xmpp_password"]
+  bot_xmpp_domain = config["bot_xmpp_domain"]
   device_xmpp_account = config["device_xmpp_account"]
   device_xmpp_account_node = device_xmpp_account.split('@')[0]
   device_xmpp_password = config["device_xmpp_password"]
@@ -50,7 +50,7 @@ describe XMPPController do
   xmpp_connect_ready = FALSE
 
   xmppThread=Thread.new{
-    XMPPController.new(bot_xmpp_account, bot_xmpp_password)
+    XMPPController.new(bot_xmpp_account, bot_xmpp_domain)
     XMPPController.run
   }
   xmppThread.abort_on_exception = TRUE
