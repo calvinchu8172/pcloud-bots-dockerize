@@ -3,6 +3,12 @@
 $stdout.sync = true
 Encoding.default_external = Encoding::UTF_8
 
+require 'yaml'
+GOD_CONFIG_FILE = './config/god_config.yml'
+config_file = File.join(File.dirname(__FILE__), GOD_CONFIG_FILE)
+config = YAML.load(File.read(config_file))
+PATH = config['path']
+
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
