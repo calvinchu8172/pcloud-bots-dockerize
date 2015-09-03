@@ -54,6 +54,30 @@ describe BotQueueAccess do
     expect(send_message).to respond_to(:message_id)
   end
 
+  it 'Send Package query message to SQS' do
+    upnp_query_body = '{"job":"Package_query", "session_id":1}'
+    send_message = queue.send_message(upnp_query_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Package submit message to SQS' do
+    package_submit_body = '{"job":"package_submit", "session_id":1}'
+    send_message = queue.send_message(package_submit_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Device information message to SQS' do
+    device_info_body = '{"job":"device_info", "session_id":1}'
+    send_message = queue.send_message(device_info_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Led Indicator message to SQS' do
+    led_indicator_submit_body = '{"job":"led_indicator", "session_id":1}'
+    send_message = queue.send_message(led_indicator_submit_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
   it 'Send DDNS message to SQS' do
     ddns_body = '{"job":"ddns", "session_id":1}'
     send_message = queue.send_message(ddns_body)
