@@ -1,6 +1,112 @@
 require_relative '../lib/bot_redis_access'
 require 'yaml'
 
+
+class BotRedisAccess
+
+  def rd_package_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:package_list))
+
+    key = PACKAGE_SESSION_KEY % data[:index]
+
+    @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "package_list", data[:package_list]) if data.has_key?(:package_list)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_package_session_delete(index = nil)
+    return nil if nil == index
+
+    key = PACKAGE_SESSION_KEY % index
+    hash_key = ["user_id", "device_id", "status", "error_code", "package_list"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_device_info_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:session_id)  || !data.has_key?(:status)|| !data.has_key?(:info)
+
+
+    key = DEVICE_INFORMATION_KEY % data[:session_id]
+
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "info", data[:info]) if data.has_key?(:info)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_device_info_session_delete(index = nil)
+    return nil if nil == index
+
+    key = DEVICE_INFORMATION_KEY % index
+    hash_key = ["status", "info", "error_code"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_led_indicator_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id)  
+
+
+    key = LED_INDICATOR_SESSION_KEY % data[:session_id]
+
+    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_led_indicator_session_delete(index = nil)
+    return nil if nil == index
+
+    key = LED_INDICATOR_SESSION_KEY % index
+    hash_key = ["device_id"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_permission_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:index)  || !data.has_key?(:status)
+
+
+    key = USER_PERMISSION_KEY % data[:index]
+
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_permission_session_delete(index = nil)
+    return nil if nil == index
+
+    key = USER_PERMISSION_KEY % index
+    hash_key = ["status", "error_code"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+end
 describe BotRedisAccess do
   let(:rd){BotRedisAccess.new}
   
@@ -303,7 +409,230 @@ describe BotRedisAccess do
       expect(result_deleted).to be_nil
     end
   end
-  
+#start of package session
+  context "Verify Package session table" do
+    it 'Access non-exist record from Package session table' do
+      index = Time.now.to_i
+      result = rd.rd_package_session_access(index)
+      
+      expect(result).to be_nil
+    end
+    
+    it 'Access exist record from package session table' do
+      index = Time.now.to_i
+      data = {index: index, user_id: 2, device_id: 1, status: "start", package_list: "[]"}
+      rd.rd_package_session_insert(data)
+      result = rd.rd_package_session_access(index)
+      rd.rd_package_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      
+      expect(result).to have_key("user_id")
+      expect(result).to have_key("device_id")
+      expect(result).to have_key("status")
+      expect(result).to have_key("package_list")
+      
+      expect(result['user_id']).to eq("2")
+      expect(result['device_id']).to eq("1")
+      expect(result['status']).to eq("start")
+      expect(result['package_list']).to eq("[]")
+    end
+    
+    it 'Update Package session record' do
+      index = Time.now.to_i
+      data = {index: index, user_id: 2, device_id: 1, status: "start", error_code: 789, package_list: "[]"}
+      rd.rd_package_session_insert(data)
+      result_insert = rd.rd_package_session_access(index)
+      
+      data = {index: index, user_id: 3, device_id: 4, status: "wait", error_code: 999, package_list: "[{}]"}
+      rd.rd_package_session_update(data)
+      result_updated = rd.rd_package_session_access(index)
+      
+      rd.rd_package_session_delete(index)
+      
+      expect(result_insert).to be_an_instance_of(Hash)
+      expect(result_insert).to have_key("user_id")
+      expect(result_insert).to have_key("device_id")
+      expect(result_insert).to have_key("status")
+      expect(result_insert).to have_key("error_code")
+      expect(result_insert).to have_key("package_list")
+      
+      expect(result_insert['user_id']).to eq("2")
+      expect(result_insert['device_id']).to eq("1")
+      expect(result_insert['status']).to eq("start")
+      expect(result_insert['error_code'].to_i).to eq(789)
+      expect(result_insert['package_list']).to eq("[]")
+      
+      expect(result_updated).to be_an_instance_of(Hash)
+      expect(result_updated).to have_key("user_id")
+      expect(result_updated).to have_key("device_id")
+      expect(result_updated).to have_key("status")
+      expect(result_updated).to have_key("error_code")
+      expect(result_updated).to have_key("package_list")
+      
+      expect(result_updated['user_id']).to eq("2")
+      expect(result_updated['device_id']).to eq("1")
+      expect(result_updated['status']).to eq("wait")
+      expect(result_updated['error_code'].to_i).to eq(999)
+      expect(result_updated['package_list']).to eq("[{}]")
+    end
+    
+    it 'Update nonexistent Package session record' do
+      index = Time.now.to_i
+      
+      data = {index: index+1, user_id: 3, device_id: 4, status: "wait", error_code: 789, package_list: "[{}]", }
+      result = rd.rd_package_session_update(data)
+      
+      expect(result).to be false
+    end
+  end
+#end of package redis 
+#begin of device info redis
+  context "Verify Device Information  table" do
+    it 'Access non-exist record from Device Information session table' do
+      index = Time.now.to_i
+      result = rd.rd_device_info_session_access(index)
+      expect(result).to be_nil
+    end
+
+    it 'Access exist record from Device Information session table' do
+      index = Time.now.to_i
+      data = {session_id: index, status: "start", info: "[]"}
+      rd.rd_device_info_session_insert(data)
+      result = rd.rd_device_info_session_access(index)
+      rd.rd_device_info_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      
+      expect(result).to have_key("status")
+      expect(result).to have_key("info")
+      
+      expect(result['status']).to eq("start")
+      expect(result['info']).to eq("[]")
+    end
+    
+    it 'Update device Information session record' do
+      index = Time.now.to_i
+      data = {session_id: index, status: "start", info: "[]"}
+      rd.rd_device_info_session_insert(data)
+      result = rd.rd_device_info_session_access(index)
+      
+      data = {session_id: index, status: "wait", info: "[]", error_code: 999}
+      rd.rd_device_info_session_update(data)
+      result_updated = rd.rd_device_info_session_access(index)
+      
+      rd.rd_device_info_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      expect(result).to have_key("status")
+      expect(result).to have_key("info")
+      
+      expect(result['status']).to eq("start")
+      expect(result['info']).to eq("[]")
+      
+      expect(result_updated).to be_an_instance_of(Hash)
+      expect(result_updated).to have_key("status")
+      expect(result_updated).to have_key("info")
+      
+      expect(result_updated['status']).to eq("wait")
+      expect(result_updated['info']).to eq("[]")
+      expect(result_updated['error_code']).to eq("999")
+    end
+
+    it 'Update nonexistent Device Information session record' do
+      index = Time.now.to_i+2
+      
+      data = {session_id: index, status: "wait", info: "[]", error_code: 999}
+      result = rd.rd_device_info_session_update(data)
+      
+      expect(result).to be false
+    end
+  end
+#end of device info redis
+
+
+#begin of permission redis
+  context "Verify PERMISSION  table" do
+    it 'Access non-exist record from PERMISSION session table' do
+      index = Time.now.to_i
+      result = rd.rd_permission_session_access(index)
+      expect(result).to be_nil
+    end
+
+    it 'Access exist record from PERMISSION session table' do
+      index = Time.now.to_i
+      data = {index: index, status: "start"}
+      rd.rd_permission_session_insert(data)
+      result = rd.rd_permission_session_access(index)
+      rd.rd_permission_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      
+      expect(result).to have_key("status")
+      
+      expect(result['status']).to eq("start")
+    end
+    
+    it 'Update PERMISSION session record' do
+      index = Time.now.to_i
+      data = {index: index, status: "start"}
+      rd.rd_permission_session_insert(data)
+      result = rd.rd_permission_session_access(index)
+      
+      data = {index: index, status: "wait", error_code: 999}
+      rd.rd_permission_session_update(data)
+      result_updated = rd.rd_permission_session_access(index)
+      
+      rd.rd_permission_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      expect(result).to have_key("status")
+      
+      expect(result['status']).to eq("start")
+      
+      expect(result_updated).to be_an_instance_of(Hash)
+      expect(result_updated).to have_key("status")
+      
+      expect(result_updated['status']).to eq("wait")
+      expect(result_updated['error_code']).to eq("999")
+    end
+
+    it 'Update nonexistent PERMISSION session record' do
+      index = Time.now.to_i+2
+      
+      data = {index: index, status: "wait", info: "[]", error_code: 999}
+      result = rd.rd_permission_session_update(data)
+      
+      expect(result).to be false
+    end
+  end
+#end of permission redis
+
+#begin of led indicator redis
+  context "Verify LED Indicator  table" do
+    it 'Access non-exist record from LED Indicator session table' do
+      index = Time.now.to_i
+      result = rd.led_indicator_session_access(index)
+      expect(result).to eq({})
+    end
+
+    it 'Access exist record from LED Indicator session table' do
+      index = Time.now.to_i
+      data = {session_id: index, device_id: 1}
+      rd.rd_led_indicator_session_insert(data)
+      result = rd.led_indicator_session_access(index)
+      rd.rd_led_indicator_session_delete(index)
+      
+      expect(result).to be_an_instance_of(Hash)
+      expect(result).to have_key("device_id")
+      
+      expect(result['device_id']).to eq("1")
+    end
+    
+    
+  end
+#end of led indicator redis
+
   context "Verify DDNS session table" do
     it 'Get DDNS session index' do
       previous = rd.rd_ddns_session_index_get
