@@ -1,6 +1,7 @@
 require_relative '../lib/bot_xmpp_controller'
 require_relative '../lib/bot_route_access'
 require_relative '../lib/bot_db_access'
+require_relative '../lib/bot_xmpp_db_access'
 require_relative '../lib/bot_unit'
 require_relative '../lib/bot_pair_protocol_template'
 require_relative '../lib/bot_xmpp_spec_protocol_template'
@@ -12,7 +13,7 @@ require 'eventmachine'
 require 'resolv'
 include Jabber
 
-DELAY_TIME = 0.5
+DELAY_TIME = 1
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
 FLUENT_BOT_SYSERROR = "bot.sys-error"
@@ -35,17 +36,23 @@ describe XMPPController do
   bot_xmpp_domain = config["bot_xmpp_domain"]
   device_xmpp_account = config["device_xmpp_account"]
   device_xmpp_account_node = device_xmpp_account.split('@')[0]
-  device_xmpp_password = config["device_xmpp_password"]
-  jid = JID.new(device_xmpp_account)
-  client = Client.new(jid)
+  #device_xmpp_password = config["device_xmpp_password"]
+  #jid = JID.new(device_xmpp_account)
+  #client = Client.new(jid)
 
   host_name = 'ut%d' % Time.now.to_i
 
   let(:route) {BotRouteAccess.new}
   let(:db) {BotDBAccess.new}
+  let(:xmpp_db) {BotXmppDBAccess.new}
   let(:rd) {BotRedisAccess.new}
   let(:domain_name) {config["domain_name"]}
   let(:user){User.find_or_create_by({email: 'test@ecoworkinc.com', display_name: 'test'})}
+  xmpp_db = BotXmppDBAccess.new
+  device_xmpp_password = xmpp_db.db_reset_password( device_xmpp_account_node )
+  jid = JID.new(device_xmpp_account)
+  client = Client.new(jid)
+
 
   xmpp_connect_ready = FALSE
 
@@ -70,6 +77,7 @@ describe XMPPController do
     sleep(3)
     isAuth = client.auth(device_xmpp_password)
     expect(isAuth).to be true
+    bot_xmpp_account = bot_xmpp_account + '@' + bot_xmpp_domain
     # end
   end
 
