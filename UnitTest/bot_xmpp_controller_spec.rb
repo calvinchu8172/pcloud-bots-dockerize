@@ -69,7 +69,7 @@ describe XMPPController do
     sleep(2)
   end
   puts '    XMPP connection ready'
-
+  XMPPController.disconnected{ XMPPController.run }
 
   before(:all) do
     # it 'Connection to remote XMPP server' do
@@ -77,7 +77,7 @@ describe XMPPController do
     sleep(3)
     isAuth = client.auth(device_xmpp_password)
     expect(isAuth).to be true
-    bot_xmpp_account = bot_xmpp_account + '@' + bot_xmpp_domain
+    bot_xmpp_account = bot_xmpp_account + '@' + bot_xmpp_domain if isAuth
     # end
   end
 
