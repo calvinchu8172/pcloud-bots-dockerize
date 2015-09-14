@@ -635,4 +635,106 @@ class BotRedisAccess
       return FALSE
     end
   end
+
+  def rd_package_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:index) || (!data.has_key?(:user_id) && !data.has_key?(:device_id) && !data.has_key?(:status) && !data.has_key?(:error_code) && !data.has_key?(:package_list))
+
+    key = PACKAGE_SESSION_KEY % data[:index]
+
+    @redis.hset(key, "user_id", data[:user_id]) if data.has_key?(:user_id)
+    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "package_list", data[:package_list]) if data.has_key?(:package_list)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_package_session_delete(index = nil)
+    return nil if nil == index
+
+    key = PACKAGE_SESSION_KEY % index
+    hash_key = ["user_id", "device_id", "status", "error_code", "package_list"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_device_info_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:session_id)  || !data.has_key?(:status)|| !data.has_key?(:info)
+
+
+    key = DEVICE_INFORMATION_KEY % data[:session_id]
+
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "info", data[:info]) if data.has_key?(:info)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_device_info_session_delete(index = nil)
+    return nil if nil == index
+
+    key = DEVICE_INFORMATION_KEY % index
+    hash_key = ["status", "info", "error_code"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_led_indicator_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:device_id)  
+
+
+    key = LED_INDICATOR_SESSION_KEY % data[:session_id]
+
+    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_led_indicator_session_delete(index = nil)
+    return nil if nil == index
+
+    key = LED_INDICATOR_SESSION_KEY % index
+    hash_key = ["device_id"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
+
+  def rd_permission_session_insert(data={})
+    return nil if data.empty? || !data.has_key?(:index)  || !data.has_key?(:status)
+
+
+    key = USER_PERMISSION_KEY % data[:index]
+
+    @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
+    @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
+
+    return @redis.hgetall(key)
+  end
+
+  def rd_permission_session_delete(index = nil)
+    return nil if nil == index
+
+    key = USER_PERMISSION_KEY % index
+    hash_key = ["status", "error_code"]
+
+    hash_key.each do |item|
+      @redis.hdel(key, item)
+    end
+
+    return TRUE
+  end
 end
