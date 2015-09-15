@@ -1,16 +1,25 @@
 #!/usr/bin/env ruby
 
+require_relative 'lib/bot_xmpp_db_access'
+
 require 'rubygems'
+require 'active_record'
 require 'blather/client'
 require './lib/bot_pair_protocol_template'
 require './lib/bot_xmpp_spec_protocol_template'
-
+require 'pry'
 # XMPP_ACCOUNT = 'd099789665701-a123456@192.168.50.10/device'
 # XMPP_PASSWORD = 'kxxNQJBLHZ'
 
 XMPP_ACCOUNT = 'd0023f8311041-tempserialnum0000@localhost/device'
 XMPP_PASSWORD = '8kP0wNjEkA'
 USER_EMAIL = 'spjay1@gmail.com'
+
+username = 'd0023f8311041-tempserialnum0000'
+xmpp_db = BotXmppDBAccess.new
+password = XMPP_User.find_by(username: username).password
+
+XMPP_PASSWORD = "#{password}"
 
 # XMPP_ACCOUNT = 'd099789665701-a123456@beta.xmpp.zyxel.com/device'
 # XMPP_PASSWORD = 'IxWHNXEVYq'
