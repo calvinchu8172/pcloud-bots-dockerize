@@ -448,6 +448,44 @@ PACKAGE_ASK_REQUEST_SUCCESS = <<EOT
 </message>
 EOT
 
+#PACKAGE_ASK_REQUEST_SINGLE_SUCCESS % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+PACKAGE_ASK_REQUEST_SINGLE_SUCCESS = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+    <x xmlns="jabber:x:data" type="result">
+        <title>bot_get_package_list</title>
+        <item>
+            <field type="text-single" var="package-name">
+                <value>NZBGet</value>
+            </field>
+            <field type="text-single" var="status">
+                <value>false</value>
+            </field>
+            <field type="text-multi" var="requires">
+                <value></value>
+            </field>
+            <field type="text-single" var="version">
+                <value>14.1zypkg003</value>
+            </field>
+            <field type="text-multi" var="description">
+                <value>This package downloads .nzb file from Usenet. Default username:nzbget password:1234</value>
+            </field>
+        </item>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
+
+#PACKAGE_ASK_REQUEST_EMPTY_SUCCESS % [ 'BOT_ID', 'DEVICE_ID', 'SESSION_ID']
+PACKAGE_ASK_REQUEST_EMPTY_SUCCESS = <<EOT
+<message to="%s" type="normal" from="%s" xml:lang="en">
+    <x xmlns="jabber:x:data" type="result">
+        <title>bot_get_package_list</title>
+    </x>
+    <thread>%s</thread>
+</message>
+EOT
+
 # SET_PACKAGE_REQUEST_SUCCESS_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
 SET_PACKAGE_REQUEST_SUCCESS_RESPONSE = <<EOT
 <message to="%s" type="normal" from="%s" lang="en">
