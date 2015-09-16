@@ -530,7 +530,7 @@ module XMPPController
         }
 
         df.callback do |x|
-          permission_session = @rd.rd_permission_session_access( session_id )
+          permission_session = @rd_conn.rd_permission_session_access( session_id )
           status = !permission_session.nil? ? permission_session["status"] : nil
           if (KSTATUS_SUBMIT == status) && Time.now.to_i > (expire_at - 1) then
             data = { index: session_id, status: KSTATUS_TIMEOUT }
