@@ -530,13 +530,14 @@ module XMPPController
         }
 
         df.callback do |x|
+          permission_session = @rd.rd_permission_session_access( session_id )
           status = !permission_session.nil? ? permission_session["status"] : nil
-          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+          if (KSTATUS_SUBMIT == status) && Time.now.to_i > (expire_at - 1) then
             data = { index: session_id, status: KSTATUS_TIMEOUT }
             @rd_conn.rd_permission_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
-            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', tag: permission_session["device_id"]}
             send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
           end
         end
