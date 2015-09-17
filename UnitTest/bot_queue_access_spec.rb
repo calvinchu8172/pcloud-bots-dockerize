@@ -10,13 +10,9 @@ describe BotQueueAccess do
   it 'Config file check' do
     expect(config).to be_an_instance_of(Hash)
 
-    expect(config).to have_key('access_key_id')
-    expect(config).to have_key('secret_access_key')
     expect(config).to have_key('region')
     expect(config).to have_key('sqs_queue_name')
 
-    expect(config['access_key_id']).not_to eq('xxx')
-    expect(config['secret_access_key']).not_to eq('xxx')
     expect(config['region']).not_to eq('xxx')
     expect(config['sqs_queue_name']).not_to eq('xxx')
   end
