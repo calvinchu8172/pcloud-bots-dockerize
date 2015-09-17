@@ -11,6 +11,7 @@ require 'multi_xml'
 require 'json'
 require 'eventmachine'
 require 'resolv'
+require 'pry'
 include Jabber
 
 DELAY_TIME = 1
@@ -26,21 +27,13 @@ KUPNP_EXPIRE_TIME = 20.0
 KPACKAGE_EXPIRE_TIME = 20.0
 KPERMISSION_EXPIRE_TIME = 20.0
 
-RSPEC_CONFIG_FILE = '../config/rspec_xmpp_controller_config.yml'
+BOT_ROUTE_CONFIG_FILE = '../config/bot_route_config.yml'
 
 Jabber::debug = FALSE
 
 describe XMPPController do
-  config_file = File.join(File.dirname(__FILE__), RSPEC_CONFIG_FILE)
+  config_file = File.join(File.dirname(__FILE__), BOT_ROUTE_CONFIG_FILE)
   config = YAML.load(File.read(config_file))
-
-  bot_xmpp_account = config["bot_xmpp_account"]
-  bot_xmpp_domain = config["bot_xmpp_domain"]
-  device_xmpp_account = config["device_xmpp_account"]
-  device_xmpp_account_node = device_xmpp_account.split('@')[0]
-  #device_xmpp_password = config["device_xmpp_password"]
-  #jid = JID.new(device_xmpp_account)
-  #client = Client.new(jid)
 
   host_name = 'ut%d' % Time.now.to_i
 
@@ -48,13 +41,25 @@ describe XMPPController do
   let(:db) {BotDBAccess.new}
   let(:xmpp_db) {BotXmppDBAccess.new}
   let(:rd) {BotRedisAccess.new}
-  let(:domain_name) {config["domain_name"]}
+  let(:domain_name) {config["zones_info"][0]["name"]}
   let(:user){User.find_or_create_by({email: 'test@ecoworkinc.com', display_name: 'test'})}
   xmpp_db = BotXmppDBAccess.new
+ 
+  #for test
+  bot_xmpp_user = XMPP_User.find_by(username: "bot")
+  bot_xmpp_user = XMPP_User.create(username: "bot", password: "bot") if bot_xmpp_user.nil?
+  bot_xmpp_account = bot_xmpp_user.username
+  bot_xmpp_domain = "localhost"
+
+  device_xmpp_user = XMPP_User.find_by(username: "device")
+  device_xmpp_user = XMPP_User.create(username: "device", password: "device") if device_xmpp_user.nil?
+  device_xmpp_account = "#{device_xmpp_user.username}@#{bot_xmpp_domain}/device"
+  device_xmpp_account_node = device_xmpp_user.username
+  #for test
+
   device_xmpp_password = xmpp_db.db_reset_password( device_xmpp_account_node )
   jid = JID.new(device_xmpp_account)
   client = Client.new(jid)
-
 
   xmpp_connect_ready = FALSE
 
@@ -71,7 +76,6 @@ describe XMPPController do
     sleep(2)
   end
   puts '    XMPP connection ready'
-  XMPPController.disconnected{ XMPPController.run }
 
   before(:all) do
     # it 'Connection to remote XMPP server' do
@@ -110,20 +114,12 @@ describe XMPPController do
 
       MultiXml.parser = :rexml
       xml = MultiXml.parse(x.to_s)
-
       action = xml['x']['field'][0]['value']
       timeout = xml['x']['field'][1]['value']
       expect(xml).to be_an_instance_of(Hash)
       expect(action).to eq('start')
       expect(timeout.to_i).to eq(expire_time)
 
-      j = 25
-      while j > 0
-        puts '        waiting %d second' % j
-        sleep(5)
-        j -= 5
-      end
-      puts '        waiting 0 second'
     end
 
 # SENDER: Send PAIR START REQUEST message to device and wait to time out

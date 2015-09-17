@@ -14,3 +14,4 @@ gem "fluent-logger"
 gem "fluent-plugin-s3"
 gem "redis"
 gem "rspec"
+gem 'pry'
