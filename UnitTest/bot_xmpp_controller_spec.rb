@@ -24,7 +24,7 @@ FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 
 KUPNP_EXPIRE_TIME = 20.0
 KPACKAGE_EXPIRE_TIME = 20.0
-KPERMISSION_EXPIRE_TIME = 10.0
+KPERMISSION_EXPIRE_TIME = 20.0
 
 RSPEC_CONFIG_FILE = '../config/rspec_xmpp_controller_config.yml'
 
@@ -647,6 +647,30 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send PERMISSION SET CANCEL SUCCESS RESPONSE message to device
+    it 'Send PERMISSION SET CANCEL SUCCESS RESPONSE message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', tag: index}
+      XMPPController.send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_set_share_permission')
+      expect(action).to eq('cancel')
+    end
+
 
 
 # SENDER: Send UPNP SET CANCEL FAILURE RESPONSE message to device
@@ -697,6 +721,32 @@ describe XMPPController do
 
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('set_package_service')
+      expect(action).to eq('cancel')
+      expect(error_code.to_i).to eq(799)
+    end
+
+  # SENDER: Send PERMISSION SET CANCEL FAILURE RESPONSE message to device
+    it 'Send PERMISSION SET CANCEL FAILURE RESPONSE message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', error_code: 799, tag: index}
+      XMPPController.send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_set_share_permission')
       expect(action).to eq('cancel')
       expect(error_code.to_i).to eq(799)
     end
@@ -1201,7 +1251,7 @@ describe XMPPController do
       title = xml['x']['title']
       timeout = xml['x']['field'][3]['value']
       expect(title).to eq('bot_set_share_permission')
-      expect(timeout.to_i).to eq(10)
+      expect(timeout.to_i).to eq(20)
     end
 
 
@@ -1301,6 +1351,54 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send PERMISSION SETTING REQUEST message to device, waiting timeout test
+    it 'Send PERMISSION SETTING REQUEST message to device, waiting timeout test' do
+      index = Time.now.to_i
+      device_id = index
+
+      data = {device_id: device_id, ip: '10.1.1.110', xmpp_account: device_xmpp_account_node}
+      device = rd.rd_device_session_insert(data)
+      permission_session = {share_point: "aa", permission: 0, cloud_id:1}
+
+      data = {index: index, user_id: 1, device_id: device_id, status: KSTATUS_SUBMIT}
+      permission = rd.rd_permission_session_insert(data)
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, session_id: index, permission_session: permission_session}
+      XMPPController.send_request(KPERMISSION_ASK_REQUEST, info)
+
+      j = 20
+      while j > 0
+        puts '        waiting %d second' % j
+        sleep(5)
+        j -= 5
+      end
+      puts '        waiting 0 second'
+
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      permission = rd.rd_permission_session_access(index)
+      isDeletedPERMISSION = rd.rd_permission_session_delete(index)
+      isDeletedDevice = rd.rd_device_session_delete(device_id)
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      puts permission
+      title = xml['x']['title']
+
+      expect(isDeletedPERMISSION).to be true
+      expect(isDeletedDevice).to be true
+      expect(device).not_to be_nil
+      expect(permission).not_to be_nil
+      expect(permission["status"]).to eq('timeout')
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_set_share_permission')
+    end
+
 # SENDER: Send UPNP SETTING TIMEOUT REQUEST message to device
     it 'Send UPNP SETTING TIMEOUT REQUEST message to device' do
       index = Time.now.to_i
@@ -1348,6 +1446,31 @@ describe XMPPController do
       expect(title).to eq('set_package_service')
       expect(action).to eq('timeout')
     end
+
+# SENDER: Send PERMISSION SETTING TIMEOUT REQUEST message to device
+    it 'Send PERMISSION SETTING TIMEOUT REQUEST message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, title: 'bot_set_share_permission', tag: index}
+      XMPPController.send_request(KSESSION_TIMEOUT_REQUEST, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_set_share_permission')
+      expect(action).to eq('timeout')
+    end
+
 
 # SENDER: Send UPNP SETTING TIMEOUT SUCCESS RESPONSE message to device
     it 'Send UPNP SETTING TIMEOUT SUCCESS RESPONSE message to device' do
@@ -1397,6 +1520,30 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+
+# SENDER: Send PERMISSION SETTING TIMEOUT SUCCESS RESPONSE message to device
+    it 'Send PERMISSION SETTING TIMEOUT SUCCESS RESPONSE message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', tag: index}
+      XMPPController.send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_set_share_permission')
+      expect(action).to eq('timeout')
+    end
 
 # SENDER: Send UPNP SETTING TIMEOUT FAILURE RESPONSE message to device
     it 'Send UPNP SETTING TIMEOUT FAILURE RESPONSE message to device' do
