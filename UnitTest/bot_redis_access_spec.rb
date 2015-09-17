@@ -1,6 +1,6 @@
 require_relative '../lib/bot_redis_access'
 require 'yaml'
-
+require 'pry'
 
 class BotRedisAccess
 
@@ -10,6 +10,13 @@ end
 describe BotRedisAccess do
   let(:rd){BotRedisAccess.new}
   
+  before(:each) do
+    until (value = rd.rd_ddns_batch_session_access) == nil
+      binding.pry
+      rd.rd_ddns_batch_session_delete(value)
+    end
+  end
+
   it 'Config file check' do
     config_file = File.join(File.dirname(__FILE__), REDIS_CONFIG_FILE)
     config = YAML.load(File.read(config_file))
