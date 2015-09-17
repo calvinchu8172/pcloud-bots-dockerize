@@ -12,7 +12,6 @@ describe BotRedisAccess do
   
   before(:each) do
     until (value = rd.rd_ddns_batch_session_access) == nil
-      binding.pry
       rd.rd_ddns_batch_session_delete(value)
     end
   end
