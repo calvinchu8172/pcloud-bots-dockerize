@@ -74,6 +74,11 @@ describe BotQueueAccess do
     expect(send_message).to respond_to(:message_id)
   end
 
+  it 'Send Create Permission message to SQS' do
+    led_indicator_submit_body = '{"job":"create_permission", "session_id":1}'
+    send_message = queue.send_message(led_indicator_submit_body)
+    expect(send_message).to respond_to(:message_id)
+  end
   it 'Send DDNS message to SQS' do
     ddns_body = '{"job":"ddns", "session_id":1}'
     send_message = queue.send_message(ddns_body)

@@ -574,7 +574,7 @@ module XMPPController
             xmpp_account = device["xmpp_account"] if !device.nil?
             info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
-            
+
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'DEVICE-INFOMATION',
                                    direction: 'N/A',
@@ -1240,7 +1240,7 @@ module XMPPController
   end
 
 # HANDLER: Result:Get_device_information
-  message :normal?, proc {|m| m.form.result? && 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
+  message :normal?, proc {|m| 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
 
