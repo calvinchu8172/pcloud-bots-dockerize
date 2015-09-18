@@ -1,1 +1,3 @@
 /config/*.*
+coverage
+.DS_Store
