@@ -5,6 +5,7 @@ require 'rubygems'
 require 'active_record'
 require 'yaml'
 require 'ipaddr'
+require 'pry'
 
 XMPP_DB_CONFIG_FILE = '../config/bot_xmpp_db_config.yml'
 
@@ -63,7 +64,7 @@ class BotXmppDBAccess
     # Ref rest api format
     origin = [('a'..'z'), ('A'..'Z')].map { |i| i.to_a }.flatten
     new_password = (0...10).map { origin[rand(origin.length)] }.join
-
+    # binding.pry
     XMPP_User.find_by(username: username).update(password: new_password)
 
     return new_password

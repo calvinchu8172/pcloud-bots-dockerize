@@ -25,6 +25,7 @@ GEM
       niceogiri (~> 1.0)
       nokogiri (~> 1.5, >= 1.5.6)
     builder (3.2.2)
+    coderay (1.1.0)
     connection_pool (1.2.0)
     cool.io (1.3.0)
     diff-lcs (1.2.5)
@@ -56,6 +57,7 @@ GEM
     http_parser.rb (0.6.0)
     i18n (0.7.0)
     json (1.8.2)
+    method_source (0.8.2)
     mini_portile (0.6.2)
     minitest (5.5.1)
     msgpack (0.5.11)
@@ -65,6 +67,10 @@ GEM
       nokogiri (~> 1.5)
     nokogiri (1.6.6.2)
       mini_portile (~> 0.6.0)
+    pry (0.10.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
     redis (3.2.1)
     rspec (3.2.0)
       rspec-core (~> 3.2.0)
@@ -83,6 +89,7 @@ GEM
       rubinius-core-api
     rubinius-core-api (0.0.1)
     sigdump (0.2.2)
+    slop (3.6.0)
     string-scrub (0.0.5)
     thread_safe (0.3.5)
     tlsmail (0.0.1)
@@ -108,7 +115,11 @@ DEPENDENCIES
   god
   multi_xml
   mysql2
+  pry
   redis
   rspec
   tlsmail
   xmpp4r
+
+BUNDLED WITH
+   1.10.6
