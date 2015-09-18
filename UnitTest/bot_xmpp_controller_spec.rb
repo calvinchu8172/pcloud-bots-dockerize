@@ -26,7 +26,7 @@ FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 KUPNP_EXPIRE_TIME = 20.0
 KPACKAGE_EXPIRE_TIME = 20.0
 KPERMISSION_EXPIRE_TIME = 20.0
-
+KDEVICE_INFO_EXPIRE_TIME = 20.0
 BOT_ROUTE_CONFIG_FILE = '../config/bot_route_config.yml'
 
 Jabber::debug = FALSE
@@ -794,6 +794,31 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+
+# SENDER: Send Device INFO GET CANCEL REQUEST message to device
+    it 'Send Device INFO GET CANCEL REQUEST message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, title: 'bot_get_device_information', tag: index}
+      XMPPController.send_request(KSESSION_CANCEL_REQUEST, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
+      expect(action).to eq('cancel')
+    end
+
 # SENDER: Send UPNP GET CANCEL SUCCESS RESPONSE message to device
     it 'Send UPNP GET CANCEL SUCCESS RESPONSE message to device' do
       index = Time.now.to_i
@@ -840,6 +865,28 @@ describe XMPPController do
       expect(action).to eq('cancel')
     end
 
+# SENDER: Send DEVICE INFO GET CANCEL SUCCESS RESPONSE message to device
+    it 'Send DEVICE INFO GET CANCEL SUCCESS RESPONSE message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_get_device_information', tag: index}
+      XMPPController.send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
+      expect(action).to eq('cancel')
+    end
 # SENDER: Send UPNP GET CANCEL FAILURE RESPONSE message to device
     it 'Send UPNP GET CANCEL FAILURE RESPONSE message to device' do
       index = Time.now.to_i
@@ -886,6 +933,32 @@ describe XMPPController do
       error_code = xml['x']['field'][1]['value']
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('get_package_service')
+      expect(action).to eq('cancel')
+      expect(error_code.to_i).to eq(799)
+    end
+
+
+# SENDER: Send DEVICE INFO GET CANCEL FAILURE RESPONSE message to device
+    it 'Send DEVICE INFO GET CANCEL FAILURE RESPONSE message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_get_device_information', error_code: 799, tag: index}
+      XMPPController.send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
       expect(action).to eq('cancel')
       expect(error_code.to_i).to eq(799)
     end
@@ -961,14 +1034,14 @@ describe XMPPController do
       expect(timeout.to_i).to eq(30)
     end
 
-# SENDER: Send LED_INDICATOR GETTING REQUEST message to device
-    it 'Send LED_INDICATOR GETTING REQUEST message to device' do
+# SENDER: Send DEVICE INFO GETTING REQUEST message to device
+    it 'Send DEVICE INFO GETTING REQUEST message to device' do
       session_id = Time.now.to_i
 
       x = nil
       i = 0
       info = {xmpp_account: device_xmpp_account_node,  session_id: session_id}
-      XMPPController.send_request(KLED_INDICATOR_REQUEST, info)
+      XMPPController.send_request(KDEVICE_INFO_ASK_REQUEST, info)
       while x.nil? && i < 200
         sleep(0.1)
         i += 1
@@ -980,8 +1053,8 @@ describe XMPPController do
       expect(xml).to be_an_instance_of(Hash)
       title = xml['x']['title']
       timeout = xml['x']['field']['value']
-      expect(title).to eq('bot_led_indicator')
-      expect(timeout.to_i).to eq(30)
+      expect(title).to eq('bot_get_device_information')
+      expect(timeout.to_i).to eq(20)
     end
 # SENDER: Send UPNP GETTING REQUEST message to device, waiting timeout test
     it 'Send UPNP GETTING REQUEST message to device, waiting timeout test' do
@@ -1080,6 +1153,53 @@ describe XMPPController do
       expect(action).to eq('timeout')
     end
 
+# SENDER: Send DEVICE INFO GET REQUEST message to device, waiting timeout test
+    it 'Send DEVICE INFO GET REQUEST message to device, waiting timeout test' do
+      index = Time.now.to_i
+      device_id = index
+
+      data = {device_id: device_id, ip: '10.1.1.110', xmpp_account: device_xmpp_account_node}
+      device = rd.rd_device_session_insert(data)
+
+      data = {session_id: index, status: 'start', info: {}, device_id: device_id}
+      device_info = rd.rd_device_info_session_insert(data)
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, session_id: index}
+      XMPPController.send_request(KDEVICE_INFO_ASK_REQUEST, info)
+
+      j = 25
+      while j > 0
+        puts '        waiting %d second' % j
+        sleep(5)
+        j -= 5
+      end
+      puts '        waiting 0 second'
+
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      device_info = rd.rd_device_info_session_access(index)
+      isDeletedDEVICEINFO = rd.rd_device_info_session_delete(index)
+      isDeletedDevice = rd.rd_device_session_delete(device_id)
+      puts x
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(isDeletedDEVICEINFO).to be true
+      expect(isDeletedDevice).to be true
+      expect(device).not_to be_nil
+      expect(device_info).not_to be_nil
+      expect(device_info["status"]).to eq('timeout')
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
+      expect(action).to eq('timeout')
+    end
+
 
 # SENDER: Send UPNP GETTING TIMEOUT REQUEST message to device
     it 'Send UPNP GETTING TIMEOUT REQUEST message to device' do
@@ -1126,6 +1246,30 @@ describe XMPPController do
 
       expect(xml).to be_an_instance_of(Hash)
       expect(title).to eq('get_package_service')
+      expect(action).to eq('timeout')
+    end
+
+# SENDER: Send DEVICE INFO GETTING TIMEOUT REQUEST message to device
+    it 'Send DEVICE INFO GETTING TIMEOUT REQUEST message to device' do
+      index = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account_node, title: 'bot_get_device_information', tag: index}
+      XMPPController.send_request(KSESSION_TIMEOUT_REQUEST, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field']['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
       expect(action).to eq('timeout')
     end
 
@@ -1179,6 +1323,34 @@ describe XMPPController do
       expect(action).to eq('timeout')
       expect(error_code.to_i).to eq(error_code_o)
     end
+
+# SENDER: Send DEVICE INFO GETTING TIMEOUT FAILURE RESPONSE message to device
+    it 'Send DEVICE INFO GETTING TIMEOUT FAILURE RESPONSE message to device' do
+      index = Time.now.to_i
+      error_code_o = 789
+
+      x = nil
+      i = 0
+      info = {xmpp_account: device_xmpp_account, title: 'bot_get_device_information', error_code: error_code_o, tag: index}
+      XMPPController.send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i+=1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      title = xml['x']['title']
+      action = xml['x']['field'][0]['value']
+      error_code = xml['x']['field'][1]['value']
+
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_get_device_information')
+      expect(action).to eq('timeout')
+      expect(error_code.to_i).to eq(error_code_o)
+    end
+
 
 # SENDER: Send UPNP SETTING REQUEST message to device
     it 'Send UPNP SETTING REQUEST message to device' do
@@ -2070,6 +2242,26 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+
+# HANDLER: Receive DEVICE INFO GET TIMEOUT SUCCESS response
+    it 'Receive DEVICE INFO GET TIMEOUT SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {session_id: index, device_id: device_id, user_id: 2, status:'start', info:{}}
+      device_info_session = rd.rd_device_info_session_insert(data)
+      msg = SESSION_TIMEOUT_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'bot_get_device_information', index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      device_info_session = rd.rd_device_info_session_access(index)
+      hasDeleted = rd.rd_device_info_session_delete(index)
+      isAlive = XMPPController.alive
+
+      expect(device_info_session).not_to be_nil
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
 # HANDLER: Receive UPNP SET TIMEOUT SUCCESS response
     it 'Receive UPNP SET TIMEOUT SUCCESS response' do
       device_id = Time.now.to_i
@@ -2109,6 +2301,27 @@ describe XMPPController do
       expect(isAlive).to be true
       expect(hasDeleted).to be true
     end
+
+# HANDLER: Receive PERMISSION SET TIMEOUT SUCCESS response
+    it 'Receive PERMISSION SET TIMEOUT SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {index: index, status:'start'}
+      permission_session = rd.rd_permission_session_insert(data)
+
+      msg = SESSION_TIMEOUT_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'bot_set_share_permission', index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      permission_session = rd.rd_permission_session_access(index)
+      hasDeleted = rd.rd_permission_session_delete(index)
+      isAlive = XMPPController.alive
+
+      expect(permission_session).not_to be_nil
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
 
 # HANDLER: Receive UPNP GET CANCEL SUCCESS response
     it 'Receive UPNP GET CANCEL SUCCESS response' do
@@ -2151,6 +2364,27 @@ describe XMPPController do
     end
 
 
+# HANDLER: Receive DEVICE INFO GET CANCEL SUCCESS response
+    it 'Receive DEVICE INFO GET CANCEL SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {session_id: index, device_id: device_id, user_id: 2, status:'start', info: '{}'}
+      device_info_session = rd.rd_device_info_session_insert(data)
+
+      msg = SESSION_CANCEL_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'bot_get_device_information', index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      device_info_session = rd.rd_device_info_session_access(index)
+      hasDeleted = rd.rd_device_info_session_delete(index)
+      isAlive = XMPPController.alive
+
+      expect(device_info_session).not_to be_nil
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
+
 # HANDLER: Receive UPNP SET CANCEL SUCCESS response
     it 'Receive UPNP SET CANCEL SUCCESS response' do
       device_id = Time.now.to_i
@@ -2187,6 +2421,26 @@ describe XMPPController do
       isAlive = XMPPController.alive
 
       expect(package_session).not_to be_nil
+      expect(isAlive).to be true
+      expect(hasDeleted).to be true
+    end
+
+# HANDLER: Receive PERMISSION SET CANCEL SUCCESS response
+    it 'Receive PERMISSION SET CANCEL SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {index: index, status:'start'}
+      permission_session = rd.rd_permission_session_insert(data)
+
+      msg = SESSION_CANCEL_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, 'bot_set_share_permission', index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      permission_session = rd.rd_permission_session_access(index)
+      hasDeleted = rd.rd_permission_session_delete(index)
+      isAlive = XMPPController.alive
+
+      expect(permission_session).not_to be_nil
       expect(isAlive).to be true
       expect(hasDeleted).to be true
     end
@@ -2234,6 +2488,27 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive PERMISSION SET SUCCESS response
+    it 'Receive PERMISSION SET SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {index: index, status:'start'}
+      permission_session = rd.rd_permission_session_insert(data)
+      expect(permission_session).not_to be_nil
+
+      msg = PERMISSION_SETTING_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      permission_session = rd.rd_permission_session_access(index)
+      hasDeleted = rd.rd_permission_session_delete(index)
+
+      expect(permission_session).not_to be_nil
+      expect(permission_session["status"]).to eq('done')
+
+      expect(hasDeleted).to be true
+    end
+
 # HANDLER: Receive UPNP SET SUCCESS response, nonexistent session id
     it 'Receive UPNP SET SUCCESS response, nonexistent session id' do
       index = Time.now.to_i
@@ -2261,6 +2536,21 @@ describe XMPPController do
       expect(isAlive).to be true
 
       hasDeleted = rd.rd_package_session_delete(index)
+      expect(hasDeleted).to be true
+    end
+
+# HANDLER: Receive PERMISSION SET SUCCESS response, nonexistent session id
+    it 'Receive PERMISSION SET SUCCESS response, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = PERMISSION_SETTING_SUCCESS_RESPONSE % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_permission_session_delete(index)
       expect(hasDeleted).to be true
     end
 
@@ -3478,6 +3768,30 @@ describe XMPPController do
     end
 
 
+# HANDLER: Receive PERMISSION SET FAILURE response
+    it 'Receive PERMISSION SET FAILURE response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {index: index, status: 'start', }
+      permission_session = rd.rd_permission_session_insert(data)
+      expect(permission_session).not_to be_nil
+
+      msg = PERMISSION_SETTING_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 488, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      permission_session = rd.rd_permission_session_access(index)
+      hasDeleted = rd.rd_permission_session_delete(index)
+
+      expect(permission_session).not_to be_nil
+      expect(permission_session["status"]).to eq('failure')
+      expect(permission_session["error_code"]).to eq('488')
+
+      expect(hasDeleted).to be true
+    end
+
+
 # HANDLER: Receive UPNP SET FAILURE response - single item
     it 'Receive UPNP SET FAILURE response - single item' do
       device_id = Time.now.to_i
@@ -3535,6 +3849,20 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive PERMISSION SET FAILURE response, nonexistent session id
+    it 'Receive PERMISSION SET FAILURE response, nonexistent session id' do
+      index = Time.now.to_i
+
+      msg = PERMISSION_SETTING_FAILURE_RESPONSE % [bot_xmpp_account, device_xmpp_account, 488, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      isAlive = XMPPController.alive
+      expect(isAlive).to be true
+
+      hasDeleted = rd.rd_permission_session_delete(index)
+      expect(hasDeleted).to be true
+    end
 
 # HANDLER: Receive UPNP SET TIMEOUT FAILURE response
     it 'Receive UPNP SET TIMEOUT FAILURE response' do

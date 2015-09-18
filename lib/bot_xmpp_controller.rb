@@ -566,16 +566,15 @@ module XMPPController
           index = x
           device_info = @rd_conn.rd_device_info_session_access(index)
           status = !device_info.nil? ? device_info["status"] : nil
-
           if KSTATUS_START == status then
-            data = {index: index, status: KSTATUS_TIMEOUT}
+            data = {session_id: index, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_device_info_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
             xmpp_account = device["xmpp_account"] if !device.nil?
             info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
-
+            
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'DEVICE-INFOMATION',
                                    direction: 'N/A',

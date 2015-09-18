@@ -671,6 +671,7 @@ class BotRedisAccess
 
     @redis.hset(key, "status", data[:status]) if data.has_key?(:status)
     @redis.hset(key, "info", data[:info]) if data.has_key?(:info)
+    @redis.hset(key, "device_id", data[:device_id]) if data.has_key?(:device_id)
     @redis.hset(key, "error_code", data[:error_code]) if data.has_key?(:error_code)
 
     return @redis.hgetall(key)
