@@ -15,7 +15,7 @@ require 'json'
 require 'yaml'
 require 'rubygems'
 require 'eventmachine'
-
+require 'pry'
 
 
 BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
@@ -116,8 +116,8 @@ module XMPPController
       client.run
       }
   end
-  
-  
+
+
   def self.container(data)
     yield(data)
   end
@@ -530,13 +530,14 @@ module XMPPController
         }
 
         df.callback do |x|
+          permission_session = @rd_conn.rd_permission_session_access( session_id )
           status = !permission_session.nil? ? permission_session["status"] : nil
-          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+          if (KSTATUS_SUBMIT == status) && Time.now.to_i > (expire_at - 1) then
             data = { index: session_id, status: KSTATUS_TIMEOUT }
             @rd_conn.rd_permission_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
-            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', tag: permission_session["device_id"]}
             send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
           end
         end
@@ -565,9 +566,8 @@ module XMPPController
           index = x
           device_info = @rd_conn.rd_device_info_session_access(index)
           status = !device_info.nil? ? device_info["status"] : nil
-
           if KSTATUS_START == status then
-            data = {index: index, status: KSTATUS_TIMEOUT}
+            data = {session_id: index, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_device_info_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
@@ -1268,8 +1268,8 @@ module XMPPController
         ## Store volume info in each item
         volume_list = Array.new
         xml["x"]["item"].each do |item|
-          item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
-          item_list = Array.new   
+          item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] )
+          item_list = Array.new
           item_field.each do |field|
             new_field = Hash.new
             new_field[field["var"].to_sym] = field["value"]
@@ -2779,7 +2779,7 @@ module XMPPController
       xml["x"]["item"].each do |item|
         package_name = ''
         error_code = ''
-        item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
+        item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] )
         item_field.each do |field|
           package_name = field["value"]  if field["var"] == 'package-name'
           error_code = field["value"]  if field["var"] == 'ERROR_CODE'
@@ -2812,5 +2812,39 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
+
+  #HANDLER: bot_health_check_send
+  message :normal?, proc {|m| 'bot_health_check_send' == m.form.title } do |msg|
+
+    require './lib/bot_xmpp_health_check_template'
+
+    puts msg
+    # Fluent::Logger.post msg
+
+    MultiXml.parser = :rexml
+    xml = MultiXml.parse(msg.to_s)
+    bot_xmpp_account = xml['message']['to']
+
+
+    bot_xmpp_domain = 'localhost'
+    # bot_xmpp_user = 'bot2'
+    # bot_xmpp_account = "#{bot_xmpp_user}@#{bot_xmpp_domain}"
+
+    device_xmpp_user = 'd0023f8311041-tempserialnum0000'
+    device_xmpp_domain = bot_xmpp_domain
+    device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
+
+    session_id = Time.now.to_i
+
+    bot_receiver = 'bot_receiver@localhost'
+
+    response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [device_xmpp_account, bot_xmpp_account, session_id]
+
+    write_to_stream response_msg_success
+
+    puts "write back #{response_msg_success}"
+
+  end
+
 
 end

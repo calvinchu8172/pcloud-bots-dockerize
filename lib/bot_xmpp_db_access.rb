@@ -64,7 +64,6 @@ class BotXmppDBAccess
     # Ref rest api format
     origin = [('a'..'z'), ('A'..'Z')].map { |i| i.to_a }.flatten
     new_password = (0...10).map { origin[rand(origin.length)] }.join
-    # binding.pry
     XMPP_User.find_by(username: username).update(password: new_password)
 
     return new_password

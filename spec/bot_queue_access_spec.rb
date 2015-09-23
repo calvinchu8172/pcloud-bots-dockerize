@@ -10,13 +10,9 @@ describe BotQueueAccess do
   it 'Config file check' do
     expect(config).to be_an_instance_of(Hash)
 
-    expect(config).to have_key('access_key_id')
-    expect(config).to have_key('secret_access_key')
     expect(config).to have_key('region')
     expect(config).to have_key('sqs_queue_name')
 
-    expect(config['access_key_id']).not_to eq('xxx')
-    expect(config['secret_access_key']).not_to eq('xxx')
     expect(config['region']).not_to eq('xxx')
     expect(config['sqs_queue_name']).not_to eq('xxx')
   end
@@ -51,6 +47,30 @@ describe BotQueueAccess do
   it 'Send Upnp submit message to SQS' do
     upnp_submit_body = '{"job":"upnp_submit", "session_id":1}'
     send_message = queue.send_message(upnp_submit_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Package query message to SQS' do
+    upnp_query_body = '{"job":"Package_query", "session_id":1}'
+    send_message = queue.send_message(upnp_query_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Package submit message to SQS' do
+    package_submit_body = '{"job":"package_submit", "session_id":1}'
+    send_message = queue.send_message(package_submit_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Device information message to SQS' do
+    device_info_body = '{"job":"device_info", "session_id":1}'
+    send_message = queue.send_message(device_info_body)
+    expect(send_message).to respond_to(:message_id)
+  end
+
+  it 'Send Led Indicator message to SQS' do
+    led_indicator_submit_body = '{"job":"led_indicator", "session_id":1}'
+    send_message = queue.send_message(led_indicator_submit_body)
     expect(send_message).to respond_to(:message_id)
   end
 
