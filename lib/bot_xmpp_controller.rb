@@ -116,8 +116,8 @@ module XMPPController
       client.run
       }
   end
-  
-  
+
+
   def self.container(data)
     yield(data)
   end
@@ -574,7 +574,7 @@ module XMPPController
             xmpp_account = device["xmpp_account"] if !device.nil?
             info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
-            
+
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'DEVICE-INFOMATION',
                                    direction: 'N/A',
@@ -1268,8 +1268,8 @@ module XMPPController
         ## Store volume info in each item
         volume_list = Array.new
         xml["x"]["item"].each do |item|
-          item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
-          item_list = Array.new   
+          item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] )
+          item_list = Array.new
           item_field.each do |field|
             new_field = Hash.new
             new_field[field["var"].to_sym] = field["value"]
@@ -2779,7 +2779,7 @@ module XMPPController
       xml["x"]["item"].each do |item|
         package_name = ''
         error_code = ''
-        item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] ) 
+        item_field =  ( item.class.to_s == 'Hash' ? item['field'] : item[1] )
         item_field.each do |field|
           package_name = field["value"]  if field["var"] == 'package-name'
           error_code = field["value"]  if field["var"] == 'ERROR_CODE'
@@ -2812,5 +2812,39 @@ module XMPPController
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
+
+  #HANDLER: bot_health_check_send
+  message :normal?, proc {|m| 'bot_health_check_send' == m.form.title } do |msg|
+
+    require './lib/bot_xmpp_health_check_template'
+
+    puts msg
+    # Fluent::Logger.post msg
+
+    MultiXml.parser = :rexml
+    xml = MultiXml.parse(msg.to_s)
+    bot_xmpp_account = xml['message']['to']
+
+
+    bot_xmpp_domain = 'localhost'
+    # bot_xmpp_user = 'bot2'
+    # bot_xmpp_account = "#{bot_xmpp_user}@#{bot_xmpp_domain}"
+
+    device_xmpp_user = 'd0023f8311041-tempserialnum0000'
+    device_xmpp_domain = bot_xmpp_domain
+    device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
+
+    session_id = Time.now.to_i
+
+    bot_receiver = 'bot_receiver@localhost'
+
+    response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [device_xmpp_account, bot_xmpp_account, session_id]
+
+    write_to_stream response_msg_success
+
+    puts "write back #{response_msg_success}"
+
+  end
+
 
 end
