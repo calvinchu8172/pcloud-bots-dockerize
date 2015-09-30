@@ -130,7 +130,7 @@ EM.run do
   end
 
   df.callback do |x|
-    puts "timeout from #{x}"
+    puts "Timeout from #{x}"
     EM.stop
   end
 
