@@ -2818,31 +2818,35 @@ module XMPPController
 
     require './lib/bot_xmpp_health_check_template'
 
-    puts msg
-    # Fluent::Logger.post msg
+    begin
+      puts msg
+      # Fluent::Logger.post msg
 
-    MultiXml.parser = :rexml
-    xml = MultiXml.parse(msg.to_s)
-    bot_xmpp_account = xml['message']['to']
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(msg.to_s)
+      bot_xmpp_account = xml['message']['to']
 
 
-    bot_xmpp_domain = 'localhost'
-    # bot_xmpp_user = 'bot2'
-    # bot_xmpp_account = "#{bot_xmpp_user}@#{bot_xmpp_domain}"
+      bot_xmpp_domain = 'localhost'
+      # bot_xmpp_user = 'bot2'
+      # bot_xmpp_account = "#{bot_xmpp_user}@#{bot_xmpp_domain}"
 
-    device_xmpp_user = 'd0023f8311041-tempserialnum0000'
-    device_xmpp_domain = bot_xmpp_domain
-    device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
+      device_xmpp_user = 'd0023f8311041-tempserialnum0000'
+      device_xmpp_domain = bot_xmpp_domain
+      device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
 
-    session_id = Time.now.to_i
+      session_id = Time.now.to_i
 
-    bot_receiver = 'bot_receiver@localhost'
+      bot_receiver = 'bot_receiver@localhost'
 
-    response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [device_xmpp_account, bot_xmpp_account, session_id]
+      response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % ["bot_health_check@localhost", bot_xmpp_account, session_id]
+      # sleep 3
+      write_to_stream response_msg_success
 
-    write_to_stream response_msg_success
-
-    puts "write back #{response_msg_success}"
+      puts "write back #{response_msg_success}"
+    rescue Exception => error
+      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+    end
 
   end
 
