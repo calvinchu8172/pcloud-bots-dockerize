@@ -119,36 +119,36 @@ EM.run do
   #   puts "Tick ..."
   # end
 
-  # EM.add_timer(1) do
-  #   bot_xmpp_usernames.each do |bot_xmpp_username|
-  #     @health_check_msg = HEALTH_CHECK_SEND_RESPONSE % [bot_xmpp_username, @bot_health_check_account, @session_id] # to bot, from device, thread_id
-  #     App.write_to_stream(@health_check_msg)
-  #     xml = MultiXml.parse @health_check_msg.to_s
-  #     title = xml['message']['x']['title']
-  #     to = xml['message']['to']
-  #     from = xml['message']['from']
-  #     puts "sent #{title} to #{to}"
-  #     Fluent::Logger.post( FLUENT_BOT_SYSINFO, { event: 'bot_health_check',
-  #                                                direction: 'Health_Check->Bot',
-  #                                                to: to,
-  #                                                from: from,
-  #                                                message: title
-  #                                               } )
-  #   end
-  # end
+  EM.add_timer(1) do
+    bot_xmpp_usernames.each do |bot_xmpp_username|
+      @health_check_msg = HEALTH_CHECK_SEND_RESPONSE % [bot_xmpp_username, @bot_health_check_account, @session_id] # to bot, from device, thread_id
+      App.write_to_stream(@health_check_msg)
+      xml = MultiXml.parse @health_check_msg.to_s
+      title = xml['message']['x']['title']
+      to = xml['message']['to']
+      from = xml['message']['from']
+      puts "sent #{title} to #{to}"
+      Fluent::Logger.post( FLUENT_BOT_SYSINFO, { event: 'bot_health_check',
+                                                 direction: 'Health_Check->Bot',
+                                                 to: to,
+                                                 from: from,
+                                                 message: title
+                                                } )
+    end
+  end
 
 
-  # df = EM::DefaultDeferrable.new
+  df = EM::DefaultDeferrable.new
 
-  # EM.add_timer(6) do
-  #   @remain_bot_xmpp_users = bot_xmpp_usernames - @received_bot_xmpp_users
-  #   df.set_deferred_status :succeeded, @remain_bot_xmpp_users
-  # end
+  EM.add_timer(6) do
+    @remain_bot_xmpp_users = bot_xmpp_usernames - @received_bot_xmpp_users
+    df.set_deferred_status :succeeded, @remain_bot_xmpp_users
+  end
 
-  # df.callback do |x|
-  #   puts "Timeout from #{x}"
-  #   # EM.stop
-  # end
+  df.callback do |x|
+    puts "Timeout from #{x}"
+    # EM.stop
+  end
 
   App.message :normal?, proc {|m| 'bot_health_check_success' == m.form.title } do |msg|
     xml = MultiXml.parse msg.to_s

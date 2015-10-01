@@ -8,7 +8,7 @@ require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
-require './lib/bot_xmpp_health_check_template'
+# require_relative 'lib/bot_xmpp_health_check_template'
 require 'fluent-logger'
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
