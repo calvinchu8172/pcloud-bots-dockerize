@@ -1242,7 +1242,7 @@ module XMPPController
   end
 
 # HANDLER: Result:Get_device_information
-  message :normal?, proc {|m| m.form.result? && 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
+  message :normal?, proc {|m| 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
 

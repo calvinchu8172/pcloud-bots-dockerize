@@ -2509,6 +2509,27 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
+# HANDLER: Receive DEVICE INFO GET SUCCESS response
+    it 'Receive DEVICE INFO GET SUCCESS response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+      data = {session_id: index, status: 'start', info: {}, device_id: device_id}
+      device_info_session = rd.rd_device_info_session_insert(data)
+      expect(device_info_session).not_to be_nil
+
+      msg = DEVICE_INFO_RESPONSE_SUCCESS % [bot_xmpp_account, device_xmpp_account, index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      device_info_session = rd.rd_device_info_session_access(index)
+      hasDeleted = rd.rd_device_info_session_delete(index)
+
+      expect(device_info_session).not_to be_nil
+      expect(device_info_session["status"]).to eq('done')
+
+      expect(hasDeleted).to be true
+    end
+
 # HANDLER: Receive UPNP SET SUCCESS response, nonexistent session id
     it 'Receive UPNP SET SUCCESS response, nonexistent session id' do
       index = Time.now.to_i
@@ -3600,6 +3621,29 @@ describe XMPPController do
       expect(package_session).not_to be_nil
       expect(package_session["status"]).to eq('failure')
       expect(package_session["error_code"].to_i).to eq(489)
+
+      expect(hasDeleted).to be true
+    end
+
+# HANDLER: Receive DEVICE INFO GET FAILURE response
+    it 'Receive DEVICE INFO GET FAILURE response' do
+      device_id = Time.now.to_i
+      index = Time.now.to_i
+
+      data = {session_id: index ,device_id: device_id, user_id: 2, status: 'start', info: '{}'}
+      device_info_session = rd.rd_device_info_session_insert(data)
+      expect(device_info_session).not_to be_nil
+
+      msg = DEVICE_INFO_RESPONSE_FAILURE % [bot_xmpp_account, device_xmpp_account, '489', index]
+      client.send msg
+      sleep(DELAY_TIME)
+
+      device_info_session = rd.rd_device_info_session_access(index)
+      hasDeleted = rd.rd_device_info_session_delete(index)
+
+      expect(device_info_session).not_to be_nil
+      expect(device_info_session["status"]).to eq('failure')
+      expect(device_info_session["error_code"].to_i).to eq(489)
 
       expect(hasDeleted).to be true
     end

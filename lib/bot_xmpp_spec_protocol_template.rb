@@ -357,14 +357,15 @@ EOT
 
 #DEVICE_INFO_RESPONSE_FAILURE % ['BOT_ID', 'DEVICE_ID', 'ERROR_CODE', 'SESSION_ID']
 DEVICE_INFO_RESPONSE_FAILURE = <<EOT
-<message to "%s" type="normal" from="%s" lang="en">
-    <x xmlns="jabber:x:data" type="cancel">
-        <title>bot_get_device_information</title>
-        <field var="ERROR_CODE" type="text-single">
-            <value>%d</value>
-        </field>
-    </x>
-    <thread>%d</thread>
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="cancel">
+    <title>bot_get_device_information</title>
+    <field type='text-single' var='ERROR_CODE'>
+      <value>%d</value>
+    </field>
+  </x>
+  <thread>%d</thread>
+</message>
 EOT
 
 # LED_INDICATOR_REQUEST_SUCCESS_RESPONSE % ['BOT_ID', 'DEVICE_ID', 'SESSION_ID']
