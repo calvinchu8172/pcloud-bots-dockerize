@@ -22,7 +22,6 @@ Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 
 bot_xmpp_domain = 'localhost'
 # bot_xmpp_user = 'bot1'
-
 # bot_xmpp_account = "#{bot_xmpp_user}@#{bot_xmpp_domain}"
 
 device_xmpp_user = 'd0023f8311041-tempserialnum0000'
@@ -31,10 +30,9 @@ device_xmpp_domain = bot_xmpp_domain
 xmpp_db = BotXmppDBAccess.new
 @device_xmpp_password = XMPP_User.find_by(username: device_xmpp_user).password
 
-XMPP_User.create(username: 'bot_health_check', password: '123456') if XMPP_User.find_by(username: 'bot_health_check') == nil
+# XMPP_User.create(username: 'bot_health_check', password: '123456') if XMPP_User.find_by(username: 'bot_health_check') == nil
 
 bot_xmpp_users = XMPP_User.where( "username like ?", "%bot%" )
-# c = XMPP_User.find(:all, :conditions => ["username like ?","%bot%"])
 
 bot_xmpp_usernames = []
 bot_xmpp_users.each do |bot_xmpp_user|
@@ -45,22 +43,19 @@ end
 
 session_id = Time.now.to_i
 
-# @health_check_msg = HEALTH_CHECK_SEND_RESPONSE % [bot_xmpp_usernames[0], @device_xmpp_account, session_id] # to bot, from device, thread_id
 MultiXml.parser = :rexml
-# xml = MultiXml.parse(@health_check_msg.to_s)
-# xml['message']['to']
-# xml['message']['x']['title']
-
-# binding.pry
 
 @sent_bots = []
-# @received_bots = []
 
-puts '%s start connect to XMPP server' % @device_xmpp_account
 
-setup @device_xmpp_account , @device_xmpp_password
+  puts '%s start connect to XMPP server' % @device_xmpp_account
+  # EM.add_periodic_timer(0.3)
+  setup @device_xmpp_account , @device_xmpp_password
+  # client.run
+  puts 'Waiting XMPP connection ready ...'
 
-puts 'Waiting XMPP connection ready ...'
+
+# }
 
 when_ready do
   puts "Connected !"
@@ -112,7 +107,6 @@ end
 
 
 disconnected {
-  # sleep(1)
   Fluent::Logger.post(FLUENT_BOT_SYSALERT, {event: 'bot_health_check',
                                             direction: 'N/A',
                                             to: 'N/A',
@@ -130,7 +124,6 @@ disconnected {
 
 # HANDLER: bot_health_check_send
 message :normal?, proc {|m| 'bot_health_check_success' == m.form.title } do |msg|
-  # puts 'OK!!'
 
   xml = MultiXml.parse msg.to_s
   title = xml['message']['x']['title']
@@ -143,7 +136,5 @@ message :normal?, proc {|m| 'bot_health_check_success' == m.form.title } do |msg
                                              from: from,
                                              message: title
                                             } )
-
-  # @received_bots << from
 
 end

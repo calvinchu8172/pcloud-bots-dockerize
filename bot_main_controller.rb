@@ -8,6 +8,7 @@ require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
+require './lib/bot_xmpp_health_check_template'
 require 'fluent-logger'
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
@@ -59,6 +60,11 @@ jobThread.abort_on_exception = TRUE
 threads << jobThread
 
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
+# XMPPController.when_ready {
+#   xmpp_connect_ready = TRUE
+#   health_check_msg = HEALTH_CHECK_SUCCESS_RESPONSE % ['bot_health_check@localhost', 'bot1@localhost', 11111111] # to bot, from device, thread_id
+#   XMPPController.write_to_stream health_check_msg
+# }
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
@@ -191,7 +197,7 @@ def worker(sqs, db_conn, rd_conn)
                 language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       when 'package_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',

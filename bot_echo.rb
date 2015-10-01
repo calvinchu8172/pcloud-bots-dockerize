@@ -7,6 +7,7 @@ require 'active_record'
 require 'blather/client'
 require './lib/bot_pair_protocol_template'
 require './lib/bot_xmpp_spec_protocol_template'
+require './lib/bot_xmpp_health_check_template'
 require 'pry'
 # XMPP_ACCOUNT = 'd099789665701-a123456@192.168.50.10/device'
 # XMPP_PASSWORD = 'kxxNQJBLHZ'
@@ -31,7 +32,12 @@ setup XMPP_ACCOUNT , XMPP_PASSWORD
 
 puts 'Waiting XMPP connection ready ...'
 
-when_ready { puts "Connected !" }
+when_ready {
+  puts "Connected !"
+  # rmsg = PACKAGE_ASK_REQUEST_SUCCESS % ['bot1@localhost', XMPP_ACCOUNT, 1]
+  rmsg = HEALTH_CHECK_SEND_RESPONSE % ['bot1@localhost', XMPP_ACCOUNT, 1] #to, from, thread
+  write_to_stream rmsg
+}
 
 msg_counter = 0
 

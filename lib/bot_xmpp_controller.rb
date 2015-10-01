@@ -111,6 +111,8 @@ module XMPPController
       }
       @bot_xmpp_password = @xmpp_db.db_reset_password(@account)
       setup @bot_xmpp_account, @bot_xmpp_password
+      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: '***************************',
+                                               direction: @bot_xmpp_account})
       @xmpp_db.close
 
       client.run
@@ -2826,10 +2828,10 @@ module XMPPController
       bot_xmpp_account = xml['message']['to']; puts bot_xmpp_account
       bot_health_check_account = xml['message']['from'].split('/')[0]; puts bot_health_check_account
 
-      bot_xmpp_domain = 'localhost'
-      device_xmpp_user = 'd0023f8311041-tempserialnum0000'
-      device_xmpp_domain = bot_xmpp_domain
-      device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
+      # bot_xmpp_domain = 'localhost'
+      # device_xmpp_user = 'd0023f8311041-tempserialnum0000'
+      # device_xmpp_domain = bot_xmpp_domain
+      # device_xmpp_account = "#{device_xmpp_user}@#{device_xmpp_domain}"
 
       session_id = Time.now.to_i
 
@@ -2840,6 +2842,17 @@ module XMPPController
       write_to_stream response_msg_success
 
       puts "write back \n #{response_msg_success}"
+      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                            {event: 'bot_health_check',
+                             direction: 'health_check->Bot',
+                             to: bot_xmpp_account,
+                             from: bot_health_check_account,
+                             id: session_id,
+                             full_domain: 'N/A',
+                             # message:"Receive SET PACKAGE LIST FAILURE RESPONSE message from device ",
+                             # data: data
+                             })
+
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
