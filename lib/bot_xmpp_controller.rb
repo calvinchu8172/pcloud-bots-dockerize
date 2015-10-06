@@ -7,6 +7,7 @@ require_relative 'bot_pair_protocol_template'
 require_relative 'bot_mail_access'
 require_relative 'bot_unit'
 require_relative 'bot_xmpp_db_access'
+require_relative 'bot_xmpp_health_check_template'
 
 require 'fluent-logger'
 require 'blather/client/dsl'
@@ -111,7 +112,7 @@ module XMPPController
       }
       @bot_xmpp_password = @xmpp_db.db_reset_password(@account)
       setup @bot_xmpp_account, @bot_xmpp_password
-      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: '***************************',
+      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: '*******bot login********',
                                                direction: @bot_xmpp_account})
       @xmpp_db.close
 
@@ -2817,8 +2818,6 @@ module XMPPController
 
   #HANDLER: bot_health_check_send
   message :normal?, proc {|m| 'bot_health_check_send' == m.form.title } do |msg|
-
-    require './lib/bot_xmpp_health_check_template'
 
     begin
       puts msg

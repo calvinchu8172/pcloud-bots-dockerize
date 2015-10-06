@@ -147,7 +147,7 @@ EM.run do
 
   df.callback do |x|
     puts "Timeout from #{x}"
-    # EM.stop
+    EM.stop
   end
 
   App.message :normal?, proc {|m| 'bot_health_check_success' == m.form.title } do |msg|
