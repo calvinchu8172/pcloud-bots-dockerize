@@ -15,5 +15,4 @@ gem "fluent-plugin-s3"
 gem "redis"
 gem "rspec"
 gem 'pry'
-gem 'rspec'
 gem 'simplecov'

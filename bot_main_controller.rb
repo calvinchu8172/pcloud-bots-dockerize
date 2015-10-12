@@ -60,11 +60,6 @@ jobThread.abort_on_exception = TRUE
 threads << jobThread
 
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
-# XMPPController.when_ready {
-#   xmpp_connect_ready = TRUE
-#   health_check_msg = HEALTH_CHECK_SUCCESS_RESPONSE % ['bot_health_check@localhost', 'bot1@localhost', 11111111] # to bot, from device, thread_id
-#   XMPPController.write_to_stream health_check_msg
-# }
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
