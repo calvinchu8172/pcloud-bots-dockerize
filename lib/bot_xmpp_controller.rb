@@ -59,6 +59,8 @@ KSESSION_TIMEOUT_FAILURE_RESPONSE = 'session_timeout_failure_response'
 KLED_INDICATOR_REQUEST = 'led_indicator'
 KLED_INDICATOR_BLINK_TIME = 30
 
+KHEALTH_CHECK_SUCCESS_RESPONSE = 'health_check_success_response'
+
 KSTATUS_START = 'start'
 KSTATUS_WAITING = 'waiting'
 KSTATUS_CANCEL = 'cancel'
@@ -926,6 +928,25 @@ module XMPPController
       when KDDNS_SETTING_FAILURE_RESPONSE
         msg = DDNS_SETTING_FAILURE_RESPONSE % [info[:xmpp_account], @bot_xmpp_account, info[:error_code], info[:session_id]]
         write_to_stream msg
+
+# SENDER: HEALTH CHECK SUCCESS RESPONSE
+      when KHEALTH_CHECK_SUCCESS_RESPONSE
+        # puts "sender #{info}"
+        bot_health_check_account = info[:bot_health_check_account]
+        bot_xmpp_account = info[:bot_xmpp_account]
+        thread = Time.now.to_i
+        msg = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, thread]
+        write_to_stream msg
+        # puts msg
+        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'HEALTH CHECK',
+                                                  direction: 'Bot->Health_Check',
+                                                  to: bot_health_check_account,
+                                                  from: bot_xmpp_account,
+                                                  id: thread,
+                                                  full_domain: 'N/A',
+                                                  message:"Send HEALTH_CHECK_SUCCESS_RESPONSE message back to %s" % bot_health_check_account,
+                                                  data: 'N/A'})
+
     end
   end
 
@@ -2817,7 +2838,6 @@ module XMPPController
 
   #HANDLER: bot_health_check_send
   message :normal?, proc {|m| 'bot_health_check_send' == m.form.title } do |msg|
-
     begin
       # puts msg
 
@@ -2827,27 +2847,32 @@ module XMPPController
       # puts bot_xmpp_account
       bot_health_check_account = xml['message']['from'].split('/')[0]
       # puts bot_health_check_account
-      session_id = Time.now.to_i
-      response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, session_id]
-
-      write_to_stream response_msg_success
+      thread = Time.now.to_i
+      # response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, session_id]
+      # write_to_stream response_msg_success
 
       # puts "write back \n #{response_msg_success}"
       Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
                             {event: 'HEALTH_CHECK',
-                             direction: 'Bot_Health_Check->Bot',
+                             direction: 'Health_Check->Bot',
                              to: bot_xmpp_account,
                              from: bot_health_check_account,
-                             id: session_id,
+                             id: thread,
                              full_domain: 'N/A',
-                             message:"Receive HEALTH_CHECK_SEND_RESPONSE message from Bot_Health_Check & reply message",
+                             message:"Receive HEALTH_CHECK_SEND_RESPONSE message from %s" % bot_health_check_account,
                              data: 'N/A'
                              })
+      info = {
+        bot_health_check_account: bot_health_check_account,
+        bot_xmpp_account: bot_xmpp_account
+      }
+      # puts "handler #{info}"
+      send_request(KHEALTH_CHECK_SUCCESS_RESPONSE, info)
+      # puts "\n send request \n"
 
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
-
   end
 
 
