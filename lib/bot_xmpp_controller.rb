@@ -934,14 +934,22 @@ module XMPPController
         # puts "sender #{info}"
         bot_health_check_account = info[:bot_health_check_account]
         bot_xmpp_account = info[:bot_xmpp_account]
+        health_check_send_time = info[:health_check_send_time]
+        bot_receive_time = info[:bot_receive_time]
+        bot_send_time = Time.now.to_i
+        health_check_receive_time = info[:health_check_receive_time]
         thread = info[:thread]
-        msg = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, thread]
+        msg = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, health_check_send_time, bot_receive_time, bot_send_time, health_check_receive_time, thread]
         write_to_stream msg
         # puts msg
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'HEALTH CHECK',
                                                   direction: 'Bot->Health_Check',
                                                   to: bot_health_check_account,
                                                   from: bot_xmpp_account,
+                                                  health_check_send_time: health_check_send_time,
+                                                  bot_receive_time: bot_receive_time,
+                                                  bot_send_time: bot_send_time,
+                                                  health_check_receive_time: health_check_receive_time,
                                                   id: thread,
                                                   full_domain: 'N/A',
                                                   message:"Send HEALTH_CHECK_SUCCESS_RESPONSE message back to %s" % bot_health_check_account,
@@ -2837,7 +2845,7 @@ module XMPPController
   end
 
   #HANDLER: bot_health_check_send
-  message :normal?, proc {|m| 'bot_health_check_send' == m.form.title } do |msg|
+  message :normal?, proc {|m| m.form.form? && 'bot_health_check_send' == m.form.title } do |msg|
     begin
       # puts msg
 
@@ -2847,7 +2855,11 @@ module XMPPController
       # puts bot_xmpp_account
       bot_health_check_account = xml['message']['from'].split('/')[0]
       # puts bot_health_check_account
-      thread = Time.now.to_i
+      health_check_send_time = xml["message"]["x"]["item"]["field"][0]["value"]
+      bot_receive_time = Time.now.to_i
+      bot_send_time = xml["message"]["x"]["item"]["field"][2]["value"]
+      health_check_receive_time = xml["message"]["x"]["item"]["field"][3]["value"]
+      thread = xml['message']['thread']
       # response_msg_success = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, session_id]
       # write_to_stream response_msg_success
 
@@ -2857,6 +2869,10 @@ module XMPPController
                              direction: 'Health_Check->Bot',
                              to: bot_xmpp_account,
                              from: bot_health_check_account,
+                             health_check_send_time: health_check_send_time,
+                             bot_receive_time: bot_receive_time,
+                             bot_send_time: bot_send_time,
+                             health_check_receive_time: health_check_receive_time,
                              id: thread,
                              full_domain: 'N/A',
                              message:"Receive HEALTH_CHECK_SEND_RESPONSE message from %s" % bot_health_check_account,
@@ -2865,6 +2881,10 @@ module XMPPController
       info = {
         bot_health_check_account: bot_health_check_account,
         bot_xmpp_account: bot_xmpp_account,
+        health_check_send_time: health_check_send_time,
+        bot_receive_time: bot_receive_time,
+        bot_send_time: bot_send_time,
+        health_check_receive_time: health_check_receive_time,
         thread: thread
       }
       # puts "handler #{info}"
