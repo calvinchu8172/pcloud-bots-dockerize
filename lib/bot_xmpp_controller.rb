@@ -6,6 +6,8 @@ require_relative 'bot_redis_access'
 require_relative 'bot_pair_protocol_template'
 require_relative 'bot_mail_access'
 require_relative 'bot_unit'
+require_relative 'bot_xmpp_db_access'
+
 require 'fluent-logger'
 require 'blather/client/dsl'
 require 'multi_xml'
@@ -13,6 +15,8 @@ require 'json'
 require 'yaml'
 require 'rubygems'
 require 'eventmachine'
+#require 'pry'
+
 
 BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
 
@@ -25,7 +29,7 @@ KPERMISSION_EXPIRE_TIME = 60
 
 KDEVICE_INFO_ASK_REQUEST = 'device_info_query'
 
-KDEVICE_INFO_EXPIRE_TIME = 10
+KDEVICE_INFO_EXPIRE_TIME = 30
 
 KUNPAIR_ASK_REQUEST = 'unpair_ask_request'
 
@@ -71,20 +75,23 @@ XMPP_API_VERSION = 'v1.0'
 module XMPPController
   extend Blather::DSL
 
-  def self.new(account, password)
+  #def self.new(account, password)
+  def self.new(account , domain)
     @db_conn = nil
-    @bot_xmpp_account = account
-    @bot_xmpp_password = password
-
-    setup @bot_xmpp_account, @bot_xmpp_password
-
+    #@bot_xmpp_password = password
+    #setup @bot_xmpp_account, @bot_xmpp_password
+    @account = account
     @db_conn = BotDBAccess.new
     @rd_conn = BotRedisAccess.new
+    @xmpp_db = BotXmppDBAccess.new
+
     @route_conn = BotRouteAccess.new
     @mail_conn = BotMailAccessSMTP.new
 
-    @xmpp_server_domain = '@%s' % client.jid.domain
+    #@xmpp_server_domain = '@%s' % client.jid.domain
+    @xmpp_server_domain = '@%s' % domain
     @xmpp_resource_id = '/device'
+    @bot_xmpp_account = @account + @xmpp_server_domain + @xmpp_resource_id
 
     Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
   end
@@ -102,11 +109,15 @@ module XMPPController
       EM.add_periodic_timer(0.3) {
         batch_register_ddns
       }
+      @bot_xmpp_password = @xmpp_db.db_reset_password(@account)
+      setup @bot_xmpp_account, @bot_xmpp_password
+      @xmpp_db.close
 
       client.run
       }
   end
-
+  
+  
   def self.container(data)
     yield(data)
   end
@@ -519,13 +530,14 @@ module XMPPController
         }
 
         df.callback do |x|
+          permission_session = @rd_conn.rd_permission_session_access( session_id )
           status = !permission_session.nil? ? permission_session["status"] : nil
-          if (KSTATUS_START == status) && Time.now.to_i > (expire_at - 1) then
+          if (KSTATUS_SUBMIT == status) && Time.now.to_i > (expire_at - 1) then
             data = { index: session_id, status: KSTATUS_TIMEOUT }
             @rd_conn.rd_permission_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_id)
-            info = {xmpp_account: device_xmpp_account, title: 'permission', tag: permission_session["device_id"]}
+            info = {xmpp_account: device_xmpp_account, title: 'bot_set_share_permission', tag: permission_session["device_id"]}
             send_request(KSESSION_TIMEOUT_REQUEST, info) if !device.nil?
           end
         end
@@ -554,14 +566,13 @@ module XMPPController
           index = x
           device_info = @rd_conn.rd_device_info_session_access(index)
           status = !device_info.nil? ? device_info["status"] : nil
-
           if KSTATUS_START == status then
-            data = {index: index, status: KSTATUS_TIMEOUT}
+            data = {session_id: index, status: KSTATUS_TIMEOUT}
             @rd_conn.rd_device_info_session_update(data)
 
             device = @rd_conn.rd_device_session_access(device_info["device_id"])
             xmpp_account = device["xmpp_account"] if !device.nil?
-            info = {xmpp_account: xmpp_account, title: 'ask_device_information', tag: index}
+            info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
             Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
@@ -1229,7 +1240,7 @@ module XMPPController
   end
 
 # HANDLER: Result:Get_device_information
-  message :normal?, proc {|m| m.form.result? && 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
+  message :normal?, proc {|m| 'bot_get_device_information' == m.form.title && nil == m.form.field('action')} do |msg|
     begin
       result_syslog(msg)
 

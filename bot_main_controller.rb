@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#Version: V.B.20150729_01
+#Version: 2.0.0
 $stdout.sync = true
 
 Encoding.default_external = Encoding::UTF_8
@@ -25,15 +25,20 @@ Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
 def get_xmpp_config
   input = ARGV
   account = nil
-  password = nil
+
+  god_config_file = './config/god_config.yml'
+  config_file = File.join(File.dirname(__FILE__), god_config_file)
+  god_config = YAML.load(File.read(config_file))
+  #password = nil
   #length = input.length - 1
 
   for i in 0..(input.length - 1)
     option = input[i]
     account = input[i + 1] if '-u' == option
-    password = input[i + 1] if '-p' == option
+    #password = input[i + 1] if '-p' == option
   end
-  return {jid: account, pw: password}
+  #return {jid: account, pw: password}
+  return {jid: account ,domain: god_config['xmpp_config']['domain']}
 end
 
 XMPP_CONFIG = get_xmpp_config
@@ -47,14 +52,13 @@ jobThread = Thread.new {
                                              full_domain: 'N/A',
                                              message:"XMPP Controll running ...",
                                              data: 'N/A'})
-    XMPPController.new(XMPP_CONFIG[:jid], XMPP_CONFIG[:pw])
+    XMPPController.new(XMPP_CONFIG[:jid] , XMPP_CONFIG[:domain])
     XMPPController.run
 }
 jobThread.abort_on_exception = TRUE
 threads << jobThread
 
 XMPPController.when_ready { xmpp_connect_ready = TRUE }
-
 db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
@@ -143,7 +147,7 @@ def worker(sqs, db_conn, rd_conn)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
         service_list = upnp["service_list"].to_s if !upnp.nil?
-        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
+        #language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
 
         field_item = ""
 
@@ -163,10 +167,10 @@ def worker(sqs, db_conn, rd_conn)
         end
 
         info = {xmpp_account: xmpp_account.to_s,
-                language: language.to_s,
+                language: 'en',
                 session_id: session_id,
                 field_item: field_item}
-        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil? && !language.nil?
+        XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
 
       when 'upnp_query' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
@@ -182,13 +186,12 @@ def worker(sqs, db_conn, rd_conn)
         upnp = rd_conn.rd_upnp_session_access(session_id)
         device = rd_conn.rd_device_session_access(upnp["device_id"]) if !upnp.nil?
         xmpp_account = device["xmpp_account"] if !device.nil?
-        language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
+        #language = db_conn.db_retrive_user_local_by_device_id(upnp["device_id"]) if !upnp.nil?
         info = {xmpp_account: xmpp_account.to_s,
-                language: language.to_s,
+                language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? && !language.nil?
-
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
       when 'package_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',
@@ -377,6 +380,7 @@ def worker(sqs, db_conn, rd_conn)
     end
     job = nil
     data = nil
+    db_conn.close
   }
 end
 

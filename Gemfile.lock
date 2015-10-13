@@ -28,6 +28,7 @@ GEM
     connection_pool (1.2.0)
     cool.io (1.3.0)
     diff-lcs (1.2.5)
+    docile (1.1.5)
     eventmachine (1.0.7)
     fluent-logger (0.5.0)
       msgpack (>= 0.4.4, < 0.6.0, != 0.5.3, != 0.5.2, != 0.5.1, != 0.5.0)
@@ -83,6 +84,11 @@ GEM
       rubinius-core-api
     rubinius-core-api (0.0.1)
     sigdump (0.2.2)
+    simplecov (0.10.0)
+      docile (~> 1.1.0)
+      json (~> 1.8)
+      simplecov-html (~> 0.10.0)
+    simplecov-html (0.10.0)
     string-scrub (0.0.5)
     thread_safe (0.3.5)
     tlsmail (0.0.1)
@@ -110,5 +116,9 @@ DEPENDENCIES
   mysql2
   redis
   rspec
+  simplecov
   tlsmail
   xmpp4r
+
+BUNDLED WITH
+   1.10.6

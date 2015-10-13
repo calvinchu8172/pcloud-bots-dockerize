@@ -1,0 +1,2 @@
+region: <Ex. us-east-1>
+sqs_queue_name: <Ex. PCloud-Alpha-Bot-Jobs-Test >

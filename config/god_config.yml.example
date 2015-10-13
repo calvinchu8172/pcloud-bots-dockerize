@@ -1,0 +1,11 @@
+path: <Ex. '/vagrant/personal-cloud-bots/' >
+xmpp_config:
+  domain: <Ex. 'localhost' >
+  resource: 'robot'
+  bot_list:
+    - {username: 'bot1'}
+mail_domain: <EX. no-reply@test.com>
+mail_user: <AWS Access Key ID for SES IAM>
+mail_pw: <AWS Secret Access Key for SES IAM>
+notify_list:
+  - {name: 'xxx', email: 'xxx'}

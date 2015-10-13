@@ -82,11 +82,12 @@ class BotDBAccess
                                             :pool     => db_pool,
                                             #:reaping_frequency => db_reaping_frequency
                                             )
-    return connect
+
+    return ActiveRecord::Base.connection_pool.checkout
   end
   
   def close
-    ActiveRecord::Base.remove_connection(@Client) if !@Client.nil?
+     ActiveRecord::Base.connection_pool.checkin(@Client) if !@Client.nil?
   end
 
 #=============== User Methods ===============

@@ -1,0 +1,6 @@
+db_host: localhost
+db_name: ejabberd
+db_userid: root
+db_userpw: '12345678'
+db_socket: ''
+db_pool: 3

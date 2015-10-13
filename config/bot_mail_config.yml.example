@@ -1,0 +1,6 @@
+region: <Ex. us-east-1>
+mail_domain: <Ex. no-reply@test.com>
+smtp_host: email-smtp.us-east-1.amazonaws.com
+smtp_user: <AWS Access Key ID for SES IAM>
+smtp_password: <AWS Secret Access Key for SES IAM>
+smtp_port: 25

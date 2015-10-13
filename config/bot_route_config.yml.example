@@ -1,0 +1,3 @@
+reserved_host_name: [api, www, dns, ddns, upnp, blog, zyxel, store, host, support, service, services]
+zones_info:
+  - {id: <AWS Route 53 Domain Name >, name: <AWS Route 53 Hosted Zone ID>}
