@@ -934,7 +934,7 @@ module XMPPController
         # puts "sender #{info}"
         bot_health_check_account = info[:bot_health_check_account]
         bot_xmpp_account = info[:bot_xmpp_account]
-        thread = Time.now.to_i
+        thread = info[:thread]
         msg = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, thread]
         write_to_stream msg
         # puts msg
@@ -2864,7 +2864,8 @@ module XMPPController
                              })
       info = {
         bot_health_check_account: bot_health_check_account,
-        bot_xmpp_account: bot_xmpp_account
+        bot_xmpp_account: bot_xmpp_account,
+        thread: thread
       }
       # puts "handler #{info}"
       send_request(KHEALTH_CHECK_SUCCESS_RESPONSE, info)
