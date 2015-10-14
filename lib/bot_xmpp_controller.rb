@@ -2853,7 +2853,8 @@ module XMPPController
       xml = MultiXml.parse(msg.to_s)
       bot_xmpp_account = xml['message']['to']
       # puts bot_xmpp_account
-      bot_health_check_account = xml['message']['from'].split('/')[0]
+      # bot_health_check_account = xml['message']['from'].split('/')[0]
+      bot_health_check_account = xml['message']['from']
       # puts bot_health_check_account
       health_check_send_time = xml["message"]["x"]["item"]["field"][0]["value"]
       bot_receive_time = Time.now.to_i
