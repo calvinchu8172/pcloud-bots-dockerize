@@ -1,7 +1,7 @@
 require_relative '../lib/bot_route_access'
 require 'aws-sdk-v1'
 require 'resolv'
-require 'pry'
+#require 'pry'
 
 describe BotRouteAccess do
   config_file = File.join(File.dirname(__FILE__), ROUTE_CONFIG_FILE)

@@ -256,18 +256,22 @@ def worker(sqs, db_conn, rd_conn)
                                                   message:"Get SQS queue of DDNS-query", data: data})
         device = nil
         xmpp_account = nil
-        session_id = data[:session_id]
-        ddns_session = rd_conn.rd_ddns_session_access(session_id)
-        device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
-        xmpp_account = device["xmpp_account"] if !device.nil?
-
+        session_id = data["session_id"]
+        xmpp_account = data["xmpp_account"]
+        device_id = data["device_id"]
+        device_ip = data["ip"]
+        full_domain = data["full_domain"]
+        #if( xmpp_account.nil? )
+        #  ddns_session = rd_conn.rd_ddns_session_access(session_id)
+        #  device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
+        #  xmpp_account = device["xmpp_account"] if !device.nil?
+        #end
         info = {xmpp_account: xmpp_account.to_s,
                 session_id: session_id,
-                device_id: !ddns_session.nil? ? ddns_session["device_id"] : '',
-                ip: !device.nil? ? device["ip"] : '',
-                full_domain: !ddns_session.nil? ? ddns_session["host_name"] + '.' + ddns_session["domain_name"] : ''}
-
-        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device.nil?
+                device_id: device_id,
+                ip: device_ip.to_s,
+                full_domain: full_domain.to_s}
+        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !device_id.nil? && !device_ip.nil? && !full_domain.nil?
 
       when 'cancel' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'CANCEL',

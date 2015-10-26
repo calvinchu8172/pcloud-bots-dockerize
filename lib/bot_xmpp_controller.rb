@@ -785,10 +785,10 @@ module XMPPController
 
           ddns_record = @db_conn.db_ddns_access({device_id: info[:device_id].to_i})
 
-          device = @rd_conn.rd_device_session_access(info[:device_id])
-          ip = device["ip"]
+          #device = @rd_conn.rd_device_session_access(info[:device_id])
+          #ip = info[:ip]
 
-          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: ip, action: 'update'}
+          batch_data = {index: info[:session_id], device_id: info[:device_id], full_domain: info[:full_domain], ip: info[:ip], action: 'update'}
           @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), info[:session_id])
 
           if !ddns_record.nil? then

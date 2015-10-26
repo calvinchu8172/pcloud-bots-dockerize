@@ -11,7 +11,7 @@ require 'multi_xml'
 require 'json'
 require 'eventmachine'
 require 'resolv'
-require 'pry'
+#require 'pry'
 include Jabber
 
 DELAY_TIME = 1
@@ -1536,7 +1536,7 @@ describe XMPPController do
       info = {xmpp_account: device_xmpp_account_node, session_id: index, permission_session: permission_session}
       XMPPController.send_request(KPERMISSION_ASK_REQUEST, info)
 
-      j = 20
+      j = 40
       while j > 0
         puts '        waiting %d second' % j
         sleep(5)
