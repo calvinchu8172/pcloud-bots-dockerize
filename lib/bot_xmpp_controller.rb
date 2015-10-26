@@ -16,7 +16,7 @@ require 'json'
 require 'yaml'
 require 'rubygems'
 require 'eventmachine'
-require 'pry'
+#require 'pry'
 
 
 BOT_ACCOUNT_CONFIG_FILE = '../config/bot_account_config.yml'
