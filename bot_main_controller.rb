@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#Version: V.B.20150922_01
+#Version: 2.0.0
 $stdout.sync = true
 
 Encoding.default_external = Encoding::UTF_8
