@@ -5,6 +5,7 @@ require_relative '../lib/bot_xmpp_db_access'
 require_relative '../lib/bot_unit'
 require_relative '../lib/bot_pair_protocol_template'
 require_relative '../lib/bot_xmpp_spec_protocol_template'
+require_relative '../lib/bot_xmpp_health_check_template'
 require 'aws-sdk-v1'
 require 'xmpp4r/client'
 require 'multi_xml'
@@ -44,7 +45,7 @@ describe XMPPController do
   let(:domain_name) {config["zones_info"][0]["name"]}
   let(:user){User.find_or_create_by({email: 'test@ecoworkinc.com', display_name: 'test'})}
   xmpp_db = BotXmppDBAccess.new
- 
+
   #for test
   bot_xmpp_user = XMPP_User.find_by(username: "bot")
   bot_xmpp_user = XMPP_User.create(username: "bot", password: "bot") if bot_xmpp_user.nil?
@@ -98,6 +99,46 @@ describe XMPPController do
   callbackThread.abort_on_exception = TRUE
 
   context "Send request methods test" do
+# SENDER: Send HEALTH CHECK SEND RESPONSE message to Bot Health Check
+    it 'Send HEALTH CHECK SUCCESS RESPONSE message to Device(Bot Health Check)' do
+      bot_health_check_account = device_xmpp_account
+      health_check_send_time = Time.now.to_i
+      bot_receive_time = Time.now.to_i
+      bot_send_time = bot_receive_time + 1
+      health_check_receive_time = 0
+      thread = Time.now.to_i
+
+      x = nil
+      i = 0
+      info = {
+        bot_health_check_account: bot_health_check_account,
+        bot_xmpp_account: bot_xmpp_account,
+        health_check_send_time: health_check_send_time,
+        bot_receive_time: bot_receive_time,
+        bot_send_time: bot_send_time,
+        health_check_receive_time: health_check_receive_time,
+        thread: thread
+      }
+      XMPPController.send_request(KHEALTH_CHECK_SUCCESS_RESPONSE, info)
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      health_check_send_time_after = xml["x"]["item"]["field"][0]["value"]
+      bot_receive_time_after = xml["x"]["item"]["field"][1]["value"]
+      bot_send_time_after = xml["x"]["item"]["field"][2]["value"]
+      health_check_receive_time_after = xml["x"]["item"]["field"][3]["value"]
+      expect(title).to eq('bot_health_check_success')
+      expect(health_check_send_time_after).to eq(health_check_send_time.to_s) #bot_health_check_send_time理當要一樣
+      expect(bot_receive_time_after).to eq(bot_receive_time.to_s) #沒有跑到handler，sender不會改到這個值，這值要跟原來的一樣
+      expect(bot_send_time_after).to be >= bot_receive_time_after #若有延遲，bot送出時間會大於bot收到訊息的時間
+      expect(health_check_receive_time_after).to eq(health_check_receive_time.to_s) #bot_health_check收到的時間為bot_health_check那邊記錄，bot這邊不會寫入這時間，所以要跟原來的值一樣
+    end
 # SENDER: Send PAIR START REQUEST message to device
     it 'Send PAIR START REQUEST message to device' do
       device_id = Time.now.to_i
@@ -4162,7 +4203,7 @@ describe XMPPController do
       expect(hasDeleted).to be true
     end
 
-    # HANDLER: Receive PACKAGE  list, nonexistent session id
+# HANDLER: Receive PACKAGE  list, nonexistent session id
     it 'Receive PACKAGE list, nonexistent session id' do
       index = Time.now.to_i
 
@@ -4175,6 +4216,46 @@ describe XMPPController do
 
       hasDeleted = rd.rd_package_session_delete(index)
       expect(hasDeleted).to be true
+    end
+  end
+
+  context 'Receive HEALTH CHECK message' do
+# HANDLER: Receive UPNP service list
+    it 'Receive HEALTH CHECK SEND RESPONSE' do
+      x = nil
+      i = 0
+
+      # 模擬Bot_Health_Check對XMPPController送出HEALTH_CHECK_SEND_RESPONSE的message，然後驗證接收到的結果正確不正確。
+      to = bot_xmpp_account
+      from = bot_health_check_xmpp_account = device_xmpp_account
+      health_check_send_time = Time.now.to_i
+      bot_receive_time = 0
+      bot_send_time = 0
+      health_check_receive_time = 0
+      thread = Time.now.to_i
+      health_check_msg = HEALTH_CHECK_SEND_RESPONSE % [to, from, health_check_send_time, bot_receive_time, bot_send_time, health_check_receive_time, thread]
+      client.send health_check_msg
+
+      while x.nil? && i < 200
+        sleep(0.1)
+        i += 1
+      end
+
+      MultiXml.parser = :rexml
+      xml = MultiXml.parse(x.to_s)
+
+      expect(xml).to be_an_instance_of(Hash)
+      title = xml['x']['title']
+      health_check_send_time_after = xml["x"]["item"]["field"][0]["value"]
+      bot_receive_time_after = xml["x"]["item"]["field"][1]["value"]
+      bot_send_time_after = xml["x"]["item"]["field"][2]["value"]
+      health_check_receive_time_after = xml["x"]["item"]["field"][3]["value"]
+      expect(xml).to be_an_instance_of(Hash)
+      expect(title).to eq('bot_health_check_success')
+      expect(health_check_send_time_after).to eq(health_check_send_time.to_s) #bot_health_check_send_time理當要一樣
+      expect(bot_receive_time_after).to be >= health_check_send_time.to_s #若有延遲，bot收到的時間會大於bot_health_check送出時間
+      expect(bot_send_time_after).to be >= bot_receive_time_after.to_s #若有延遲，bot送出時間會大於bot收到訊息的時間
+      expect(health_check_receive_time_after).to eq('0') #bot_health_check收到的時間為bot_health_check那邊記錄，bot這邊不會寫入這時間，所以應為預設值"0"
     end
   end
 

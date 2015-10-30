@@ -8,6 +8,7 @@ require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
+require_relative 'lib/bot_xmpp_health_check_template'
 require 'fluent-logger'
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
@@ -191,7 +192,7 @@ def worker(sqs, db_conn, rd_conn)
                 language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       when 'package_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',

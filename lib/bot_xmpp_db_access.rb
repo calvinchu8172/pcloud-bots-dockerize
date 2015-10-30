@@ -5,6 +5,7 @@ require 'rubygems'
 require 'active_record'
 require 'yaml'
 require 'ipaddr'
+require 'pry'
 
 XMPP_DB_CONFIG_FILE = '../config/bot_xmpp_db_config.yml'
 
