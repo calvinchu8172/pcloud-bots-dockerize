@@ -1,6 +1,6 @@
 require_relative '../lib/bot_redis_access'
 require 'yaml'
-require 'pry'
+#require 'pry'
 
 class BotRedisAccess
 
