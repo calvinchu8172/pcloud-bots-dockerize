@@ -15,3 +15,5 @@ gem "fluent-plugin-s3"
 gem "redis"
 gem "rspec"
 gem "process_safe_logger"
+gem 'pry'
+gem 'simplecov'

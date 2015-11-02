@@ -192,6 +192,7 @@ describe BotDBAccess do
       index = Time.now.to_i
       host_name = "ut%s" % index
       device_id = index
+      #puts "%s.#{Domain.first.domain_name}" % host_name 
       ddns = db.db_ddns_access({
                                 device_id: device_id,
                                 ip_address: '10.1.1.111',

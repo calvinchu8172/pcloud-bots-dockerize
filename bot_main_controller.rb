@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#Version: V.B.20150729_01
+#Version: 2.0.0
 $stdout.sync = true
 Encoding.default_external = Encoding::UTF_8
 
@@ -15,6 +15,7 @@ require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
 require_relative 'lib/bot_logger'
 
+require_relative 'lib/bot_xmpp_health_check_template'
 require 'fluent-logger'
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
@@ -255,7 +256,7 @@ def worker(sqs, db_conn, rd_conn)
                 language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       when 'package_submit' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',
@@ -342,18 +343,22 @@ def worker(sqs, db_conn, rd_conn)
         
         device = nil
         xmpp_account = nil
-        session_id = data[:session_id]
-        ddns_session = rd_conn.rd_ddns_session_access(session_id)
-        device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
-        xmpp_account = device["xmpp_account"] if !device.nil?
-
+        session_id = data["session_id"]
+        xmpp_account = data["xmpp_account"]
+        device_id = data["device_id"]
+        device_ip = data["ip"]
+        full_domain = data["full_domain"]
+        #if( xmpp_account.nil? )
+        #  ddns_session = rd_conn.rd_ddns_session_access(session_id)
+        #  device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
+        #  xmpp_account = device["xmpp_account"] if !device.nil?
+        #end
         info = {xmpp_account: xmpp_account.to_s,
                 session_id: session_id,
-                device_id: !ddns_session.nil? ? ddns_session["device_id"] : '',
-                ip: !device.nil? ? device["ip"] : '',
-                full_domain: !ddns_session.nil? ? ddns_session["host_name"] + '.' + ddns_session["domain_name"] : ''}
-
-        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device.nil?
+                device_id: device_id,
+                ip: device_ip.to_s,
+                full_domain: full_domain.to_s}
+        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !device_id.nil? && !device_ip.nil? && !full_domain.nil?
 
       when 'cancel' then
         Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'CANCEL',
@@ -493,7 +498,6 @@ def worker(sqs, db_conn, rd_conn)
     end
     job = nil
     data = nil
-    db_conn.close
   }
 end
 

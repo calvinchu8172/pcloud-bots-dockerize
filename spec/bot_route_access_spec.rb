@@ -1,6 +1,7 @@
 require_relative '../lib/bot_route_access'
 require 'aws-sdk-v1'
 require 'resolv'
+#require 'pry'
 
 describe BotRouteAccess do
   config_file = File.join(File.dirname(__FILE__), ROUTE_CONFIG_FILE)
@@ -9,13 +10,9 @@ describe BotRouteAccess do
   it 'Config file check' do
     expect(config).to be_an_instance_of(Hash)
     
-    expect(config).to have_key('access_key_id')
-    expect(config).to have_key('secret_access_key')
     expect(config).to have_key('reserved_host_name')
     expect(config).to have_key('zones_info')
     
-    expect(config['access_key_id']).not_to eq('xxx')
-    expect(config['secret_access_key']).not_to eq('xxx')
     expect(config['reserved_host_name'].length).not_to eq(0)
     expect(config['zones_info'].length).not_to eq(0)
   end
