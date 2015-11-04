@@ -322,7 +322,8 @@ DEVICE_INFO_RESPONSE_SUCCESS = <<EOT
         xmlns="jabber:x:data" type="result">
         <title>bot_get_device_information</title>
         <field var="cpu-temperature-celsius" type="text-single">
-            <value>41.00 </value>
+            <value>41.00       
+            </value>
         </field>
         <field var="cpu-temperature-fahrenheit" type="text-single">
             <value> 54.78</value>

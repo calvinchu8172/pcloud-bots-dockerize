@@ -1239,6 +1239,18 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send HEALTH_CHECK_SUCCESS_RESPONSE message back to %s" % bot_health_check_account,
                                                   data: 'N/A'})
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'HEALTH CHECK',
+                                                  direction: 'Bot->Health_Check',
+                                                  to: bot_health_check_account,
+                                                  from: bot_xmpp_account,
+                                                  health_check_send_time: health_check_send_time,
+                                                  bot_receive_time: bot_receive_time,
+                                                  bot_send_time: bot_send_time,
+                                                  health_check_receive_time: health_check_receive_time,
+                                                  id: thread,
+                                                  full_domain: 'N/A',
+                                                  message:"Send HEALTH_CHECK_SUCCESS_RESPONSE message back to %s" % bot_health_check_account,
+                                                  data: 'N/A'})
 
     end
   end
@@ -3936,6 +3948,20 @@ module XMPPController
                              message:"Receive HEALTH_CHECK_SEND_RESPONSE message from %s" % bot_health_check_account,
                              data: 'N/A'
                              })
+      LOGGER.post(FLUENT_BOT_FLOWINFO,
+                            {event: 'HEALTH_CHECK',
+                             direction: 'Health_Check->Bot',
+                             to: bot_xmpp_account,
+                             from: bot_health_check_account,
+                             health_check_send_time: health_check_send_time,
+                             bot_receive_time: bot_receive_time,
+                             bot_send_time: bot_send_time,
+                             health_check_receive_time: health_check_receive_time,
+                             id: thread,
+                             full_domain: 'N/A',
+                             message:"Receive HEALTH_CHECK_SEND_RESPONSE message from %s" % bot_health_check_account,
+                             data: 'N/A'
+                             })
       info = {
         bot_health_check_account: bot_health_check_account,
         bot_xmpp_account: bot_xmpp_account,
@@ -3951,6 +3977,7 @@ module XMPPController
 
     rescue Exception => error
       Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 

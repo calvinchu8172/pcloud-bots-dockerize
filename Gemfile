@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "fluentd"
-gem "mysql2"
+gem 'mysql2', '~> 0.3.18'
 gem "activerecord"
 gem "blather"
 gem "aws-sdk-v1"
@@ -17,3 +17,4 @@ gem "rspec"
 gem "process_safe_logger"
 gem 'pry'
 gem 'simplecov'
+gem 'minitest', '~> 5.1'

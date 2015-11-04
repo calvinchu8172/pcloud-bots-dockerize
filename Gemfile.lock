@@ -70,7 +70,7 @@ GEM
     minitest (5.8.2)
     msgpack (0.5.12)
     multi_xml (0.5.5)
-    mysql2 (0.4.1)
+    mysql2 (0.3.20)
     niceogiri (1.1.2)
       nokogiri (~> 1.5)
     nokogiri (1.6.6.2)
@@ -127,8 +127,9 @@ DEPENDENCIES
   fluent-plugin-s3
   fluentd
   god
+  minitest (~> 5.1)
   multi_xml
-  mysql2
+  mysql2 (~> 0.3.18)
   process_safe_logger
   pry
   redis
