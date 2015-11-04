@@ -15,12 +15,6 @@ GEM
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
     arel (6.0.3)
-    aws-sdk (2.1.33)
-      aws-sdk-resources (= 2.1.33)
-    aws-sdk-core (2.1.33)
-      jmespath (~> 1.0)
-    aws-sdk-resources (2.1.33)
-      aws-sdk-core (= 2.1.33)
     aws-sdk-v1 (1.66.0)
       json (~> 1.4)
       nokogiri (>= 1.4.4)
@@ -33,42 +27,18 @@ GEM
     builder (3.2.2)
     coderay (1.1.0)
     connection_pool (1.2.0)
-    cool.io (1.4.1)
     diff-lcs (1.2.5)
     docile (1.1.5)
     eventmachine (1.0.8)
-    fluent-logger (0.5.0)
-      msgpack (>= 0.4.4, < 0.6.0, != 0.5.3, != 0.5.2, != 0.5.1, != 0.5.0)
-    fluent-mixin-config-placeholders (0.3.0)
-      fluentd
-      uuidtools (>= 2.1.5)
-    fluent-plugin-s3 (0.6.1)
-      aws-sdk (~> 2)
-      fluent-mixin-config-placeholders (>= 0.3.0)
-      fluentd (>= 0.10.58, < 2)
-      yajl-ruby (~> 1.0)
-    fluentd (0.12.16)
-      cool.io (>= 1.2.2, < 2.0.0)
-      http_parser.rb (>= 0.5.1, < 0.7.0)
-      json (>= 1.4.3)
-      msgpack (>= 0.5.11, < 0.6.0)
-      sigdump (~> 0.2.2)
-      string-scrub (>= 0.0.3)
-      tzinfo (>= 1.0.0)
-      tzinfo-data (>= 1.0.0)
-      yajl-ruby (~> 1.0)
     girl_friday (0.11.2)
       connection_pool (~> 1.0)
       rubinius-actor
     god (0.13.7)
-    http_parser.rb (0.6.0)
     i18n (0.7.0)
-    jmespath (1.1.3)
     json (1.8.3)
     method_source (0.8.2)
     mini_portile (0.6.2)
     minitest (5.8.2)
-    msgpack (0.5.12)
     multi_xml (0.5.5)
     mysql2 (0.3.20)
     niceogiri (1.1.2)
@@ -97,23 +67,17 @@ GEM
     rubinius-actor (0.0.2)
       rubinius-core-api
     rubinius-core-api (0.0.1)
-    sigdump (0.2.3)
     simplecov (0.10.0)
       docile (~> 1.1.0)
       json (~> 1.8)
       simplecov-html (~> 0.10.0)
     simplecov-html (0.10.0)
     slop (3.6.0)
-    string-scrub (0.0.5)
     thread_safe (0.3.5)
     tlsmail (0.0.1)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
-    tzinfo-data (1.2015.7)
-      tzinfo (>= 1.0.0)
-    uuidtools (2.1.5)
     xmpp4r (0.5.6)
-    yajl-ruby (1.2.1)
 
 PLATFORMS
   ruby
@@ -123,9 +87,6 @@ DEPENDENCIES
   aws-sdk-v1
   blather
   eventmachine
-  fluent-logger
-  fluent-plugin-s3
-  fluentd
   god
   minitest (~> 5.1)
   multi_xml
