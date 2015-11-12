@@ -9,7 +9,6 @@ require_relative 'bot_unit'
 require_relative 'bot_xmpp_db_access'
 require_relative 'bot_xmpp_health_check_template'
 
-require 'fluent-logger'
 require 'blather/client/dsl'
 require 'multi_xml'
 require 'json'
@@ -96,12 +95,11 @@ module XMPPController
     @xmpp_resource_id = '/device'
     @bot_xmpp_account = @account + @xmpp_server_domain + @xmpp_resource_id
 
-    Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
   end
 
   def self.run
     EM.run {
-      Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+      LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                direction: 'N/A',
                                                to: 'N/A',
                                                from: 'N/A',
@@ -175,7 +173,8 @@ module XMPPController
         end
 
         if records.count > 0 then
-          Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+          
+          LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                    direction: 'N/A',
                                                    to: 'N/A',
                                                    from: 'N/A',
@@ -183,7 +182,6 @@ module XMPPController
                                                    full_domain: 'N/A',
                                                    message:"Batch register DDNS record ...",
                                                    data: 'N/A'})
-
           isSuccess = @route_conn.batch_create_records({domain_name: zone_name, records: records})
 
           #if update records failure, remove delete action and do again.
@@ -211,7 +209,8 @@ module XMPPController
 
               user_email = @db_conn.db_retrive_user_email_by_device_id(device_id)
 
-              Fluent::Logger.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+              
+              LOGGER.post(isSuccess ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
@@ -226,7 +225,8 @@ module XMPPController
                 @rd_conn.rd_ddns_session_update({index: session_id, status: KSTATUS_SUCCESS}) if !ddns_session.nil?
 
                 isDeleted = @rd_conn.rd_ddns_batch_session_delete(data)
-                Fluent::Logger.post(isDeleted ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
+                
+                LOGGER.post(isDeleted ? FLUENT_BOT_SYSINFO : FLUENT_BOT_SYSERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
@@ -255,7 +255,8 @@ module XMPPController
       @rd_conn.rd_ddns_batch_lock_delete
     rescue Exception => error
       @rd_conn.rd_ddns_batch_lock_delete
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -268,7 +269,8 @@ module XMPPController
         tag = info[:tag]
         msg = SESSION_CANCEL_REQUEST % [device_xmpp_account, @bot_xmpp_account, title, tag, XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -276,7 +278,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION CANCEL REQUEST message to device" % title.upcase ,
                                                   data: 'N/A'})
-
 # SENDER: SESSION CANCEL SUCCESS RESPONSE
       when KSESSION_CANCEL_SUCCESS_RESPONSE
         to = info[:xmpp_account]
@@ -284,7 +285,8 @@ module XMPPController
         tag = info[:tag]
         msg = SESSION_CANCEL_SUCCESS_RESPONSE % [to, @bot_xmpp_account, title, tag, XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: to,
                                                   from: @bot_xmpp_account,
@@ -301,7 +303,8 @@ module XMPPController
         error_code = info[:error_code]
         msg = SESSION_CANCEL_FAILURE_RESPONSE % [to, @bot_xmpp_account, title, error_code, tag]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: to,
                                                   from: @bot_xmpp_account,
@@ -317,7 +320,8 @@ module XMPPController
         tag = info[:tag]
         msg = SESSION_TIMEOUT_REQUEST % [device_xmpp_account, @bot_xmpp_account, title, tag, XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -333,7 +337,8 @@ module XMPPController
         tag = info[:tag]
         msg = SESSION_TIMEOUT_SUCCESS_RESPONSE % [device_xmpp_account, @bot_xmpp_account, title, tag]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -341,7 +346,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION TIMEOUT SUCCESS RESPONSE message to device" % title.upcase,
                                                   data: 'N/A'})
-
 # SENDER: SESSION TIMEOUT FAILURE RESPONSE
       when KSESSION_TIMEOUT_FAILURE_RESPONSE
         device_xmpp_account = info[:xmpp_account]
@@ -350,7 +354,8 @@ module XMPPController
         error_code = info[:error_code]
         msg = SESSION_TIMEOUT_FAILURE_RESPONSE % [device_xmpp_account, @bot_xmpp_account, title, error_code, tag]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: title.upcase,
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -358,7 +363,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send %s SESSION TIMEOUT FAILURE RESPONSE message to device" % title.upcase,
                                                   data: 'N/A'})
-
 # SENDER: PAIR START REQUEST
       when KPAIR_START_REQUEST
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
@@ -371,7 +375,7 @@ module XMPPController
         msg = PAIR_START_REQUEST % [device_xmpp_account, @bot_xmpp_account, expire_time, device_id, XMPP_API_VERSION]
         write_to_stream msg
 
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -424,7 +428,8 @@ module XMPPController
             batch_data = {index: index, device_id: info[:session_id], full_domain: info[:full_domain], ip: ip, action: 'delete'}
             isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), index)
 
-            Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+            
+            LOGGER.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                   {event: 'UNPAIR',
                                    direction: 'N/A',
                                    to: 'N/A',
@@ -437,7 +442,8 @@ module XMPPController
             isDeleted = FALSE
             ddns = @db_conn.db_ddns_access({full_domain: info[:full_domain]})
             isDeleted = @db_conn.db_ddns_delete(ddns.id) if !ddns.nil?
-            Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            
+            LOGGER.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'UNPAIR',
                                    direction: 'N/A',
                                    to: 'N/A',
@@ -450,7 +456,8 @@ module XMPPController
 
           msg = UNPAIR_ASK_REQUEST % [xmpp_account, @bot_xmpp_account, session_id, XMPP_API_VERSION]
           write_to_stream msg
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
                                                     direction: 'Bot->Device',
                                                     to: xmpp_account,
                                                     from: @bot_xmpp_account,
@@ -464,7 +471,8 @@ module XMPPController
             unpair_session = @rd_conn.rd_unpair_session_access(session_id)
             if !unpair_session.nil? then
               write_to_stream msg
-              Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
+              
+              LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
                                                         direction: 'Bot->Device',
                                                         to: xmpp_account,
                                                         from: @bot_xmpp_account,
@@ -487,7 +495,8 @@ module XMPPController
             end
 
             EM.cancel_timer(periodic_timer)
-            Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UNPAIR',
+            
+            LOGGER.post(FLUENT_BOT_FLOWERROR, {event: 'UNPAIR',
                                                       direction: 'N/A',
                                                       to: 'N/A',
                                                       from: 'N/A',
@@ -519,7 +528,8 @@ module XMPPController
         msg = PERMISSION_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, share_point, permission, cloud_id, expire_time, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -554,7 +564,8 @@ module XMPPController
         msg = DEVICE_INFO_ASK_REQUEST % [device_xmpp_account, @bot_xmpp_account, KDEVICE_INFO_EXPIRE_TIME, session_id, XMPP_API_VERSION]
         write_to_stream msg
 
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
+       
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Bot->Device',
                                                   to: device_xmpp_account,
                                                   from: @bot_xmpp_account,
@@ -579,7 +590,8 @@ module XMPPController
             info = {xmpp_account: xmpp_account, title: 'bot_get_device_information', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+           
+            LOGGER.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'DEVICE-INFOMATION',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
@@ -595,7 +607,8 @@ module XMPPController
         session_id = info[:session_id]
         msg = PACKAGE_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, 300, session_id, XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Bot->Device',
                                                   to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                   from: @bot_xmpp_account,
@@ -622,7 +635,8 @@ module XMPPController
             info = {xmpp_account: xmpp_account, title: 'get_package_service', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+            
+            LOGGER.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'PCAKAGE',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
@@ -639,7 +653,8 @@ module XMPPController
         session_id = info[:session_id]
         msg = PACKAGE_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, 300,  info[:field_item], session_id]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Bot->Device',
                                                   to: info[:xmpp_account],
                                                   from: @bot_xmpp_account,
@@ -647,7 +662,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send PACKAGE SETTING RESPONSE message to device" ,
                                                   data: {field_item: info[:field_item]}})
-
         df = EM::DefaultDeferrable.new
         EM.add_timer(KPACKAGE_EXPIRE_TIME * 1) {
           df.set_deferred_status :succeeded, session_id
@@ -667,7 +681,8 @@ module XMPPController
             info = {xmpp_account: xmpp_account, title: 'set_package_service', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+           
+            LOGGER.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'PACKAGE',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
@@ -685,7 +700,8 @@ module XMPPController
         session_id = info[:session_id]
         msg = UPNP_ASK_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], 300, session_id, XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+       
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
                                                   to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                   from: @bot_xmpp_account,
@@ -693,7 +709,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send UPNP ASK REQUEST message to device" ,
                                                   data: {language: info[:language]}})
-
         df = EM::DefaultDeferrable.new
         EM.add_timer(KUPNP_EXPIRE_TIME * 1) {
           df.set_deferred_status :succeeded, session_id
@@ -713,7 +728,7 @@ module XMPPController
             info = {xmpp_account: xmpp_account, title: 'get_upnp_service', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+            LOGGER.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'UPNP',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
@@ -730,7 +745,7 @@ module XMPPController
         session_id = info[:session_id]
         msg = UPNP_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, info[:language], info[:field_item], 300, session_id]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Bot->Device',
                                                   to: info[:xmpp_account],
                                                   from: @bot_xmpp_account,
@@ -738,7 +753,6 @@ module XMPPController
                                                   full_domain: 'N/A',
                                                   message:"Send UPNP SETTING RESPONSE message to device" ,
                                                   data: {language: info[:language], field_item: info[:field_item]}})
-
         df = EM::DefaultDeferrable.new
         EM.add_timer(KUPNP_EXPIRE_TIME * 1) {
           df.set_deferred_status :succeeded, session_id
@@ -758,7 +772,7 @@ module XMPPController
             info = {xmpp_account: xmpp_account, title: 'set_upnp_service', tag: index}
             send_request(KSESSION_TIMEOUT_REQUEST, info)
 
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+            LOGGER.post(FLUENT_BOT_FLOWINFO,
                                   {event: 'UPNP',
                                    direction: 'N/A',
                                    to: xmpp_account + @xmpp_server_domain + @xmpp_resource_id,
@@ -778,7 +792,8 @@ module XMPPController
           domain_name = find_domainname(info[:full_domain])
 
           @rd_conn.rd_ddns_session_update({index: info[:session_id], status: KSTATUS_WAITING})
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                     direction: 'N/A',
                                                     to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                     from: @bot_xmpp_account,
@@ -800,7 +815,8 @@ module XMPPController
 
             data = {id: ddns_record.id, full_domain: info[:full_domain], ip_address: info[:ip]}
             isUpdated =  @db_conn.db_ddns_update(data)
-            Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            
+            LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'DDNS',
                                    direction: 'N/A',
                                    to: 'N/A',
@@ -809,14 +825,14 @@ module XMPPController
                                    full_domain: info[:full_domain],
                                    message:"Update DB DDNS setting %s" % [isUpdated ? 'success' : 'failure'] ,
                                    data: {ip: info[:ip]}})
-
             if old_full_domain != info[:full_domain]
               del_index = @rd_conn.rd_ddns_session_index_get
               ip = ddns_record.ip_address
 
               batch_data = {index: del_index, device_id: info[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
               isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
-              Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+              
+              LOGGER.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
@@ -830,7 +846,8 @@ module XMPPController
             data = {device_id: info[:device_id], ip_address: info[:ip], full_domain: info[:full_domain]}
             new_ddns = @db_conn.db_ddns_insert(data)
             isInserted = !new_ddns.nil? ? TRUE : FALSE
-            Fluent::Logger.post(isInserted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+            
+            LOGGER.post(isInserted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                   {event: 'DDNS',
                                    direction: 'N/A',
                                    to: 'N/A',
@@ -853,7 +870,8 @@ module XMPPController
           if isSuccess then
             msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id], XMPP_API_VERSION]
             write_to_stream msg
-            Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+            
+            LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                       direction: 'Bot->Device',
                                                       to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                       from: @bot_xmpp_account,
@@ -861,7 +879,6 @@ module XMPPController
                                                       full_domain: host_name + '.' + domain_name,
                                                       message:"Send DDNS SETTING REQUEST to device" ,
                                                       data: 'N/A'})
-
             @rd_conn.rd_ddns_resend_session_insert(info[:session_id])
             df = EM::DefaultDeferrable.new
             periodic_timer = EM.add_periodic_timer(15) {
@@ -869,7 +886,8 @@ module XMPPController
               if !resend.nil? then
                 msg = DDNS_SETTING_REQUEST % [info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id, @bot_xmpp_account, host_name, domain_name, info[:session_id], XMPP_API_VERSION]
                 write_to_stream msg
-                Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+                
+                LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                           direction: 'Bot->Device',
                                                           to: info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id,
                                                           from: @bot_xmpp_account,
@@ -890,7 +908,8 @@ module XMPPController
               @rd_conn.rd_ddns_resend_session_delete(index) if !resend.nil?
 
               EM.cancel_timer(periodic_timer)
-              Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'DDNS',
+              
+              LOGGER.post(FLUENT_BOT_FLOWERROR, {event: 'DDNS',
                                                         direction: 'N/A',
                                                         to: 'N/A',
                                                         from: 'N/A',
@@ -901,7 +920,8 @@ module XMPPController
             end
           end
           rescue Exception => error
-            Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+            
+            LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
           end
         }
 
@@ -910,7 +930,8 @@ module XMPPController
         device_xmpp_account = info[:xmpp_account] + @xmpp_server_domain + @xmpp_resource_id
         msg = LED_INDICATOR_REQUEST % [device_xmpp_account, @bot_xmpp_account, KLED_INDICATOR_BLINK_TIME, info[:session_id], XMPP_API_VERSION]
         write_to_stream msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'LED_INDICATOR_REQUEST',
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'LED_INDICATOR_REQUEST',
                                                   direction: 'Bot->Device',
                                                   to: info[:xmpp_account],
                                                   from: @bot_xmpp_account,
@@ -942,7 +963,8 @@ module XMPPController
         msg = HEALTH_CHECK_SUCCESS_RESPONSE % [bot_health_check_account, bot_xmpp_account, health_check_send_time, bot_receive_time, bot_send_time, health_check_receive_time, thread]
         write_to_stream msg
         # puts msg
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'HEALTH CHECK',
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'HEALTH CHECK',
                                                   direction: 'Bot->Health_Check',
                                                   to: bot_health_check_account,
                                                   from: bot_xmpp_account,
@@ -959,7 +981,8 @@ module XMPPController
   end
 
   def self.result_syslog(msg)
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO,
+    
+    LOGGER.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
                             direction: 'Device->Bot',
                             to: @bot_xmpp_account,
@@ -971,7 +994,8 @@ module XMPPController
   end
 
   def self.submit_syslog(msg)
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO,
+    
+    LOGGER.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
                            direction: 'Device->Bot',
                            to: @bot_xmpp_account,
@@ -983,7 +1007,8 @@ module XMPPController
   end
 
   def self.cancel_syslog(msg)
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO,
+    
+    LOGGER.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
                            direction: 'Device->Bot',
                            to: @bot_xmpp_account,
@@ -995,7 +1020,8 @@ module XMPPController
   end
 
   def self.form_syslog(msg)
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO,
+    
+    LOGGER.post(FLUENT_BOT_SYSINFO,
                           {event: 'SYSTEM',
                            direction: 'Device->Bot',
                            to: @bot_xmpp_account,
@@ -1008,7 +1034,8 @@ module XMPPController
 
   disconnected {
     sleep(10)
-    Fluent::Logger.post(FLUENT_BOT_SYSALERT, {event: 'SYSTEM',
+    
+    LOGGER.post(FLUENT_BOT_SYSALERT, {event: 'SYSTEM',
                                               direction: 'N/A',
                                               to: 'N/A',
                                               from: @bot_xmpp_account,
@@ -1036,7 +1063,8 @@ module XMPPController
         data = {device_id: device_id, status: !isStartExpired ? KSTATUS_WAITING : KSTATUS_TIMEOUT}
         isSuccess = @rd_conn.rd_pairing_session_update(data)
         status = data[:status]
-        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1046,7 +1074,8 @@ module XMPPController
                                message:"Update the status of pairing session table to %s %s as receive PAIR START RESPONSE message from device" % [status, isSuccess ? 'success' : 'failure'] ,
                                data: 'N/A'})
       else
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'N/A',
                                to: msg.from.to_s,
@@ -1057,7 +1086,8 @@ module XMPPController
                                data: {error_code: 898}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1069,7 +1099,8 @@ module XMPPController
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       if !pairing.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1080,7 +1111,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1092,7 +1124,8 @@ module XMPPController
       device_id = msg.thread
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       if !pairing.nil?
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1103,7 +1136,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1121,7 +1155,8 @@ module XMPPController
         isSuccess = TRUE
       end
 
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -1131,7 +1166,8 @@ module XMPPController
                              message:"Delete record from unpair session table %s as receive UNPAIR SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1143,7 +1179,8 @@ module XMPPController
       session_id = msg.thread
       upnp = @rd_conn.rd_upnp_session_access(session_id)
       if !upnp.nil?
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1154,7 +1191,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1166,7 +1204,8 @@ module XMPPController
       session_id = msg.thread
       upnp = @rd_conn.rd_upnp_session_access(session_id)
       if !upnp.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1177,7 +1216,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1189,7 +1229,8 @@ module XMPPController
       index = msg.thread
       upnp = @rd_conn.rd_upnp_session_access(index)
       if !upnp.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1200,7 +1241,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1212,7 +1254,8 @@ module XMPPController
       session_id = msg.thread
       upnp = @rd_conn.rd_upnp_session_access(session_id)
       if !upnp.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1223,7 +1266,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1234,7 +1278,8 @@ module XMPPController
       session_id = msg.thread
       data = {index: session_id, status: KSTATUS_UPDATED}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -1244,7 +1289,7 @@ module XMPPController
                              message:"Update the status of unpnp session table to UPDATED %s as receive UPNP SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1257,7 +1302,7 @@ module XMPPController
       data       = {index: session_id, status: KSTATUS_DONE, error_code: ''}
 
       isSuccess  = @rd_conn.rd_permission_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PERMISSION',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -1266,7 +1311,8 @@ module XMPPController
                              message:"Update the status of permission session table to UPDATED %s as receive PERMISSION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1319,7 +1365,8 @@ module XMPPController
       end
 
       isSuccess         = @rd_conn.rd_device_info_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'DEVICE-INFOMATION',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -1328,7 +1375,8 @@ module XMPPController
                              message:"Update the status of device information session table to UPDATED %s as receive DEVICE-INFOMATION RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1339,7 +1387,8 @@ module XMPPController
 
       index = msg.thread
       @rd_conn.rd_ddns_resend_session_delete(index)
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+      
+      LOGGER.post(FLUENT_BOT_FLOWINFO,
                             {event: 'DDNS',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -1349,7 +1398,8 @@ module XMPPController
                              message:"Receive DDNS SETTING SUCCESS RESPONSE message from device success",
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1367,7 +1417,8 @@ module XMPPController
         if !isExpired
           data = {device_id: device_id, status: KSTATUS_DONE}
           isSuccess = @rd_conn.rd_pairing_session_update(data)
-          Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+          
+          LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
                                  direction: 'Device->Bot',
                                  to: @bot_xmpp_account,
@@ -1378,7 +1429,8 @@ module XMPPController
                                  data: 'N/A'})
 
           pairing_insert = @db_conn.db_pairing_insert(pairing["user_id"].to_i, device_id.to_i)
-          Fluent::Logger.post(nil != pairing_insert ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+          
+          LOGGER.post(nil != pairing_insert ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
                                  direction: 'N/A',
                                  to: 'N/A',
@@ -1391,7 +1443,8 @@ module XMPPController
           cloud_id = pairing["cloud_id"]
           info = {xmpp_account: msg.from, session_id: device_id, cloud_id: cloud_id.nil? ? '' : cloud_id}
           send_request(KPAIR_COMPLETED_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1406,7 +1459,8 @@ module XMPPController
 
           info = {xmpp_account: msg.from, error_code: 899, session_id: device_id}
           send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+          
+          LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1419,7 +1473,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, error_code: 898, session_id: device_id}
         send_request(KPAIR_COMPLETED_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1430,7 +1485,8 @@ module XMPPController
                                data: {error_code: 898}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1446,7 +1502,8 @@ module XMPPController
       if !pairing.nil? && (KSTATUS_START == status || KSTATUS_WAITING == status) then
         data = {device_id: device_id, status: KSTATUS_CANCEL}
         isUpdated = @rd_conn.rd_pairing_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1459,7 +1516,8 @@ module XMPPController
         if isUpdated
           info = {xmpp_account: msg.from, title: 'pair', tag: device_id}
           send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1471,7 +1529,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'pair', error_code: 897, tag: device_id}
           send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1484,7 +1543,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'pair', error_code: 898, tag: device_id}
         send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1496,7 +1556,8 @@ module XMPPController
       end
 
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1512,7 +1573,8 @@ module XMPPController
       if !pairing.nil? && (KSTATUS_START == status || KSTATUS_WAITING == status || KSTATUS_TIMEOUT == status) then
         data = {device_id: device_id, status: KSTATUS_TIMEOUT}
         isUpdated = @rd_conn.rd_pairing_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1525,7 +1587,8 @@ module XMPPController
         if isUpdated
           info = {xmpp_account: msg.from, title: 'pair', tag: device_id}
           send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1537,7 +1600,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'pair', error_code: 897, tag: device_id}
           send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'PAIR',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1550,7 +1614,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'pair', error_code: 898, tag: device_id}
         send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1561,7 +1626,8 @@ module XMPPController
                                data: {error_code: 898}})
       end
     rescue
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1577,7 +1643,8 @@ module XMPPController
       if !upnp.nil? && KSTATUS_START == status then
         data = {index: index, status: KSTATUS_CANCEL}
         isUpdated = @rd_conn.rd_upnp_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1590,7 +1657,8 @@ module XMPPController
         if isUpdated
           info = {xmpp_account: msg.from, title: 'get_upnp_service', tag: index}
           send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1602,7 +1670,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 797, tag: index}
           send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1615,7 +1684,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 798, tag: index}
         send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'UPNP',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1626,7 +1696,8 @@ module XMPPController
                                data: {error_code: 798}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1642,7 +1713,8 @@ module XMPPController
       if !upnp.nil? && KSTATUS_START == status then
         data = {index: index, status: KSTATUS_TIMEOUT}
         isUpdated = @rd_conn.rd_upnp_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1655,7 +1727,8 @@ module XMPPController
         if isUpdated
           info = {xmpp_account: msg.from, title: 'get_upnp_service', tag: index}
           send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1667,7 +1740,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 797, tag: index}
           send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1680,7 +1754,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'get_upnp_service', error_code: 798, tag: index}
         send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'UPNP',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1691,7 +1766,8 @@ module XMPPController
                                data: {error_code: 798}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1707,7 +1783,8 @@ module XMPPController
       if !upnp.nil? && KSTATUS_SUBMIT == status then
         data = {index: index, status: KSTATUS_CANCEL}
         isUpdated = @rd_conn.rd_upnp_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1716,11 +1793,11 @@ module XMPPController
                                full_domain: 'N/A',
                                message:"Update the status of set upnp service list session to 'CANCEL' %s as receive SET UPNP SERVICE LIST CANCEL RESPONSE message from device" % [isUpdated ? 'success' : 'failure'],
                                data: 'N/A'})
-
         if isUpdated
           info = {xmpp_account: msg.from, title: 'set_upnp_service', tag: index}
           send_request(KSESSION_CANCEL_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1732,7 +1809,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 797, tag: index}
           send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1745,7 +1823,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 798, tag: index}
         send_request(KSESSION_CANCEL_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'UPNP',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1756,7 +1835,8 @@ module XMPPController
                                data: {error_code: 798}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1772,7 +1852,8 @@ module XMPPController
       if !upnp.nil? && KSTATUS_SUBMIT == status then
         data = {index: index, status: KSTATUS_TIMEOUT}
         isUpdated = @rd_conn.rd_upnp_session_update(data)
-        Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -1785,7 +1866,8 @@ module XMPPController
         if isUpdated
           info = {xmpp_account: msg.from, title: 'set_upnp_service', tag: index}
           send_request(KSESSION_TIMEOUT_SUCCESS_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+          
+          LOGGER.post(FLUENT_BOT_FLOWINFO,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1797,7 +1879,8 @@ module XMPPController
         else
           info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 797, tag: index}
           send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'UPNP',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -1810,7 +1893,8 @@ module XMPPController
       else
         info = {xmpp_account: msg.from, title: 'set_upnp_service', error_code: 798, tag: index}
         send_request(KSESSION_TIMEOUT_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'UPNP',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -1821,7 +1905,8 @@ module XMPPController
                                data: {error_code: 798}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -1890,7 +1975,8 @@ module XMPPController
 
                 data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
                 isUpdated =  @db_conn.db_ddns_update(data)
-                Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                
+                LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
@@ -1907,7 +1993,8 @@ module XMPPController
                   batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
                   isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
 
-                  Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                  
+                  LOGGER.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                         {event: 'DDNS',
                                          direction: 'N/A',
                                          to: 'N/A',
@@ -1928,7 +2015,8 @@ module XMPPController
                 sleep(0.1)
               end
 
-              Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+              
+              LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                     {event: 'DDNS',
                                      direction: 'N/A',
                                      to: 'N/A',
@@ -1944,7 +2032,8 @@ module XMPPController
 
                 info = {xmpp_account: x[:msg_from], session_id: session_id}
                 send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                
+                LOGGER.post(FLUENT_BOT_FLOWINFO,
                                       {event: 'DDNS',
                                        direction: 'Bot->Device',
                                        to: x[:msg_from],
@@ -1956,7 +2045,8 @@ module XMPPController
               else
                 info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
                 send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                
+                LOGGER.post(FLUENT_BOT_FLOWERROR,
                                       {event: 'DDNS',
                                        direction: 'Bot->Device',
                                        to: x[:msg_from],
@@ -2000,7 +2090,8 @@ module XMPPController
 
                   data = {id: ddns_record.id, full_domain: x[:host_name] + '.' + x[:domain_name], ip_address: x[:device_ip]}
                   isUpdated =  @db_conn.db_ddns_update(data)
-                  Fluent::Logger.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                  
+                  LOGGER.post(isUpdated ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                         {event: 'DDNS',
                                          direction: 'N/A',
                                          to: 'N/A',
@@ -2016,7 +2107,8 @@ module XMPPController
 
                     batch_data = {index: del_index, device_id: x[:device_id], full_domain: old_full_domain, ip: ip, action: 'delete'}
                     isDeleted = @rd_conn.rd_ddns_batch_session_insert(JSON.generate(batch_data), del_index)
-                    Fluent::Logger.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
+                    
+                    LOGGER.post(isDeleted ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWERROR,
                                           {event: 'DDNS',
                                            direction: 'N/A',
                                            to: 'N/A',
@@ -2037,7 +2129,8 @@ module XMPPController
                   sleep(0.1)
                 end
 
-                Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+                
+                LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                                       {event: 'DDNS',
                                        direction: 'N/A',
                                        to: 'N/A',
@@ -2050,7 +2143,8 @@ module XMPPController
                 if isSuccess then
                   info = info = {xmpp_account: x[:msg_from], session_id: session_id}
                   send_request(KDDNS_SETTING_SUCCESS_RESPONSE, info)
-                  Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+                  
+                  LOGGER.post(FLUENT_BOT_FLOWINFO,
                                         {event: 'DDNS',
                                          direction: 'Bot->Device',
                                          to: x[:msg_from],
@@ -2062,7 +2156,8 @@ module XMPPController
                 else
                   info = info = {xmpp_account: x[:msg_from], error_code: 997, session_id: session_id}
                   send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-                  Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+                  
+                  LOGGER.post(FLUENT_BOT_FLOWERROR,
                                         {event: 'DDNS',
                                          direction: 'Bot->Device',
                                          to: x[:msg_from],
@@ -2077,7 +2172,8 @@ module XMPPController
           else
             info = info = {xmpp_account: msg.from, error_code: 995, session_id: msg.thread}
             send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-            Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+            
+            LOGGER.post(FLUENT_BOT_FLOWERROR,
                                   {event: 'DDNS',
                                    direction: 'Bot->Device',
                                    to: msg.from.to_s,
@@ -2090,7 +2186,8 @@ module XMPPController
         else
           info = info = {xmpp_account: msg.from, error_code: 998, session_id: msg.thread}
           send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-          Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+          
+          LOGGER.post(FLUENT_BOT_FLOWERROR,
                                 {event: 'DDNS',
                                  direction: 'Bot->Device',
                                  to: msg.from.to_s,
@@ -2103,7 +2200,8 @@ module XMPPController
       else
         info = info = {xmpp_account: msg.from, error_code: 999, session_id: msg.thread}
         send_request(KDDNS_SETTING_FAILURE_RESPONSE, info)
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'DDNS',
                                direction: 'Bot->Device',
                                to: msg.from.to_s,
@@ -2114,7 +2212,8 @@ module XMPPController
                                data: {error_code: 999}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2130,7 +2229,8 @@ module XMPPController
         data = {device_id: device_id, status: KSTATUS_FAILURE}
         error_code = msg.form.field('ERROR_CODE').value
         isSuccess = @rd_conn.rd_pairing_session_update(data)
-        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2141,7 +2241,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2154,7 +2255,8 @@ module XMPPController
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       error_code = msg.form.field('ERROR_CODE').value
       if !pairing.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2165,7 +2267,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2178,7 +2281,8 @@ module XMPPController
       data = {device_id: device_id, status: KSTATUS_FAILURE}
       error_code = msg.form.field('ERROR_CODE').value
       isSuccess = @rd_conn.rd_pairing_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'PAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2188,7 +2292,8 @@ module XMPPController
                              message:"Update the status of pairing session to FAILURE %s as receive START COMPLETED FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+     
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2201,7 +2306,8 @@ module XMPPController
       pairing = @rd_conn.rd_pairing_session_access(device_id)
       if !pairing.nil? then
         error_code = msg.form.field('ERROR_CODE').value
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2212,7 +2318,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2231,7 +2338,8 @@ module XMPPController
         isSuccess = TRUE
       end
 
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UNPAIR',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2242,7 +2350,8 @@ module XMPPController
                              data: {error_code: error_code}})
 
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2255,7 +2364,8 @@ module XMPPController
       error_code = msg.form.field('ERROR_CODE').value
       data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2265,7 +2375,8 @@ module XMPPController
                              message:"Update the status of upnp session to FAILURE %s as receive UPNP GET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2278,7 +2389,8 @@ module XMPPController
       error_code = msg.form.field('ERROR_CODE').value
       upnp = @rd_conn.rd_upnp_session_access(index)
       if !upnp.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
                                from: msg.from.to_s,
@@ -2288,7 +2400,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2302,7 +2415,8 @@ module XMPPController
       upnp = @rd_conn.rd_upnp_session_access(index)
       if !upnp.nil? then
         error_code = msg.form.field('ERROR_CODE').value
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2313,7 +2427,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2327,7 +2442,8 @@ module XMPPController
       upnp = @rd_conn.rd_upnp_session_access(index)
       if !upnp.nil? then
         error_code = msg.form.field('ERROR_CODE').value
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR,
                               {event: 'PAIR',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2338,7 +2454,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2397,7 +2514,8 @@ module XMPPController
 
         data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json}
         isSuccess = @rd_conn.rd_upnp_session_update(data)
-        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                               {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2407,7 +2525,8 @@ module XMPPController
                                message:"Update the status of upnp session to FAILURE %s as receive UPNP SET SETTING FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                                data: {error_code: JSON.generate(error_code_record)}})
       else
-        Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+        
+        LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2418,7 +2537,8 @@ module XMPPController
                              data: {error_code: 798}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2431,7 +2551,8 @@ module XMPPController
       error_code = msg.form.field('ERROR_CODE').value
       upnp = @rd_conn.rd_upnp_session_access(index)
       if !upnp.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
+        
+        LOGGER.post(FLUENT_BOT_FLOWERROR, {event: 'UPNP',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
                                from: msg.from.to_s,
@@ -2441,7 +2562,8 @@ module XMPPController
                                data: {error_code: error_code}})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2453,7 +2575,8 @@ module XMPPController
       index = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
       @rd_conn.rd_ddns_resend_session_delete(index)
-      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+      
+      LOGGER.post(FLUENT_BOT_FLOWERROR,
                             {event: 'DDNS',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2463,7 +2586,8 @@ module XMPPController
                              message:"Receive DDNS SETTING FAILURE RESPONSE message from device success",
                              data: {error_code: error_code}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+     
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2475,7 +2599,8 @@ module XMPPController
       session_id = msg.thread
       error_code = msg.form.field('ERROR_CODE').value
 
-      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+      
+      LOGGER.post(FLUENT_BOT_FLOWERROR,
                             {event: 'LED_INDICATOR_RESPONSE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2485,7 +2610,8 @@ module XMPPController
                              message:"Receive LED INDICATOR FAILURE RESPONSE message from device",
                              data: {error_code: error_code } })
       rescue Exception => error
-        Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+        
+        LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end
   end
 
@@ -2500,7 +2626,8 @@ module XMPPController
       data       = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
       @rd_conn.rd_permission_session_update(data)
 
-      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+      
+      LOGGER.post(FLUENT_BOT_FLOWERROR,
                             {event: 'PERMISSION',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2509,9 +2636,9 @@ module XMPPController
                              full_domain: 'N/A',
                              message:"Receive PERMISSION FAILURE RESPONSE message from device",
                              data: {error_code: error_code } })
-
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2596,7 +2723,8 @@ module XMPPController
 
       data = {index: session_id, status: KSTATUS_FORM, service_list: service_list_json, used_wan_port_list: used_wan_port_list_json, lan_ip: lan_ip}
       isSuccess = @rd_conn.rd_upnp_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'UPNP',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2606,7 +2734,8 @@ module XMPPController
                              message:"Update the status & service list of ddns session %s as receive DDNS SETTING RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {service_list: service_list_json}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2615,7 +2744,8 @@ module XMPPController
     begin
       result_syslog(msg)
       session_id = msg.thread
-      Fluent::Logger.post(FLUENT_BOT_FLOWERROR,
+      
+      LOGGER.post(FLUENT_BOT_FLOWERROR,
                             {event: 'LED_INDICATOR_RESPONSE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2625,7 +2755,8 @@ module XMPPController
                              message:"Receive LED INDICATOR SUCCESS message from device",
                              data: 'N/A' })
       rescue Exception => error
-        Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+        
+        LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
       end
   end
 
@@ -2713,7 +2844,8 @@ module XMPPController
 
       data = {index: session_id, status: KSTATUS_FORM, package_list: package_list_json}
       isSuccess = @rd_conn.rd_package_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PACKAGE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2723,7 +2855,8 @@ module XMPPController
                              message:"Update the status & service list of package session %s as receive package SETTING RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {package_list: package_list_json}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2736,7 +2869,8 @@ module XMPPController
       error_code = msg.form.field('ERROR_CODE').value
       data = {index: session_id, status: KSTATUS_FAILURE, error_code: error_code}
       isSuccess = @rd_conn.rd_package_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWERROR : FLUENT_BOT_FLOWALERT,
                             {event: 'PACKAGE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2746,7 +2880,8 @@ module XMPPController
                              message:"Update the status of PACKAGE session to FAILURE %s as receive PACKAGE GET LIST FAILURE RESPONSE message from device" % [isSuccess ? 'success' : 'failure'],
                              data: {error_code: error_code}})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2759,7 +2894,8 @@ module XMPPController
       index = msg.thread
       upnp = @rd_conn.rd_package_session_access(index)
       if !package.nil? then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+        
+        LOGGER.post(FLUENT_BOT_FLOWINFO,
                               {event: 'PACKAGE',
                                direction: 'Device->Bot',
                                to: @bot_xmpp_account,
@@ -2770,7 +2906,8 @@ module XMPPController
                                data: 'N/A'})
       end
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2785,7 +2922,8 @@ module XMPPController
 
       #send_request(KPACKAGE_ASK_REQUEST, info)
       isSuccess = @rd_conn.rd_package_session_update(data)
-      Fluent::Logger.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
+      
+      LOGGER.post(isSuccess ? FLUENT_BOT_FLOWINFO : FLUENT_BOT_FLOWALERT,
                             {event: 'PACKAGE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2795,7 +2933,8 @@ module XMPPController
                              message:"Update the status of package session table to UPDATED %s as receive PACKAGE SETTING SUCCESS RESPONSE message from device" % [isSuccess ? 'success' : 'failure'] ,
                              data: 'N/A'})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2830,7 +2969,8 @@ module XMPPController
       end
       data = {index: session_id, status: KSTATUS_FORM, package_list: JSON.generate(package_list) }
       isSuccess = @rd_conn.rd_package_session_update(data)
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+      
+      LOGGER.post(FLUENT_BOT_FLOWINFO,
                             {event: 'PACKAGE',
                              direction: 'Device->Bot',
                              to: @bot_xmpp_account,
@@ -2840,7 +2980,8 @@ module XMPPController
                              message:"Receive SET PACKAGE LIST FAILURE RESPONSE message from device ",
                              data: data})
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 
@@ -2865,7 +3006,8 @@ module XMPPController
       # write_to_stream response_msg_success
 
       # puts "write back \n #{response_msg_success}"
-      Fluent::Logger.post(FLUENT_BOT_FLOWINFO,
+      
+      LOGGER.post(FLUENT_BOT_FLOWINFO,
                             {event: 'HEALTH_CHECK',
                              direction: 'Health_Check->Bot',
                              to: bot_xmpp_account,
@@ -2893,7 +3035,8 @@ module XMPPController
       # puts "\n send request \n"
 
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+      
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
   end
 

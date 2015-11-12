@@ -13,6 +13,14 @@ require 'json'
 require 'eventmachine'
 require 'resolv'
 #require 'pry'
+
+GOD_CONFIG_FILE = '../config/god_config.yml'
+config_file = File.join(File.dirname(__FILE__), GOD_CONFIG_FILE)
+config = YAML.load(File.read(config_file))
+PATH = config['path']
+require_relative '../lib/bot_logger'
+
+
 include Jabber
 
 DELAY_TIME = 1
