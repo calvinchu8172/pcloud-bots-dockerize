@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#Version: 2.1.2
+#Version: 2.2.0
 $stdout.sync = true
 Encoding.default_external = Encoding::UTF_8
 
@@ -121,7 +121,7 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil? && !pair.nil?
 
       when 'unpair' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -144,7 +144,7 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device.nil?
 
       when 'upnp_submit' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -185,7 +185,7 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
 
       when 'upnp_query' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -193,7 +193,7 @@ def worker(sqs, db_conn, rd_conn)
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of upnp-query", data: data})
-        
+
         xmpp_account = nil
         session_id = data[:session_id]
         upnp = rd_conn.rd_upnp_session_access(session_id)
@@ -267,7 +267,7 @@ def worker(sqs, db_conn, rd_conn)
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of DDNS-query", data: data})
-        
+
         device = nil
         xmpp_account = nil
         session_id = data["session_id"]
@@ -324,7 +324,7 @@ def worker(sqs, db_conn, rd_conn)
         end
 
       when 'create_permission' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -349,7 +349,7 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
 
       when 'device_info' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -372,7 +372,7 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KDEVICE_INFO_ASK_REQUEST, info) if !xmpp_account.nil? && !device_info_session.nil?
 
     when 'led_indicator' then
-        
+
         LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'LED INDICATOR',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
@@ -395,7 +395,7 @@ def worker(sqs, db_conn, rd_conn)
     end
 
     rescue Exception => error
-      
+
       LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
     job = nil
