@@ -48,6 +48,9 @@ LOGGER.formatter = proc do  |severity, datetime, progname, msg|
     severity = severity.sub( '_' , '-' )
     msg[:level] = severity
     msg[:time] = Time.now.getutc.to_i
+    msg.each do |key , item|
+      msg[key] = item.to_s
+    end
     JSON.generate( msg ) + "\n"
     #puts msg[:data]
     #msg.to_json + "\n"
