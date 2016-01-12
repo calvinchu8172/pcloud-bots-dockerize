@@ -1,14 +1,25 @@
 #!/usr/bin/env ruby
-#Version: 2.0.0
+#Version: 2.6.0
 $stdout.sync = true
-
 Encoding.default_external = Encoding::UTF_8
+
+require 'yaml'
+GOD_CONFIG_FILE = './config/god_config.yml'
+config_file = File.join(File.dirname(__FILE__), GOD_CONFIG_FILE)
+config = YAML.load(File.read(config_file))
+PATH = config['path']
 
 require_relative 'lib/bot_db_access'
 require_relative 'lib/bot_queue_access'
 require_relative 'lib/bot_redis_access'
 require_relative 'lib/bot_xmpp_controller'
-require 'fluent-logger'
+require_relative 'lib/bot_logger'
+
+require_relative 'lib/bot_xmpp_health_check_template'
+
+xmpp_connect_ready = FALSE
+threads = Array.new
+
 
 FLUENT_BOT_SYSINFO = "bot.sys-info"
 FLUENT_BOT_SYSERROR = "bot.sys-error"
@@ -17,10 +28,10 @@ FLUENT_BOT_FLOWINFO = "bot.flow-info"
 FLUENT_BOT_FLOWERROR = "bot.flow-error"
 FLUENT_BOT_FLOWALERT = "bot.flow-alert"
 
-xmpp_connect_ready = FALSE
-threads = Array.new
 
-Fluent::Logger::FluentLogger.open(nil, :host=>'localhost', :port=>24224)
+#LOGGER.error("This is an error log...")
+#LOGGER.warn("This is an warn log...")
+
 
 def get_xmpp_config
   input = ARGV
@@ -44,7 +55,7 @@ end
 XMPP_CONFIG = get_xmpp_config
 
 jobThread = Thread.new {
-    Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+    LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                              direction: 'N/A',
                                              to: 'N/A',
                                              from: 'N/A',
@@ -63,7 +74,7 @@ db_conn = BotDBAccess.new
 rd_conn = BotRedisAccess.new
 
 while !xmpp_connect_ready
-  Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+  LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                            direction: 'N/A',
                                            to: 'N/A',
                                            from: 'N/A',
@@ -73,7 +84,7 @@ while !xmpp_connect_ready
                                            data: 'N/A'})
   sleep(2)
 end
-Fluent::Logger.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                          direction: 'N/A',
                                          to: 'N/A',
                                          from: 'N/A',
@@ -90,7 +101,7 @@ def worker(sqs, db_conn, rd_conn)
 
       when 'pairing' then
         device_id = data[:device_id]
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PAIR',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -110,14 +121,14 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KPAIR_START_REQUEST, info) if !xmpp_account.nil? && !pair.nil?
 
       when 'unpair' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UNPAIR',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
                                                   id: 'N/A',
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of unpair", data: data})
-
         device_id = data[:device_id]
         device = rd_conn.rd_device_session_access(device_id)
         xmpp_account = !device.nil? ? device["xmpp_account"] : ''
@@ -133,7 +144,8 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KUNPAIR_ASK_REQUEST, info) if !device.nil?
 
       when 'upnp_submit' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -173,7 +185,8 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KUPNP_SETTING_REQUEST, info) if !xmpp_account.nil?
 
       when 'upnp_query' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'UPNP',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -191,9 +204,9 @@ def worker(sqs, db_conn, rd_conn)
                 language: 'en',
                 session_id: data[:session_id]}
 
-        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil? 
+        XMPPController.send_request(KUPNP_ASK_REQUEST, info) if !xmpp_account.nil?
       when 'package_submit' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -225,7 +238,7 @@ def worker(sqs, db_conn, rd_conn)
 
 
       when 'package_query' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PACKAGE',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -247,30 +260,35 @@ def worker(sqs, db_conn, rd_conn)
 
 
       when 'ddns' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DDNS',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of DDNS-query", data: data})
+
         device = nil
         xmpp_account = nil
-        session_id = data[:session_id]
-        ddns_session = rd_conn.rd_ddns_session_access(session_id)
-        device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
-        xmpp_account = device["xmpp_account"] if !device.nil?
-
+        session_id = data["session_id"]
+        xmpp_account = data["xmpp_account"]
+        device_id = data["device_id"]
+        device_ip = data["ip"]
+        full_domain = data["full_domain"]
+        #if( xmpp_account.nil? )
+        #  ddns_session = rd_conn.rd_ddns_session_access(session_id)
+        #  device = rd_conn.rd_device_session_access(ddns_session["device_id"]) if !ddns_session.nil?
+        #  xmpp_account = device["xmpp_account"] if !device.nil?
+        #end
         info = {xmpp_account: xmpp_account.to_s,
                 session_id: session_id,
-                device_id: !ddns_session.nil? ? ddns_session["device_id"] : '',
-                ip: !device.nil? ? device["ip"] : '',
-                full_domain: !ddns_session.nil? ? ddns_session["host_name"] + '.' + ddns_session["domain_name"] : ''}
-
-        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !ddns_session.nil? && !device.nil?
+                device_id: device_id,
+                ip: device_ip.to_s,
+                full_domain: full_domain.to_s}
+        XMPPController.send_request(KDDNS_SETTING_REQUEST, info) if !xmpp_account.nil? && !device_id.nil? && !device_ip.nil? && !full_domain.nil?
 
       when 'cancel' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'CANCEL',
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'CANCEL',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -306,14 +324,14 @@ def worker(sqs, db_conn, rd_conn)
         end
 
       when 'create_permission' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'PERMISSION',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of Create-permission", data: data})
-
         session_id         = data[:session_id]
 
         permission_session = rd_conn.rd_permission_session_access(session_id)
@@ -331,7 +349,8 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KPERMISSION_ASK_REQUEST, info) if !xmpp_account.nil? && !permission_session.nil?
 
       when 'device_info' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'DEVICE-INFOMATION',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
@@ -353,14 +372,14 @@ def worker(sqs, db_conn, rd_conn)
         XMPPController.send_request(KDEVICE_INFO_ASK_REQUEST, info) if !xmpp_account.nil? && !device_info_session.nil?
 
     when 'led_indicator' then
-        Fluent::Logger.post(FLUENT_BOT_FLOWINFO, {event: 'LED INDICATOR',
+
+        LOGGER.post(FLUENT_BOT_FLOWINFO, {event: 'LED INDICATOR',
                                                   direction: 'Portal->Bot',
                                                   to: XMPP_CONFIG[:jid],
                                                   from: 'N/A',
                                                   id: data[:session_id],
                                                   full_domain: 'N/A',
                                                   message:"Get SQS queue of led indicator", data: data})
-
         device = nil
         xmpp_account = nil
         session_id = data[:session_id]
@@ -376,11 +395,11 @@ def worker(sqs, db_conn, rd_conn)
     end
 
     rescue Exception => error
-      Fluent::Logger.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
+
+      LOGGER.post(FLUENT_BOT_SYSALERT, {message:error.message, inspect: error.inspect, backtrace: error.backtrace})
     end
     job = nil
     data = nil
-    db_conn.close
   }
 end
 

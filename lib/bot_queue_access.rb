@@ -50,7 +50,7 @@ class BotQueueAccess
 
         elsif msg["job"] == "ddns" && block_given? then
           job = msg["job"]
-          data = {session_id: msg["session_id"]}
+          data = msg
           yield(job, data)
 
         elsif msg["job"] == "create_permission" && block_given? then
