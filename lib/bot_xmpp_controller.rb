@@ -110,7 +110,7 @@ module XMPPController
       EM.add_periodic_timer(0.3) {
         batch_register_ddns
       }
-      EM.add_periodic_timer(30) {
+      EM.add_periodic_timer(60) {
         LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                direction: 'N/A',
                                                to: 'N/A',
