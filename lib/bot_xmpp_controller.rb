@@ -110,6 +110,16 @@ module XMPPController
       EM.add_periodic_timer(0.3) {
         batch_register_ddns
       }
+      EM.add_periodic_timer(60) {
+        LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
+                                               direction: 'N/A',
+                                               to: 'N/A',
+                                               from: @bot_xmpp_account,
+                                               id: 'N/A',
+                                               full_domain: 'N/A',
+                                               message:"%s still running" % @bot_xmpp_account,
+                                               data: 'N/A'})
+      }
       @bot_xmpp_password = @xmpp_db.db_reset_password(@account)
       setup @bot_xmpp_account, @bot_xmpp_password
 
@@ -1033,22 +1043,17 @@ module XMPPController
   end
 
   disconnected {
-    sleep(10)
-    
+     
     LOGGER.post(FLUENT_BOT_SYSALERT, {event: 'SYSTEM',
                                               direction: 'N/A',
                                               to: 'N/A',
                                               from: @bot_xmpp_account,
                                               id: 'N/A',
                                               full_domain: 'N/A',
-                                              message:"%s reconnect XMPP server ..." % client.jid.to_s,
+                                              message:"%s disconnected " % @bot_xmpp_account,
                                               data: 'N/A'})
-    begin
-      self.run
-    rescue Exception => error
-      puts error
-    end
-    }
+    raise ( "%s disconnected" % @bot_xmpp_account)
+  }
 
 # HANDLER: Result:Pair:Start
   message :normal?, proc {|m| m.form.result? && 'pair' == m.form.title && 'start' == m.form.field('action').value} do |msg|
