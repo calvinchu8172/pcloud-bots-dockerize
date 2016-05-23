@@ -333,3 +333,14 @@ PACKAGE_SETTING_REQUEST = <<EOT
   <api_version>v1.0</api_version>
 </message>
 EOT
+
+
+
+# ALIVE_TESTER % ['BOT_ID', 'BOT_ID']
+ALIVE_TESTER = <<EOT
+<message to="%s" type="normal" from="%s" lang="en">
+  <x xmlns="jabber:x:data" type="result">
+     <title>alive</title>
+    </x>
+</message>
+EOT

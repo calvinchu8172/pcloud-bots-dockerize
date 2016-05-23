@@ -111,6 +111,9 @@ module XMPPController
         batch_register_ddns
       }
       EM.add_periodic_timer(60) {
+        puts @bot_xmpp_account
+        msg = ALIVE_TESTER % [@bot_xmpp_account, @bot_xmpp_account]
+        write_to_stream msg
         LOGGER.post(FLUENT_BOT_SYSINFO, {event: 'SYSTEM',
                                                direction: 'N/A',
                                                to: 'N/A',
