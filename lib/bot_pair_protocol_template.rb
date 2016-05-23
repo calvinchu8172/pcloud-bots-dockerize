@@ -336,11 +336,9 @@ EOT
 
 
 
-# ALIVE_TESTER % ['BOT_ID', 'BOT_ID']
+# ALIVE_TESTER % ['BOT_ID']
 ALIVE_TESTER = <<EOT
-<message to="%s" type="normal" from="%s" lang="en">
-  <x xmlns="jabber:x:data" type="result">
-     <title>alive</title>
-    </x>
-</message>
+<iq from='%s' to='capulet.lit' id='c2s1' type='get'>
+  <ping xmlns='urn:xmpp:ping'/>
+</iq>
 EOT
