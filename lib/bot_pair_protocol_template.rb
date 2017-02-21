@@ -333,3 +333,12 @@ PACKAGE_SETTING_REQUEST = <<EOT
   <api_version>v1.0</api_version>
 </message>
 EOT
+
+
+
+# ALIVE_TESTER % ['BOT_ID']
+ALIVE_TESTER = <<EOT
+<iq from='%s' to='capulet.lit' id='c2s1' type='get'>
+  <ping xmlns='urn:xmpp:ping'/>
+</iq>
+EOT
