@@ -1,3 +1,8 @@
 /config/*.*
 coverage
 .DS_Store
+
+# Ignore local rvm ruby version and gemset
+/.ruby-gemset
+/.ruby-version
+/.versions.conf
