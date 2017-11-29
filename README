@@ -1,0 +1,40 @@
+# P.Cloud Bot
+
+## 本機跑 Bot
+
+1. God
+    * 啟動 Bot
+        1. `cd personal-cloud-bots`
+        2. `god -c bot.god -D`
+        3. 會看到 God 將兩台 Bot 叫起一台是 `personal-cloud-bot-0`，一台是 `personal-cloud-bot-1`
+    * 關閉 Bot，請勿直接 `control + c`
+        1. `god stop personal-cloud-bot-0`
+        2. `god stop personal-cloud-bot-1`
+        3. control + c
+
+2. 跑單隻 Bot
+    1. `cd personal-cloud-bots`
+    2. `./bot_main_controller.rb -u bot1 -r 12345`
+    3. 若要關閉，直接 `control + c`
+
+3. 要看 bot fluentD 的 log 是放在
+    * 在 vagrant 下: `cd /vagrant/var/log/td-agent/`
+    * 線上的 bot.log 是放在 `cd /var/log/fluent`，不過現在小馬已經移到 `cd log`
+
+4. 跑 Rspec 測試
+    1. `cd personal-cloud-bots`
+    2. 跑整份rspec：`rspec spec/ --format html > report.html`
+    3. 跑單一檔案，ex：`rspec spec/bot_xmpp_db_access_spec.rb --format html > report.html`
+
+5. 似乎要連 VPN，SQS 才不會常常斷線，原因不明
+6. 若 signature 有時間上的誤差，出現以下錯誤：
+    ```
+    Signature expired: 20161108T075010Z is now earlier than 20161108T075432Z (20161108T080932Z - 15 min.) (AWS::SQS::Errors::SignatureDoesNotMatch)
+下這個指令去校正時間
+    ```
+    可輸入 `sudo ntpdate ntp.ubuntu.com` 去校正時間。
+7. 可以模擬 Device 回應訊息的 bot_echo.rb 程式：
+    1. git clone 此 `git@gitlab.ecoworkinc.com:zyxel/pcloud-bot-echo.git` repo 下來後，將 `bot_echo.rb` copy 到 `personal-cloud-bots` 專案目錄下
+    2. 程式內 `XMPP_ACCOUNT` 可以改成要模擬的 Device 的帳號，ex：`XMPP_ACCOUNT = 'd0023f8311041-tempserialnum0000@localhost/device'`
+
+8. 記得 bot 若沒有回應，很可能是 Device 沒有註冊，打一次 Device 註冊 API
