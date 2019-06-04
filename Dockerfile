@@ -19,6 +19,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 RUN mkdir -p $APP_HOME
 COPY ./pcloud-bots $APP_HOME
 WORKDIR $APP_HOME
+RUN mkdir -p log
 RUN bundle install
 
 # Add a script to be executed every time the container starts.
