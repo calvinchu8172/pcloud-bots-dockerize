@@ -23,26 +23,26 @@ Net::SMTP.class_eval do
   alias_method :initialize, :initialize_with_starttls
 end
 
-God::Contacts::Email.defaults do |d|
-  Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
-  d.from_email = 'bot-notification@%s' % config['mail_domain']
-  d.from_name = 'bot-notification'
-  d.delivery_method = :smtp
-  d.server_host = 'email-smtp.us-west-2.amazonaws.com'
-  d.server_port = 587
-  d.server_auth = :plain
-  d.server_domain = config['mail_domain']
-  d.server_user = config['mail_user']
-  d.server_password = config['mail_pw']
-end
+# God::Contacts::Email.defaults do |d|
+#   Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
+#   d.from_email = 'bot-notification@%s' % config['mail_domain']
+#   d.from_name = 'bot-notification'
+#   d.delivery_method = :smtp
+#   d.server_host = 'email-smtp.us-east-1.amazonaws.com'
+#   d.server_port = 587
+#   d.server_auth = :plain
+#   d.server_domain = config['mail_domain']
+#   d.server_user = config['mail_user']
+#   d.server_password = config['mail_pw']
+# end
 
-config['notify_list'].each do |note|
-  God.contact(:email) do |c|
-    c.name = note['name']
-    c.group = 'developers'
-    c.to_email = note['email']
-  end
-end
+# config['notify_list'].each do |note|
+#   God.contact(:email) do |c|
+#     c.name = note['name']
+#     c.group = 'developers'
+#     c.to_email = note['email']
+#   end
+# end
 
 bots_revision = `cd #{File.dirname(__FILE__)} && git rev-parse HEAD`.strip
 
@@ -61,7 +61,9 @@ BOT_LIST.each do |c|
     #w.start   = "#{PATH}bot_main_controller.rb -u #{jid} -p #{password} -r #{bots_revision}"
     w.start   = "#{PATH}bot_main_controller.rb -u #{username} -r #{bots_revision}"
 
-    w.keepalive
+    w.keepalive( :memory_max => 500.megabytes,
+                 :cpu_max => 50.percent )
+    
     w.log     = "#{PATH}bot.log"
     w.err_log = "#{PATH}bot.err"
 

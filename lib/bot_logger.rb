@@ -1,12 +1,17 @@
 require 'process_safe_logger'
 class ProcessSafeLogger
+  @tmp_array = []
+  @tmp_array << SEV_LABEL
+  @tmp_array.flatten!
+
   def self.custom_level(tag)
-    SEV_LABEL << tag 
-    idx = SEV_LABEL.size - 1 
+    @tmp_array << tag 
+    idx = @tmp_array.size - 1 
     define_method(tag.downcase.gsub(/\W+/, '_').to_sym) do |progname, &block|
       add(idx, nil, progname, &block)
     end 
   end
+
   def post(level ,message)
   	#message = message.to_json
   	#message = message.gsub!(/\\u([0-9a-z]{4})/) {|s| [$1.to_i(16)].pack("U")}
