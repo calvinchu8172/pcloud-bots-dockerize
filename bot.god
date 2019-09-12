@@ -64,8 +64,8 @@ BOT_LIST.each do |c|
     w.keepalive( :memory_max => 500.megabytes,
                  :cpu_max => 50.percent )
     
-    w.log     = "#{PATH}bot.log"
-    w.err_log = "#{PATH}bot.err"
+    w.log     = "#{PATH}log/bot.log"
+    w.err_log = "#{PATH}log/bot.err"
 
     w.start_if do |on|
       on.condition(:process_running) do |e|
@@ -76,4 +76,12 @@ BOT_LIST.each do |c|
     end
   end
   i += 1
+end
+
+God.watch do |w|
+  w.name = "device"
+  w.start = "ruby #{PATH}device_echo.rb"
+  w.keepalive
+  w.log     = "#{PATH}log/device.log"
+  w.err_log = "#{PATH}log/device.err"
 end
