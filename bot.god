@@ -81,7 +81,15 @@ end
 God.watch do |w|
   w.name = "device"
   w.start = "ruby #{PATH}device_echo.rb"
-  w.keepalive
+  w.keepalive( :memory_max => 500.megabytes,
+               :cpu_max => 50.percent )
   w.log     = "#{PATH}log/device.log"
   w.err_log = "#{PATH}log/device.err"
+  w.start_if do |on|
+    on.condition(:process_running) do |e|
+      e.interval = 2.seconds
+      e.running = false
+      e.notify = {:contacts => ['developers'], :priority => 1, :category => 'production'}
+    end
+  end
 end
