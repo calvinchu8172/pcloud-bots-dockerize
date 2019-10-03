@@ -15,3 +15,5 @@ gem "process_safe_logger"
 gem 'pry'
 gem 'simplecov'
 gem 'minitest', '~> 5.1'
+gem 'whenever', require: false
+gem 'rake'

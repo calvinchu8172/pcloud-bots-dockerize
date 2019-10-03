@@ -9,11 +9,13 @@ require_relative 'lib/bot_pair_protocol_template'
 require_relative 'lib/bot_xmpp_spec_protocol_template'
 # require './lib/bot_xmpp_health_check_template'
 require 'pry'
+require 'yaml'
 # XMPP_ACCOUNT = 'd099789665701-a123456@192.168.50.10/device'
 # XMPP_PASSWORD = 'kxxNQJBLHZ'
-
+config_file = File.join(File.dirname(__FILE__), './config/god_config.yml')
+config = YAML.load(File.read(config_file))
 # XMPP_ACCOUNT = 'd0023f8311042-tempserialnum0001@localhost/device'
-XMPP_ACCOUNT = 'd0023f8311041-tempserialnum0000@mongooseim/device'
+XMPP_ACCOUNT = "d0023f8311041-tempserialnum0000@#{config['xmpp_config']['domain']}/device"
 # XMPP_ACCOUNT = 'bot_health_check@localhost/device'
 # XMPP_PASSWORD = 'xTeJbaVu80'
 USER_EMAIL = 'spjay1@gmail.com'
